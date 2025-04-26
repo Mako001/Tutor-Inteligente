@@ -228,7 +228,6 @@ export default function Home() {
       setEditedProposal(null);
     } finally {
       setIsLoading(false);
-      setIsEditing(false);
     }
   }
 
@@ -236,17 +235,8 @@ export default function Home() {
     setIsEditing(true);
   };
 
-  const handleSaveClick = () => {
-    setProposal(editedProposal);
+  const handleCancelClick = () => {
     setIsEditing(false);
-    toast({
-      title: "Propuesta editada!",
-      description: "La propuesta de actividad ha sido editada exitosamente.",
-    });
-  };
-
-  const handleProposalChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setEditedProposal(e.target.value);
   };
 
   const downloadProposal = () => {
@@ -553,7 +543,7 @@ export default function Home() {
                 )}
               />
 
-              <Button type="submit" disabled={isLoading}>
+              <Button type="submit" disabled={isLoading || isEditing}>
                 {isLoading ? "Generando propuesta..." : "Generar Propuesta"}
               </Button>
             </form>
@@ -564,27 +554,24 @@ export default function Home() {
             <div className="w-full">
               <h2 className="text-lg font-semibold mb-2">Vista Preliminar de la Propuesta</h2>
               <ScrollArea className="h-[300px] w-full rounded-md border p-4 mb-4">
-                {isEditing ? (
-                  <Textarea
-                    value={editedProposal || ""}
-                    onChange={handleProposalChange}
-                    className="resize-none"
-                  />
-                ) : (
-                  <div ref={proposalRef}>
-                    {editedProposal || proposal}
-                  </div>
-                )}
+                <div ref={proposalRef}>
+                  {editedProposal || proposal}
+                </div>
               </ScrollArea>
             </div>
             <div className="flex justify-between items-center w-full">
               {isEditing ? (
-                <Button variant="outline" onClick={handleSaveClick}>
-                  Guardar
-                </Button>
+                <>
+                  <Button variant="outline" onClick={form.handleSubmit(onSubmit)} disabled={isLoading}>
+                    {isLoading ? "Guardando..." : "Guardar Cambios"}
+                  </Button>
+                  <Button variant="ghost" onClick={handleCancelClick}>
+                    Cancelar
+                  </Button>
+                </>
               ) : (
                 <Button variant="outline" onClick={handleEditClick}>
-                  Editar
+                  Editar Formulario
                 </Button>
               )}
               <Select onValueChange={setDownloadFormat} defaultValue={downloadFormat}>
