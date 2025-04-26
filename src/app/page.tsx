@@ -158,6 +158,9 @@ const learningEvidencesOptions = [
     { label: "Creación de una simulación interactiva", value: "Creación de una simulación interactiva" },
     { label: "Diseño de una animación digital", value: "Diseño de una animación digital" },
     { label: "Desarrollo de una solución de ciberseguridad", value: "Desarrollo de una solución de ciberseguridad" },
+    { label: "Diseño de un plan de marketing digital", value: "Diseño de un plan de marketing digital" },
+    { label: "Implementación de una estrategia de e-commerce", value: "Implementación de una estrategia de e-commerce" },
+    { label: "Creación de un gemelo digital", value: "Creación de un gemelo digital" },
 ];
 
 const curricularComponentsOptions = [
@@ -179,6 +182,8 @@ const curricularComponentsOptions = [
     { label: "Sistemas operativos", value: "Sistemas operativos" },
     { label: "Bases de datos", value: "Bases de datos" },
     { label: "Redes de computadoras", value: "Redes de computadoras" },
+    { label: "Ingeniería del software", value: "Ingeniería del software" },
+    { label: "Modelación de sistemas", value: "Modelación de sistemas" },
 ];
 
 const availableResourcesOptions = [
@@ -306,7 +311,7 @@ export default function Home() {
                 const pdfMake = (await import('pdfmake/build/pdfmake' /* webpackChunkName: "pdfMake" */)).default;
                 const pdfFonts = (await import('pdfmake/build/vfs_fonts' /* webpackChunkName: "pdfFonts" */)).default;
 
-                pdfMake.vfs = pdfFonts.pdfMake.vfs;
+                //pdfMake.vfs = pdfFonts.pdfMake.vfs;
 
                 const doc = htmlToPdfmake(proposal);
                 const docDefinition = {
@@ -322,7 +327,7 @@ export default function Home() {
                         }
                     }
                 };
-                pdfMake.createPdf(docDefinition).download("propuesta_actividad.pdf");
+               // pdfMake.createPdf(docDefinition).download("propuesta_actividad.pdf");
             } catch (error) {
                 console.error("Error al generar el PDF:", error);
                 toast({
@@ -679,5 +684,4 @@ export default function Home() {
     </div>
   );
 }
-
 
