@@ -223,7 +223,7 @@ export default function Home() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const proposalRef = useRef<HTMLDivElement>(null);
-  const [fileType, setFileType] = useState<'html' | 'pdf'>('html');
+  const [fileType, setFileType] = useState<'html' | 'text'>('html');
   const [isEditing, setIsEditing] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -288,56 +288,9 @@ export default function Home() {
     if (fileType === 'html') {
       const blob = new Blob([proposal], { type: "text/html;charset=utf-8" });
       saveAs(blob, `propuesta_actividad.html`);
-    } else if (fileType === 'pdf') {
-      try {
-        // Dynamically import the required modules
-        const htmlToPdfmake = (await import('html-to-pdfmake' /* webpackChunkName: "htmlToPdfmake" */)).default;
-        const pdfMake = (await import('pdfmake/build/pdfmake' /* webpackChunkName: "pdfMake" */)).default;
-        const pdfFonts = (await import('pdfmake/build/vfs_fonts' /* webpackChunkName: "pdfFonts" */)).default;
-
-        pdfMake.vfs = pdfFonts.pdfMake.vfs;
-
-        const html = proposalRef.current?.outerHTML;
-
-        if (!html) {
-          toast({
-            variant: "destructive",
-            title: "Error",
-            description: "No se pudo obtener el HTML de la propuesta.",
-          });
-          return;
-        }
-
-        const documentDefinition = {
-          content: htmlToPdfmake(html, {
-            tableAutoSize: true
-          }),
-          styles: {
-            defaultStyle: {
-              font: 'Roboto'
-            }
-          },
-          defaultStyle: {
-            font: 'Roboto'
-          },
-        };
-
-        const pdfDocGenerator = pdfMake.createPdf(documentDefinition);
-
-        pdfDocGenerator.getDataUrl((dataUrl) => {
-          const link = document.createElement('a');
-          link.href = dataUrl;
-          link.download = 'propuesta_actividad.pdf';
-          link.click();
-        });
-      } catch (error: any) {
-        console.error("Error generating PDF:", error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Error al generar el PDF. Por favor, inténtalo de nuevo.",
-        });
-      }
+    } else if (fileType === 'text') {
+      const blob = new Blob([proposal], { type: "text/plain;charset=utf-8" });
+      saveAs(blob, `propuesta_actividad.text`);
     }
   };
 
@@ -360,7 +313,7 @@ export default function Home() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>1. Grado(s) Específico(s):</FormLabel>
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="flex flex-col gap-2">
                         {gradeOptions.map((option) => (
                           <FormItem key={option.value} className="flex flex-row items-center space-x-2 space-y-0">
                             <FormControl>
@@ -429,7 +382,7 @@ export default function Home() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>4. Metodología Preferida:</FormLabel>
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="flex flex-col gap-2">
                         {methodologyOptions.map((option) => (
                           <FormItem key={option.value} className="flex flex-row items-center space-x-2 space-y-0">
                             <FormControl>
@@ -459,7 +412,7 @@ export default function Home() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>5. Competencias a Desarrollar:</FormLabel>
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="flex flex-col gap-2">
                         {competenciesOptions.map((option) => (
                           <FormItem key={option.value} className="flex flex-row items-center space-x-2 space-y-0">
                             <FormControl>
@@ -489,7 +442,7 @@ export default function Home() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>6. Evidencias de Aprendizaje:</FormLabel>
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="flex flex-col gap-2">
                         {learningEvidencesOptions.map((option) => (
                           <FormItem key={option.value} className="flex flex-row items-center space-x-2 space-y-0">
                             <FormControl>
@@ -519,7 +472,7 @@ export default function Home() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>7. Componentes Curriculares:</FormLabel>
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="flex flex-col gap-2">
                         {curricularComponentsOptions.map((option) => (
                           <FormItem key={option.value} className="flex flex-row items-center space-x-2 space-y-0">
                             <FormControl>
@@ -549,7 +502,7 @@ export default function Home() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>8. Recursos Disponibles:</FormLabel>
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="flex flex-col gap-2">
                         {availableResourcesOptions.map((option) => (
                           <FormItem key={option.value} className="flex flex-row items-center space-x-2 space-y-0">
                             <FormControl>
@@ -579,7 +532,7 @@ export default function Home() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>9. Contexto y Necesidades:</FormLabel>
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="flex flex-col gap-2">
                         {contextAndNeedsOptions.map((option) => (
                           <FormItem key={option.value} className="flex flex-row items-center space-x-2 space-y-0">
                             <FormControl>
@@ -662,11 +615,11 @@ export default function Home() {
                     <AlertDialogAction onClick={downloadProposal}>
                       <select
                         value={fileType}
-                        onChange={(e) => setFileType(e.target.value as 'html' | 'pdf')}
+                        onChange={(e) => setFileType(e.target.value as 'html' | 'text')}
                         className="rounded-md border-input text-sm"
                       >
                         <option value="html">HTML</option>
-                        <option value="pdf">PDF</option>
+                        <option value="text">TEXT</option>
                       </select>
                       Descargar
                     </AlertDialogAction>
