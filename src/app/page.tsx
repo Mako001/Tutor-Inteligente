@@ -300,30 +300,21 @@ export default function Home() {
             const blob = new Blob([proposal], { type: "text/html;charset=utf-8" });
             saveAs(blob, `propuesta_actividad.html`);
         } else if (fileType === 'pdf') {
+            const doc = htmlToPdfmake(proposal);
             const docDefinition = {
-                content: [
-                    {
-                        text: 'Propuesta de Actividad',
-                        style: 'header'
-                    },
-                    {
-                        text: proposal,
-                        style: 'body'
-                    }
-                ],
-                styles: {
-                    header: {
-                        fontSize: 18,
-                        bold: true,
-                        marginBotton: 20
-                    },
-                    body: {
-                        fontSize: 12
-                    }
+              content: doc,
+              styles: {
+                header: {
+                  fontSize: 18,
+                  bold: true,
+                  marginBotton: 20
+                },
+                body: {
+                  fontSize: 12
                 }
+              }
             };
-
-            pdfMake.createPdf(docDefinition).download('propuesta_actividad.pdf');
+            pdfMake.createPdf(docDefinition).download("propuesta_actividad.pdf");
         }
     };
 
