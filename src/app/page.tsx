@@ -114,6 +114,9 @@ const competenciesOptions = [
   { label: "Modelado y simulación", value: "Modelado y simulación" },
   { label: "Análisis de datos", value: "Análisis de datos" },
   { label: "Diseño de interfaces", value: "Diseño de interfaces" },
+  { label: "Desarrollo de videojuegos", value: "Desarrollo de videojuegos" },
+  { label: "Diseño de aplicaciones móviles", value: "Diseño de aplicaciones móviles" },
+  { label: "Robótica", value: "Robótica" },
 ];
 
 const learningEvidencesOptions = [
@@ -131,6 +134,10 @@ const learningEvidencesOptions = [
   { label: "Diseño de una página web", value: "Diseño de una página web" },
   { label: "Elaboración de un mapa conceptual", value: "Elaboración de un mapa conceptual" },
   { label: "Desarrollo de un videojuego", value: "Desarrollo de un videojuego" },
+  { label: "Diseño de una base de datos", value: "Diseño de una base de datos" },
+  { label: "Creación de una presentación multimedia", value: "Creación de una presentación multimedia" },
+  { label: "Desarrollo de un sistema de información", value: "Desarrollo de un sistema de información" },
+  { label: "Elaboración de un blog", value: "Elaboración de un blog" },
 ];
 
 const curricularComponentsOptions = [
@@ -144,6 +151,10 @@ const curricularComponentsOptions = [
   { label: "Ciencia, tecnología y sociedad", value: "Ciencia, tecnología y sociedad" },
   { label: "Sistemas tecnológicos", value: "Sistemas tecnológicos" },
   { label: "Información y comunicación", value: "Información y comunicación" },
+  { label: "Pensamiento algorítmico", value: "Pensamiento algorítmico" },
+  { label: "Programación", value: "Programación" },
+  { label: "Robótica", value: "Robótica" },
+  { label: "Inteligencia artificial", value: "Inteligencia artificial" },
 ];
 
 const availableResourcesOptions = [
@@ -157,6 +168,9 @@ const availableResourcesOptions = [
   { label: "Otros materiales", value: "Otros materiales" },
   { label: "Plataformas de aprendizaje en línea", value: "Plataformas de aprendizaje en línea" },
   { label: "Herramientas de diseño gráfico", value: "Herramientas de diseño gráfico" },
+  { label: "Simuladores", value: "Simuladores" },
+  { label: "Dispositivos móviles", value: "Dispositivos móviles" },
+  { label: "Realidad virtual/aumentada", value: "Realidad virtual/aumentada" },
 ];
 
 const contextAndNeedsOptions = [
@@ -169,6 +183,9 @@ const contextAndNeedsOptions = [
   { label: "Adaptar la enseñanza a diferentes ritmos de aprendizaje", value: "Adaptar la enseñanza a diferentes ritmos de aprendizaje" },
   { label: "Estudiantes con necesidades educativas especiales", value: "Estudiantes con necesidades educativas especiales" },
   { label: "Promover la inclusión digital", value: "Promover la inclusión digital" },
+  { label: "Abordar la brecha digital", value: "Abordar la brecha digital" },
+  { label: "Fomentar el pensamiento crítico", value: "Fomentar el pensamiento crítico" },
+  { label: "Promover el aprendizaje colaborativo", value: "Promover el aprendizaje colaborativo" },
 ];
 
 export default function Home() {
@@ -177,7 +194,6 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editedProposal, setEditedProposal] = useState<string | null>(null);
-  const [downloadFormat, setDownloadFormat] = useState<"docx" | "pdf">("docx");
   const proposalRef = useRef<HTMLDivElement>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -249,13 +265,12 @@ export default function Home() {
       return;
     }
 
-    // TODO: Implement docx and pdf generation here
-    // For now, just download as text
-    const blob = new Blob([proposal], { type: "text/plain;charset=utf-8" });
+    // Download as text
+    const blob = new Blob([proposal], { type: "text/html;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `propuesta_actividad.${downloadFormat}`;
+    link.download = `propuesta_actividad.html`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -554,9 +569,7 @@ export default function Home() {
             <div className="w-full">
               <h2 className="text-lg font-semibold mb-2">Vista Preliminar de la Propuesta</h2>
               <ScrollArea className="h-[300px] w-full rounded-md border p-4 mb-4">
-                <div ref={proposalRef}>
-                  {editedProposal || proposal}
-                </div>
+                <div ref={proposalRef} dangerouslySetInnerHTML={{ __html: editedProposal || proposal }} />
               </ScrollArea>
             </div>
             <div className="flex justify-between items-center w-full">
@@ -570,28 +583,19 @@ export default function Home() {
                   </Button>
                 </>
               ) : (
-                <Button variant="outline" onClick={handleEditClick}>
+                <Button variant="outline" onClick={() => setIsEditing(true)}>
                   Editar Formulario
                 </Button>
               )}
-              <Select onValueChange={setDownloadFormat} defaultValue={downloadFormat}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Seleccionar formato" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="docx">.docx</SelectItem>
-                  <SelectItem value="pdf">.pdf</SelectItem>
-                </SelectContent>
-              </Select>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button>Descargar Propuesta</Button>
+                  <Button onClick={downloadProposal}>Descargar Propuesta</Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
                     <AlertDialogTitle>¿Descargar propuesta?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      ¿Estás seguro de que quieres descargar la propuesta de actividad en formato {downloadFormat.toUpperCase()}?
+                      ¿Estás seguro de que quieres descargar la propuesta de actividad en formato HTML?
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
