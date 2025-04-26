@@ -300,28 +300,37 @@ export default function Home() {
             const blob = new Blob([proposal], { type: "text/html;charset=utf-8" });
             saveAs(blob, `propuesta_actividad.html`);
         } else if (fileType === 'pdf') {
-            // Dynamically import the required modules
-            const htmlToPdfmake = (await import('html-to-pdfmake')).default;
-            const pdfMake = (await import('pdfmake/build/pdfmake')).default;
-            const pdfFonts = (await import('pdfmake/build/vfs_fonts')).default;
+            try {
+                // Dynamically import the required modules
+                const htmlToPdfmake = (await import('html-to-pdfmake' /* webpackChunkName: "htmlToPdfmake" */)).default;
+                const pdfMake = (await import('pdfmake/build/pdfmake' /* webpackChunkName: "pdfMake" */)).default;
+                const pdfFonts = (await import('pdfmake/build/vfs_fonts' /* webpackChunkName: "pdfFonts" */)).default;
 
-            pdfMake.vfs = pdfFonts.pdfMake.vfs;
+                pdfMake.vfs = pdfFonts.pdfMake.vfs;
 
-            const doc = htmlToPdfmake(proposal);
-            const docDefinition = {
-                content: doc,
-                styles: {
-                    header: {
-                        fontSize: 18,
-                        bold: true,
-                        marginBottom: 20
-                    },
-                    body: {
-                        fontSize: 12
+                const doc = htmlToPdfmake(proposal);
+                const docDefinition = {
+                    content: doc,
+                    styles: {
+                        header: {
+                            fontSize: 18,
+                            bold: true,
+                            marginBottom: 20
+                        },
+                        body: {
+                            fontSize: 12
+                        }
                     }
-                }
-            };
-            pdfMake.createPdf(docDefinition).download("propuesta_actividad.pdf");
+                };
+                pdfMake.createPdf(docDefinition).download("propuesta_actividad.pdf");
+            } catch (error) {
+                console.error("Error al generar el PDF:", error);
+                toast({
+                    variant: "destructive",
+                    title: "Error",
+                    description: "No se pudo generar el PDF. Asegúrate de que todas las dependencias estén correctamente instaladas.",
+                });
+            }
         }
     };
 
@@ -670,3 +679,5 @@ export default function Home() {
     </div>
   );
 }
+
+
