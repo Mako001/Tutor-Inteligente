@@ -47,12 +47,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { saveAs } from 'file-saver';
-//import htmlToPdfmake from 'html-to-pdfmake';
-//import pdfMake from 'pdfmake/build/pdfmake';
-//import pdfFonts from 'pdfmake/build/vfs_fonts';
-
-//pdfMake.vfs = pdfFonts.pdfMake.vfs;
-
 
 const initialGreeting =
   "¡Hola, colega docente de Informática de bachillerato! Estoy aquí para ayudarte a diseñar actividades de aprendizaje significativas y contextualizadas para tus estudiantes. Para comenzar, necesito que reflexionemos juntos sobre algunos aspectos clave. Responder a las siguientes preguntas me permitirá generar una propuesta de actividad ajustada a tus necesidades y a los lineamientos del MEN.";
@@ -227,10 +221,8 @@ export default function Home() {
   const [proposal, setProposal] = useState<string | null>(null);
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedProposal, setEditedProposal] = useState<string | null>(null);
   const proposalRef = useRef<HTMLDivElement>(null);
-    const [fileType, setFileType] = useState<'html' | 'pdf'>('html');
+  const [fileType, setFileType] = useState<'html' | 'pdf'>('html');
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -262,7 +254,6 @@ export default function Home() {
         contextAndNeeds: values.contextAndNeeds.join(", "),
       });
       setProposal(aiResponse?.activityProposal ?? "No se pudo generar la propuesta.");
-      setEditedProposal(aiResponse?.activityProposal ?? "No se pudo generar la propuesta.");
       toast({
         title: "Propuesta generada!",
         description: "La propuesta de actividad ha sido generada exitosamente.",
@@ -277,67 +268,87 @@ export default function Home() {
           "Hubo un error al generar la propuesta. Por favor, intenta de nuevo.",
       });
       setProposal(null);
-      setEditedProposal(null);
     } finally {
       setIsLoading(false);
     }
   }
 
-  const handleEditClick = () => {
-    setIsEditing(true);
-  };
+  const downloadProposal = async () => {
+    if (!proposal) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No hay propuesta para descargar.",
+      });
+      return;
+    }
 
-  const handleCancelClick = () => {
-    setIsEditing(false);
-  };
+    if (fileType === 'html') {
+      const blob = new Blob([proposal], { type: "text/html;charset=utf-8" });
+      saveAs(blob, `propuesta_actividad.html`);
+    } else if (fileType === 'pdf') {
+      try {
+        // Dynamically import the required modules
+        const htmlToPdfmake = (await import('html-to-pdfmake')).default;
+        const pdfMake = (await import('pdfmake/build/pdfmake')).default;
+        const pdfFonts = (await import('pdfmake/build/vfs_fonts')).default;
 
-    const downloadProposal = async () => {
-        if (!proposal) {
-            toast({
-                variant: "destructive",
-                title: "Error",
-                description: "No hay propuesta para descargar.",
-            });
-            return;
+        pdfMake.vfs = pdfFonts.pdfMake.vfs;
+
+        const html = proposalRef.current?.innerHTML;
+
+        if (!html) {
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "No se pudo obtener el contenido HTML de la propuesta.",
+          });
+          return;
         }
 
-        if (fileType === 'html') {
-            const blob = new Blob([proposal], { type: "text/html;charset=utf-8" });
-            saveAs(blob, `propuesta_actividad.html`);
-        } else if (fileType === 'pdf') {
-            try {
-                // Dynamically import the required modules
-                const htmlToPdfmake = (await import('html-to-pdfmake' /* webpackChunkName: "htmlToPdfmake" */)).default;
-                const pdfMake = (await import('pdfmake/build/pdfmake' /* webpackChunkName: "pdfMake" */)).default;
-                const pdfFonts = (await import('pdfmake/build/vfs_fonts' /* webpackChunkName: "pdfFonts" */)).default;
-
-                //pdfMake.vfs = pdfFonts.pdfMake.vfs;
-
-                const doc = htmlToPdfmake(proposal);
-                const docDefinition = {
-                    content: doc,
-                    styles: {
-                        header: {
-                            fontSize: 18,
-                            bold: true,
-                            marginBottom: 20
-                        },
-                        body: {
-                            fontSize: 12
-                        }
-                    }
-                };
-               // pdfMake.createPdf(docDefinition).download("propuesta_actividad.pdf");
-            } catch (error) {
-                console.error("Error al generar el PDF:", error);
-                toast({
-                    variant: "destructive",
-                    title: "Error",
-                    description: "No se pudo generar el PDF. Asegúrate de que todas las dependencias estén correctamente instaladas.",
-                });
+        const docDefinition = {
+          content: [
+            {
+              text: 'Propuesta de Actividad',
+              style: 'header'
+            },
+            {
+              text: htmlToPdfmake(html),
+              style: 'body'
             }
-        }
-    };
+          ],
+          styles: {
+            header: {
+              fontSize: 18,
+              bold: true,
+              marginBottom: 20
+            },
+            body: {
+              fontSize: 12
+            }
+          }
+        };
+
+        const pdfDocGenerator = pdfMake.createPdf(docDefinition);
+        pdfDocGenerator.getDataUrl((dataUrl) => {
+          const link = document.createElement('a');
+          link.href = dataUrl;
+          link.download = 'propuesta_actividad.pdf';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        });
+
+      } catch (error) {
+        console.error("Error al generar el PDF:", error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "No se pudo generar el PDF. Asegúrate de que todas las dependencias estén correctamente instaladas.",
+        });
+      }
+    }
+  };
 
   return (
     <div className="flex justify-center items-start min-h-screen py-12 bg-secondary">
@@ -620,7 +631,7 @@ export default function Home() {
                 )}
               />
 
-              <Button type="submit" disabled={isLoading || isEditing}>
+              <Button type="submit" disabled={isLoading}>
                 {isLoading ? "Generando propuesta..." : "Generar Propuesta"}
               </Button>
             </form>
@@ -631,28 +642,14 @@ export default function Home() {
             <div className="w-full">
               <h2 className="text-lg font-semibold mb-2">Vista Preliminar de la Propuesta</h2>
               <ScrollArea className="h-[300px] w-full rounded-md border p-4 mb-4">
-                <div ref={proposalRef} dangerouslySetInnerHTML={{ __html: editedProposal || proposal }} />
+                <div ref={proposalRef} dangerouslySetInnerHTML={{ __html: proposal }} />
               </ScrollArea>
             </div>
             <div className="flex justify-between items-center w-full">
-              {isEditing ? (
-                <>
-                  <Button variant="outline" onClick={form.handleSubmit(onSubmit)} disabled={isLoading}>
-                    {isLoading ? "Guardando..." : "Guardar Cambios"}
-                  </Button>
-                  <Button variant="ghost" onClick={handleCancelClick}>
-                    Cancelar
-                  </Button>
-                </>
-              ) : (
-                <Button variant="outline" onClick={() => setIsEditing(true)}>
-                  Editar Formulario
-                </Button>
-              )}
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                                    <Button>Descargar Propuesta</Button>
-                                </AlertDialogTrigger>
+                  <Button>Descargar Propuesta</Button>
+                </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
                     <AlertDialogTitle>¿Descargar propuesta?</AlertDialogTitle>
@@ -664,16 +661,16 @@ export default function Home() {
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancelar</AlertDialogCancel>
                     <AlertDialogAction onClick={downloadProposal}>
-                                            <select
-                                                value={fileType}
-                                                onChange={(e) => setFileType(e.target.value as 'html' | 'pdf')}
-                                                className="rounded-md border-input text-sm"
-                                            >
-                                                <option value="html">HTML</option>
-                                                <option value="pdf">PDF</option>
-                                            </select>
-                                            Descargar
-                                        </AlertDialogAction>
+                      <select
+                        value={fileType}
+                        onChange={(e) => setFileType(e.target.value as 'html' | 'pdf')}
+                        className="rounded-md border-input text-sm"
+                      >
+                        <option value="html">HTML</option>
+                        <option value="pdf">PDF</option>
+                      </select>
+                      Descargar
+                    </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
