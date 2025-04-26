@@ -47,6 +47,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { saveAs } from 'file-saver';
+import { Edit } from "lucide-react";
 
 const initialGreeting =
   "¡Hola, colega docente de Informática de bachillerato! Estoy aquí para ayudarte a diseñar actividades de aprendizaje significativas y contextualizadas para tus estudiantes. Para comenzar, necesito que reflexionemos juntos sobre algunos aspectos clave. Responder a las siguientes preguntas me permitirá generar una propuesta de actividad ajustada a tus necesidades y a los lineamientos del MEN.";
@@ -222,7 +223,8 @@ export default function Home() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const proposalRef = useRef<HTMLDivElement>(null);
-  const [fileType, setFileType] = useState<'html' | 'pdf'>('html');
+  const [fileType, setFileType] = useState<'html'>('html');
+  const [isEditing, setIsEditing] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -286,67 +288,13 @@ export default function Home() {
     if (fileType === 'html') {
       const blob = new Blob([proposal], { type: "text/html;charset=utf-8" });
       saveAs(blob, `propuesta_actividad.html`);
-    } else if (fileType === 'pdf') {
-      try {
-        // Dynamically import the required modules
-        const htmlToPdfmake = (await import('html-to-pdfmake')).default;
-        const pdfMake = (await import('pdfmake/build/pdfmake')).default;
-        const pdfFonts = (await import('pdfmake/build/vfs_fonts')).default;
-
-        pdfMake.vfs = pdfFonts.pdfMake.vfs;
-
-        const html = proposalRef.current?.innerHTML;
-
-        if (!html) {
-          toast({
-            variant: "destructive",
-            title: "Error",
-            description: "No se pudo obtener el contenido HTML de la propuesta.",
-          });
-          return;
-        }
-
-        const docDefinition = {
-          content: [
-            {
-              text: 'Propuesta de Actividad',
-              style: 'header'
-            },
-            {
-              text: htmlToPdfmake(html),
-              style: 'body'
-            }
-          ],
-          styles: {
-            header: {
-              fontSize: 18,
-              bold: true,
-              marginBottom: 20
-            },
-            body: {
-              fontSize: 12
-            }
-          }
-        };
-
-        const pdfDocGenerator = pdfMake.createPdf(docDefinition);
-        pdfDocGenerator.getDataUrl((dataUrl) => {
-          const link = document.createElement('a');
-          link.href = dataUrl;
-          link.download = 'propuesta_actividad.pdf';
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-        });
-
-      } catch (error) {
-        console.error("Error al generar el PDF:", error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "No se pudo generar el PDF. Asegúrate de que todas las dependencias estén correctamente instaladas.",
-        });
-      }
+    } else{
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Formato no compatible para descargar.",
+      });
+      return;
     }
   };
 
@@ -360,282 +308,289 @@ export default function Home() {
           <CardDescription className="text-sm">{initialGreeting}</CardDescription>
         </CardHeader>
         <CardContent className="p-6">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="grade"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>1. Grado(s) Específico(s):</FormLabel>
-                    <div className="grid grid-cols-3 gap-2">
-                      {gradeOptions.map((option) => (
-                        <FormItem key={option.value} className="flex flex-row items-center space-x-2 space-y-0">
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value?.includes(option.value)}
-                              onCheckedChange={(checked) => {
-                                return checked
-                                  ? field.onChange([...(field.value || []), option.value])
-                                  : field.onChange(field.value?.filter((value) => value !== option.value));
-                              }}
-                            />
-                          </FormControl>
-                          <FormLabel className="text-sm font-normal">{option.label}</FormLabel>
-                        </FormItem>
-                      ))}
-                    </div>
-                    <FormDescription>
-                      ¿Para qué grado(s) de bachillerato estás diseñando esta actividad?
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="timeAvailable"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>2. Tiempo Disponible:</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Ej: Una clase, dos clases, una semana"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      ¿De cuánto tiempo dispones para implementar esta actividad?
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="centralTheme"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>3. Tema Central:</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Ej: Programación en Python, Robótica Educativa"
-                        className="resize-none"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      ¿Cuál es el tema central que deseas abordar en esta actividad?
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="methodologyPreference"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>4. Metodología Preferida:</FormLabel>
-                    <div className="grid grid-cols-2 gap-2">
-                      {methodologyOptions.map((option) => (
-                        <FormItem key={option.value} className="flex flex-row items-center space-x-2 space-y-0">
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value?.includes(option.value)}
-                              onCheckedChange={(checked) => {
-                                return checked
-                                  ? field.onChange([...(field.value || []), option.value])
-                                  : field.onChange(field.value?.filter((value) => value !== option.value));
-                              }}
-                            />
-                          </FormControl>
-                          <FormLabel className="text-sm font-normal">{option.label}</FormLabel>
-                        </FormItem>
-                      ))}
-                    </div>
-                    <FormDescription>
-                      ¿Tienes alguna preferencia metodológica o enfoque pedagógico para esta actividad?
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="competenciesToDevelop"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>5. Competencias a Desarrollar:</FormLabel>
-                    <div className="grid grid-cols-2 gap-2">
-                      {competenciesOptions.map((option) => (
-                        <FormItem key={option.value} className="flex flex-row items-center space-x-2 space-y-0">
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value?.includes(option.value)}
-                              onCheckedChange={(checked) => {
-                                return checked
-                                  ? field.onChange([...(field.value || []), option.value])
-                                  : field.onChange(field.value?.filter((value) => value !== option.value));
-                              }}
-                            />
-                          </FormControl>
-                          <FormLabel className="text-sm font-normal">{option.label}</FormLabel>
-                        </FormItem>
-                      ))}
-                    </div>
-                    <FormDescription>
-                      ¿Cuáles son las competencias específicas del área de Tecnología e Informática que deseas que tus estudiantes desarrollen con esta actividad?
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="learningEvidences"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>6. Evidencias de Aprendizaje:</FormLabel>
-                    <div className="grid grid-cols-2 gap-2">
-                      {learningEvidencesOptions.map((option) => (
-                        <FormItem key={option.value} className="flex flex-row items-center space-x-2 space-y-0">
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value?.includes(option.value)}
-                              onCheckedChange={(checked) => {
-                                return checked
-                                  ? field.onChange([...(field.value || []), option.value])
-                                  : field.onChange(field.value?.filter((value) => value !== option.value));
-                              }}
-                            />
-                          </FormControl>
-                          <FormLabel className="text-sm font-normal">{option.label}</FormLabel>
-                        </FormItem>
-                      ))}
-                    </div>
-                    <FormDescription>
-                      ¿Qué evidencias de aprendizaje te permitirán verificar que tus estudiantes están desarrollando las competencias seleccionadas?
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="curricularComponents"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>7. Componentes Curriculares:</FormLabel>
-                    <div className="grid grid-cols-2 gap-2">
-                      {curricularComponentsOptions.map((option) => (
-                        <FormItem key={option.value} className="flex flex-row items-center space-x-2 space-y-0">
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value?.includes(option.value)}
-                              onCheckedChange={(checked) => {
-                                return checked
-                                  ? field.onChange([...(field.value || []), option.value])
-                                  : field.onChange(field.value?.filter((value) => value !== option.value));
-                              }}
-                            />
-                          </FormControl>
-                          <FormLabel className="text-sm font-normal">{option.label}</FormLabel>
-                        </FormItem>
-                      ))}
-                    </div>
-                    <FormDescription>
-                      ¿Cuáles componentes del área se abordarán principalmente en esta actividad?
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="availableResources"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>8. Recursos Disponibles:</FormLabel>
-                    <div className="grid grid-cols-2 gap-2">
-                      {availableResourcesOptions.map((option) => (
-                        <FormItem key={option.value} className="flex flex-row items-center space-x-2 space-y-0">
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value?.includes(option.value)}
-                              onCheckedChange={(checked) => {
-                                return checked
-                                  ? field.onChange([...(field.value || []), option.value])
-                                  : field.onChange(field.value?.filter((value) => value !== option.value));
-                              }}
-                            />
-                          </FormControl>
-                          <FormLabel className="text-sm font-normal">{option.label}</FormLabel>
-                        </FormItem>
-                      ))}
-                    </div>
-                    <FormDescription>
-                      ¿Qué recursos tienes disponibles para esta actividad?
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="contextAndNeeds"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>9. Contexto y Necesidades:</FormLabel>
-                    <div className="grid grid-cols-2 gap-2">
-                      {contextAndNeedsOptions.map((option) => (
-                        <FormItem key={option.value} className="flex flex-row items-center space-x-2 space-y-0">
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value?.includes(option.value)}
-                              onCheckedChange={(checked) => {
-                                return checked
-                                  ? field.onChange([...(field.value || []), option.value])
-                                  : field.onChange(field.value?.filter((value) => value !== option.value));
-                              }}
-                            />
-                          </FormControl>
-                          <FormLabel className="text-sm font-normal">{option.label}</FormLabel>
-                        </FormItem>
-                      ))}
-                    </div>
-                    <FormDescription>
-                      ¿Hay alguna necesidad o particularidad de tu contexto escolar o de tus estudiantes que deba considerar al diseñar la actividad?
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="interdisciplinarity"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>10. Interdisciplinariedad (Opcional):</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Ej: Integración con Matemáticas, Ciencias"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      ¿Te gustaría integrar esta actividad con otras áreas del conocimiento?
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+          {!isEditing ? (
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="grade"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>1. Grado(s) Específico(s):</FormLabel>
+                      <div className="grid grid-cols-3 gap-2">
+                        {gradeOptions.map((option) => (
+                          <FormItem key={option.value} className="flex flex-row items-center space-x-2 space-y-0">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value?.includes(option.value)}
+                                onCheckedChange={(checked) => {
+                                  return checked
+                                    ? field.onChange([...(field.value || []), option.value])
+                                    : field.onChange(field.value?.filter((value) => value !== option.value));
+                                }}
+                              />
+                            </FormControl>
+                            <FormLabel className="text-sm font-normal">{option.label}</FormLabel>
+                          </FormItem>
+                        ))}
+                      </div>
+                      <FormDescription>
+                        ¿Para qué grado(s) de bachillerato estás diseñando esta actividad?
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="timeAvailable"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>2. Tiempo Disponible:</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Ej: Una clase, dos clases, una semana"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        ¿De cuánto tiempo dispones para implementar esta actividad?
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="centralTheme"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>3. Tema Central:</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Ej: Programación en Python, Robótica Educativa"
+                          className="resize-none"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        ¿Cuál es el tema central que deseas abordar en esta actividad?
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="methodologyPreference"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>4. Metodología Preferida:</FormLabel>
+                      <div className="grid grid-cols-2 gap-2">
+                        {methodologyOptions.map((option) => (
+                          <FormItem key={option.value} className="flex flex-row items-center space-x-2 space-y-0">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value?.includes(option.value)}
+                                onCheckedChange={(checked) => {
+                                  return checked
+                                    ? field.onChange([...(field.value || []), option.value])
+                                    : field.onChange(field.value?.filter((value) => value !== option.value));
+                                }}
+                              />
+                            </FormControl>
+                            <FormLabel className="text-sm font-normal">{option.label}</FormLabel>
+                          </FormItem>
+                        ))}
+                      </div>
+                      <FormDescription>
+                        ¿Tienes alguna preferencia metodológica o enfoque pedagógico para esta actividad?
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="competenciesToDevelop"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>5. Competencias a Desarrollar:</FormLabel>
+                      <div className="grid grid-cols-2 gap-2">
+                        {competenciesOptions.map((option) => (
+                          <FormItem key={option.value} className="flex flex-row items-center space-x-2 space-y-0">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value?.includes(option.value)}
+                                onCheckedChange={(checked) => {
+                                  return checked
+                                    ? field.onChange([...(field.value || []), option.value])
+                                    : field.onChange(field.value?.filter((value) => value !== option.value));
+                                }}
+                              />
+                            </FormControl>
+                            <FormLabel className="text-sm font-normal">{option.label}</FormLabel>
+                          </FormItem>
+                        ))}
+                      </div>
+                      <FormDescription>
+                        ¿Cuáles son las competencias específicas del área de Tecnología e Informática que deseas que tus estudiantes desarrollen con esta actividad?
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="learningEvidences"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>6. Evidencias de Aprendizaje:</FormLabel>
+                      <div className="grid grid-cols-2 gap-2">
+                        {learningEvidencesOptions.map((option) => (
+                          <FormItem key={option.value} className="flex flex-row items-center space-x-2 space-y-0">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value?.includes(option.value)}
+                                onCheckedChange={(checked) => {
+                                  return checked
+                                    ? field.onChange([...(field.value || []), option.value])
+                                    : field.onChange(field.value?.filter((value) => value !== option.value));
+                                }}
+                              />
+                            </FormControl>
+                            <FormLabel className="text-sm font-normal">{option.label}</FormLabel>
+                          </FormItem>
+                        ))}
+                      </div>
+                      <FormDescription>
+                        ¿Qué evidencias de aprendizaje te permitirán verificar que tus estudiantes están desarrollando las competencias seleccionadas?
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="curricularComponents"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>7. Componentes Curriculares:</FormLabel>
+                      <div className="grid grid-cols-2 gap-2">
+                        {curricularComponentsOptions.map((option) => (
+                          <FormItem key={option.value} className="flex flex-row items-center space-x-2 space-y-0">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value?.includes(option.value)}
+                                onCheckedChange={(checked) => {
+                                  return checked
+                                    ? field.onChange([...(field.value || []), option.value])
+                                    : field.onChange(field.value?.filter((value) => value !== option.value));
+                                }}
+                              />
+                            </FormControl>
+                            <FormLabel className="text-sm font-normal">{option.label}</FormLabel>
+                          </FormItem>
+                        ))}
+                      </div>
+                      <FormDescription>
+                        ¿Cuáles componentes del área se abordarán principalmente en esta actividad?
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="availableResources"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>8. Recursos Disponibles:</FormLabel>
+                      <div className="grid grid-cols-2 gap-2">
+                        {availableResourcesOptions.map((option) => (
+                          <FormItem key={option.value} className="flex flex-row items-center space-x-2 space-y-0">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value?.includes(option.value)}
+                                onCheckedChange={(checked) => {
+                                  return checked
+                                    ? field.onChange([...(field.value || []), option.value])
+                                    : field.onChange(field.value?.filter((value) => value !== option.value));
+                                }}
+                              />
+                            </FormControl>
+                            <FormLabel className="text-sm font-normal">{option.label}</FormLabel>
+                          </FormItem>
+                        ))}
+                      </div>
+                      <FormDescription>
+                        ¿Qué recursos tienes disponibles para esta actividad?
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="contextAndNeeds"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>9. Contexto y Necesidades:</FormLabel>
+                      <div className="grid grid-cols-2 gap-2">
+                        {contextAndNeedsOptions.map((option) => (
+                          <FormItem key={option.value} className="flex flex-row items-center space-x-2 space-y-0">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value?.includes(option.value)}
+                                onCheckedChange={(checked) => {
+                                  return checked
+                                    ? field.onChange([...(field.value || []), option.value])
+                                    : field.onChange(field.value?.filter((value) => value !== option.value));
+                                }}
+                              />
+                            </FormControl>
+                            <FormLabel className="text-sm font-normal">{option.label}</FormLabel>
+                          </FormItem>
+                        ))}
+                      </div>
+                      <FormDescription>
+                        ¿Hay alguna necesidad o particularidad de tu contexto escolar o de tus estudiantes que deba considerar al diseñar la actividad?
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="interdisciplinarity"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>10. Interdisciplinariedad (Opcional):</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Ej: Integración con Matemáticas, Ciencias"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        ¿Te gustaría integrar esta actividad con otras áreas del conocimiento?
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? "Generando propuesta..." : "Generar Propuesta"}
-              </Button>
-            </form>
-          </Form>
+                <Button type="submit" disabled={isLoading}>
+                  {isLoading ? "Generando propuesta..." : "Generar Propuesta"}
+                </Button>
+              </form>
+            </Form>
+          ) : (
+            // Display a message or an empty state when not editing
+            <div className="text-center py-4">
+              <p>Edición deshabilitada.</p>
+            </div>
+          )}
         </CardContent>
         {proposal && (
           <CardFooter className="flex flex-col items-center p-6">
@@ -646,6 +601,7 @@ export default function Home() {
               </ScrollArea>
             </div>
             <div className="flex justify-between items-center w-full">
+              
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button>Descargar Propuesta</Button>
@@ -663,11 +619,10 @@ export default function Home() {
                     <AlertDialogAction onClick={downloadProposal}>
                       <select
                         value={fileType}
-                        onChange={(e) => setFileType(e.target.value as 'html' | 'pdf')}
+                        onChange={(e) => setFileType(e.target.value)}
                         className="rounded-md border-input text-sm"
                       >
                         <option value="html">HTML</option>
-                        <option value="pdf">PDF</option>
                       </select>
                       Descargar
                     </AlertDialogAction>
