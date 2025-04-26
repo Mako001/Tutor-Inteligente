@@ -36,12 +36,13 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const initialGreeting =
   "¡Hola, colega docente de Informática de bachillerato! Estoy aquí para ayudarte a diseñar actividades de aprendizaje significativas y contextualizadas para tus estudiantes. Para comenzar, necesito que reflexionemos juntos sobre algunos aspectos clave. Responder a las siguientes preguntas me permitirá generar una propuesta de actividad ajustada a tus necesidades y a los lineamientos del MEN.";
 
 const formSchema = z.object({
-  grade: z.string().min(1, {
+  grade: z.array(z.string()).min(1, {
     message: "Por favor, especifica el grado.",
   }),
   timeAvailable: z.string().min(1, {
@@ -53,13 +54,13 @@ const formSchema = z.object({
   methodologyPreference: z.string().min(1, {
     message: "Por favor, especifica la metodología preferida.",
   }),
-  competenciesToDevelop: z.string().min(1, {
+  competenciesToDevelop: z.array(z.string()).min(1, {
     message: "Por favor, especifica las competencias a desarrollar.",
   }),
-  learningEvidences: z.string().min(1, {
+  learningEvidences: z.array(z.string()).min(1, {
     message: "Por favor, especifica las evidencias de aprendizaje.",
   }),
-  curricularComponents: z.string().min(1, {
+  curricularComponents: z.array(z.string()).min(1, {
     message: "Por favor, especifica los componentes curriculares.",
   }),
   availableResources: z.string().min(1, {
@@ -71,6 +72,33 @@ const formSchema = z.object({
   interdisciplinarity: z.string().optional(),
 });
 
+const gradeOptions = [
+  { label: "10º", value: "10º" },
+  { label: "11º", value: "11º" },
+  { label: "Otro", value: "otro" },
+];
+
+const competenciesOptions = [
+  { label: "Pensamiento algorítmico", value: "Pensamiento algorítmico" },
+  { label: "Resolución de problemas", value: "Resolución de problemas" },
+  { label: "Creatividad e innovación", value: "Creatividad e innovación" },
+  { label: "Comunicación y colaboración", value: "Comunicación y colaboración" },
+];
+
+const learningEvidencesOptions = [
+  { label: "Diseño de un programa", value: "Diseño de un programa" },
+  { label: "Presentación de un proyecto", value: "Presentación de un proyecto" },
+  { label: "Elaboración de un informe", value: "Elaboración de un informe" },
+  { label: "Desarrollo de un prototipo", value: "Desarrollo de un prototipo" },
+];
+
+const curricularComponentsOptions = [
+  { label: "Naturaleza y Evolución de la Tecnología", value: "Naturaleza y Evolución de la Tecnología" },
+  { label: "Apropiación y Uso de la Tecnología", value: "Apropiación y Uso de la Tecnología" },
+  { label: "Solución de Problemas con Tecnología", value: "Solución de Problemas con Tecnología" },
+  { label: "Tecnología y Sociedad", value: "Tecnología y Sociedad" },
+];
+
 export default function Home() {
   const [proposal, setProposal] = useState<string | null>(null);
   const { toast } = useToast();
@@ -79,13 +107,13 @@ export default function Home() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      grade: "",
+      grade: [],
       timeAvailable: "",
       centralTheme: "",
       methodologyPreference: "",
-      competenciesToDevelop: "",
-      learningEvidences: "",
-      curricularComponents: "",
+      competenciesToDevelop: [],
+      learningEvidences: [],
+      curricularComponents: [],
       availableResources: "",
       contextAndNeeds: "",
       interdisciplinarity: "",
@@ -95,7 +123,13 @@ export default function Home() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
-      const aiResponse = await generateActivityProposal(values);
+      const aiResponse = await generateActivityProposal({
+        ...values,
+        grade: values.grade.join(", "),
+        competenciesToDevelop: values.competenciesToDevelop.join(", "),
+        learningEvidences: values.learningEvidences.join(", "),
+        curricularComponents: values.curricularComponents.join(", "),
+      });
       setProposal(aiResponse?.activityProposal ?? "No se pudo generar la propuesta.");
       toast({
         title: "Propuesta generada!",
@@ -155,9 +189,23 @@ export default function Home() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>1. Grado(s) Específico(s):</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Ej: 10º, 11º, ambos" {...field} />
-                    </FormControl>
+                    <div className="grid grid-cols-2 gap-2">
+                      {gradeOptions.map((option) => (
+                        <FormItem key={option.value} className="flex flex-row items-center space-x-2 space-y-0">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value?.includes(option.value)}
+                              onCheckedChange={(checked) => {
+                                return checked
+                                  ? field.onChange([...(field.value || []), option.value])
+                                  : field.onChange(field.value?.filter((value) => value !== option.value));
+                              }}
+                            />
+                          </FormControl>
+                          <FormLabel className="text-sm font-normal">{option.label}</FormLabel>
+                        </FormItem>
+                      ))}
+                    </div>
                     <FormDescription>
                       ¿Para qué grado(s) de bachillerato estás diseñando esta actividad?
                     </FormDescription>
@@ -230,13 +278,23 @@ export default function Home() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>5. Competencias a Desarrollar:</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Ej: Pensamiento algorítmico, Resolución de problemas"
-                        className="resize-none"
-                        {...field}
-                      />
-                    </FormControl>
+                    <div className="grid grid-cols-2 gap-2">
+                      {competenciesOptions.map((option) => (
+                        <FormItem key={option.value} className="flex flex-row items-center space-x-2 space-y-0">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value?.includes(option.value)}
+                              onCheckedChange={(checked) => {
+                                return checked
+                                  ? field.onChange([...(field.value || []), option.value])
+                                  : field.onChange(field.value?.filter((value) => value !== option.value));
+                              }}
+                            />
+                          </FormControl>
+                          <FormLabel className="text-sm font-normal">{option.label}</FormLabel>
+                        </FormItem>
+                      ))}
+                    </div>
                     <FormDescription>
                       ¿Cuáles son las competencias específicas del área de Tecnología e
                       Informática que deseas que tus estudiantes desarrollen con esta
@@ -252,13 +310,23 @@ export default function Home() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>6. Evidencias de Aprendizaje:</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Ej: Diseño de un programa, Presentación de un proyecto"
-                        className="resize-none"
-                        {...field}
-                      />
-                    </FormControl>
+                    <div className="grid grid-cols-2 gap-2">
+                      {learningEvidencesOptions.map((option) => (
+                        <FormItem key={option.value} className="flex flex-row items-center space-x-2 space-y-0">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value?.includes(option.value)}
+                              onCheckedChange={(checked) => {
+                                return checked
+                                  ? field.onChange([...(field.value || []), option.value])
+                                  : field.onChange(field.value?.filter((value) => value !== option.value));
+                              }}
+                            />
+                          </FormControl>
+                          <FormLabel className="text-sm font-normal">{option.label}</FormLabel>
+                        </FormItem>
+                      ))}
+                    </div>
                     <FormDescription>
                       ¿Qué evidencias de aprendizaje te permitirán verificar que tus
                       estudiantes están desarrollando las competencias seleccionadas?
@@ -273,13 +341,23 @@ export default function Home() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>7. Componentes Curriculares:</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Ej: Naturaleza y Evolución de la Tecnología"
-                        className="resize-none"
-                        {...field}
-                      />
-                    </FormControl>
+                    <div className="grid grid-cols-2 gap-2">
+                      {curricularComponentsOptions.map((option) => (
+                        <FormItem key={option.value} className="flex flex-row items-center space-x-2 space-y-0">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value?.includes(option.value)}
+                              onCheckedChange={(checked) => {
+                                return checked
+                                  ? field.onChange([...(field.value || []), option.value])
+                                  : field.onChange(field.value?.filter((value) => value !== option.value));
+                              }}
+                            />
+                          </FormControl>
+                          <FormLabel className="text-sm font-normal">{option.label}</FormLabel>
+                        </FormItem>
+                      ))}
+                    </div>
                     <FormDescription>
                       ¿Cuáles componentes del área se abordarán principalmente en esta
                       actividad?
