@@ -47,11 +47,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { saveAs } from 'file-saver';
-import htmlToPdfmake from 'html-to-pdfmake';
-import pdfMake from 'pdfmake/build/pdfmake';
-import pdfFonts from 'pdfmake/build/vfs_fonts';
+//import htmlToPdfmake from 'html-to-pdfmake';
+//import pdfMake from 'pdfmake/build/pdfmake';
+//import pdfFonts from 'pdfmake/build/vfs_fonts';
 
-pdfMake.vfs = pdfFonts.pdfMake.vfs;
+//pdfMake.vfs = pdfFonts.pdfMake.vfs;
 
 
 const initialGreeting =
@@ -286,7 +286,7 @@ export default function Home() {
     setIsEditing(false);
   };
 
-    const downloadProposal = () => {
+    const downloadProposal = async () => {
         if (!proposal) {
             toast({
                 variant: "destructive",
@@ -300,19 +300,26 @@ export default function Home() {
             const blob = new Blob([proposal], { type: "text/html;charset=utf-8" });
             saveAs(blob, `propuesta_actividad.html`);
         } else if (fileType === 'pdf') {
+            // Dynamically import the required modules
+            const htmlToPdfmake = (await import('html-to-pdfmake')).default;
+            const pdfMake = (await import('pdfmake/build/pdfmake')).default;
+            const pdfFonts = (await import('pdfmake/build/vfs_fonts')).default;
+
+            pdfMake.vfs = pdfFonts.pdfMake.vfs;
+
             const doc = htmlToPdfmake(proposal);
             const docDefinition = {
-              content: doc,
-              styles: {
-                header: {
-                  fontSize: 18,
-                  bold: true,
-                  marginBotton: 20
-                },
-                body: {
-                  fontSize: 12
+                content: doc,
+                styles: {
+                    header: {
+                        fontSize: 18,
+                        bold: true,
+                        marginBottom: 20
+                    },
+                    body: {
+                        fontSize: 12
+                    }
                 }
-              }
             };
             pdfMake.createPdf(docDefinition).download("propuesta_actividad.pdf");
         }
