@@ -20,7 +20,7 @@ body {
     --secondary-foreground: 0 0% 9%;
     --muted: 220 14.3% 95.9%;
     --muted-foreground: 220 8.9% 46.1%;
-    --accent: 150 80% 50%; /* Teal */
+    --accent: 150 80% 50%; /* Emerald Green */
     --accent-foreground: 0 0% 9%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
@@ -91,6 +91,7 @@ input,
 textarea,
 select {
   @apply bg-background border border-input rounded-md text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 w-full py-2 px-3;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 textarea {
@@ -99,6 +100,15 @@ textarea {
 
 button {
   @apply inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 py-2 px-4 transition-colors transform-gpu hover:scale-105;
+  transition: background-color 0.3s ease, transform 0.1s ease;
+}
+
+button:hover {
+  @apply bg-primary/80;
+}
+
+button:active {
+  transform: scale(0.98);
 }
 
 /* Alert Styles */
@@ -118,4 +128,46 @@ input:focus,
 textarea:focus,
 select:focus {
   @apply border-primary shadow-md outline-none;
+  border-color: hsl(var(--primary));
+  box-shadow: 0 0 5px hsla(var(--primary), 0.5);
+  outline: none;
+}
+
+/* Responsive Design */
+.container {
+  display: flex;
+  flex-direction: column;
+  width: 90%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.form-section,
+.preview-section {
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+@media (min-width: 768px) {
+  .container {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+
+  .form-section {
+    width: 55%;
+    margin-right: 5%;
+    margin-bottom: 0;
+  }
+
+  .preview-section {
+    width: 40%;
+  }
+}
+
+input,
+textarea,
+select {
+  width: 100%;
+  box-sizing: border-box;
 }

@@ -46,6 +46,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { saveAs } from 'file-saver';
+import htmlToPdfmake from 'html-to-pdfmake';
+import pdfMake from 'pdfmake/build/pdfmake';
+import pdfFonts from 'pdfmake/build/vfs_fonts';
+
+pdfMake.vfs = pdfFonts.pdfMake.vfs;
+
 
 const initialGreeting =
   "¡Hola, colega docente de Informática de bachillerato! Estoy aquí para ayudarte a diseñar actividades de aprendizaje significativas y contextualizadas para tus estudiantes. Para comenzar, necesito que reflexionemos juntos sobre algunos aspectos clave. Responder a las siguientes preguntas me permitirá generar una propuesta de actividad ajustada a tus necesidades y a los lineamientos del MEN.";
@@ -103,90 +110,113 @@ const methodologyOptions = [
 ];
 
 const competenciesOptions = [
-  { label: "Pensamiento algorítmico", value: "Pensamiento algorítmico" },
-  { label: "Resolución de problemas", value: "Resolución de problemas" },
-  { label: "Creatividad e innovación", value: "Creatividad e innovación" },
-  { label: "Comunicación y colaboración", value: "Comunicación y colaboración" },
-  { label: "Pensamiento crítico", value: "Pensamiento crítico" },
-  { label: "Aprender a aprender", value: "Aprender a aprender" },
-  { label: "Ciudadanía digital", value: "Ciudadanía digital" },
-  { label: "Ética y responsabilidad", value: "Ética y responsabilidad" },
-  { label: "Modelado y simulación", value: "Modelado y simulación" },
-  { label: "Análisis de datos", value: "Análisis de datos" },
-  { label: "Diseño de interfaces", value: "Diseño de interfaces" },
-  { label: "Desarrollo de videojuegos", value: "Desarrollo de videojuegos" },
-  { label: "Diseño de aplicaciones móviles", value: "Diseño de aplicaciones móviles" },
-  { label: "Robótica", value: "Robótica" },
+    { label: "Pensamiento algorítmico", value: "Pensamiento algorítmico" },
+    { label: "Resolución de problemas", value: "Resolución de problemas" },
+    { label: "Creatividad e innovación", value: "Creatividad e innovación" },
+    { label: "Comunicación y colaboración", value: "Comunicación y colaboración" },
+    { label: "Pensamiento crítico", value: "Pensamiento crítico" },
+    { label: "Aprender a aprender", value: "Aprender a aprender" },
+    { label: "Ciudadanía digital", value: "Ciudadanía digital" },
+    { label: "Ética y responsabilidad", value: "Ética y responsabilidad" },
+    { label: "Modelado y simulación", value: "Modelado y simulación" },
+    { label: "Análisis de datos", value: "Análisis de datos" },
+    { label: "Diseño de interfaces", value: "Diseño de interfaces" },
+    { label: "Desarrollo de videojuegos", value: "Desarrollo de videojuegos" },
+    { label: "Diseño de aplicaciones móviles", value: "Diseño de aplicaciones móviles" },
+    { label: "Robótica", value: "Robótica" },
+    { label: "Inteligencia Artificial", value: "Inteligencia Artificial" },
+    { label: "Pensamiento computacional", value: "Pensamiento computacional" },
+    { label: "Ciberseguridad", value: "Ciberseguridad" },
+    { label: "Realidad Virtual y Aumentada", value: "Realidad Virtual y Aumentada" },
+    { label: "Internet de las Cosas (IoT)", value: "Internet de las Cosas (IoT)" },
+    { label: "Analítica de datos", value: "Analítica de datos" },
+    { label: "Desarrollo de software", value: "Desarrollo de software" },
 ];
 
 const learningEvidencesOptions = [
-  { label: "Diseño de un programa", value: "Diseño de un programa" },
-  { label: "Presentación de un proyecto", value: "Presentación de un proyecto" },
-  { label: "Elaboración de un informe", value: "Elaboración de un informe" },
-  { label: "Desarrollo de un prototipo", value: "Desarrollo de un prototipo" },
-  { label: "Creación de un video tutorial", value: "Creación de un video tutorial" },
-  { label: "Participación en un debate", value: "Participación en un debate" },
-  { label: "Realización de una investigación", value: "Realización de una investigación" },
-  { label: "Simulación de un proceso", value: "Simulación de un proceso" },
-  { label: "Construcción de un modelo", value: "Construcción de un modelo" },
-  { label: "Desarrollo de una aplicación móvil", value: "Desarrollo de una aplicación móvil" },
-  { label: "Creación de un portafolio digital", value: "Creación de un portafolio digital" },
-  { label: "Diseño de una página web", value: "Diseño de una página web" },
-  { label: "Elaboración de un mapa conceptual", value: "Elaboración de un mapa conceptual" },
-  { label: "Desarrollo de un videojuego", value: "Desarrollo de un videojuego" },
-  { label: "Diseño de una base de datos", value: "Diseño de una base de datos" },
-  { label: "Creación de una presentación multimedia", value: "Creación de una presentación multimedia" },
-  { label: "Desarrollo de un sistema de información", value: "Desarrollo de un sistema de información" },
-  { label: "Elaboración de un blog", value: "Elaboración de un blog" },
+    { label: "Diseño de un programa", value: "Diseño de un programa" },
+    { label: "Presentación de un proyecto", value: "Presentación de un proyecto" },
+    { label: "Elaboración de un informe", value: "Elaboración de un informe" },
+    { label: "Desarrollo de un prototipo", value: "Desarrollo de un prototipo" },
+    { label: "Creación de un video tutorial", value: "Creación de un video tutorial" },
+    { label: "Participación en un debate", value: "Participación en un debate" },
+    { label: "Realización de una investigación", value: "Realización de una investigación" },
+    { label: "Simulación de un proceso", value: "Simulación de un proceso" },
+    { label: "Construcción de un modelo", value: "Construcción de un modelo" },
+    { label: "Desarrollo de una aplicación móvil", value: "Desarrollo de una aplicación móvil" },
+    { label: "Creación de un portafolio digital", value: "Creación de un portafolio digital" },
+    { label: "Diseño de una página web", value: "Diseño de una página web" },
+    { label: "Elaboración de un mapa conceptual", value: "Elaboración de un mapa conceptual" },
+    { label: "Desarrollo de un videojuego", value: "Desarrollo de un videojuego" },
+    { label: "Diseño de una base de datos", value: "Diseño de una base de datos" },
+    { label: "Creación de una presentación multimedia", value: "Creación de una presentación multimedia" },
+    { label: "Desarrollo de un sistema de información", value: "Desarrollo de un sistema de información" },
+    { label: "Elaboración de un blog", value: "Elaboración de un blog" },
+    { label: "Creación de un podcast", value: "Creación de un podcast" },
+    { label: "Diseño de una infografía", value: "Diseño de una infografía" },
+    { label: "Desarrollo de un proyecto de robótica", value: "Desarrollo de un proyecto de robótica" },
+    { label: "Creación de una simulación interactiva", value: "Creación de una simulación interactiva" },
+    { label: "Diseño de una animación digital", value: "Diseño de una animación digital" },
+    { label: "Desarrollo de una solución de ciberseguridad", value: "Desarrollo de una solución de ciberseguridad" },
 ];
 
 const curricularComponentsOptions = [
-  { label: "Naturaleza y Evolución de la Tecnología", value: "Naturaleza y Evolución de la Tecnología" },
-  { label: "Apropiación y Uso de la Tecnología", value: "Apropiación y Uso de la Tecnología" },
-  { label: "Solución de Problemas con Tecnología", value: "Solución de Problemas con Tecnología" },
-  { label: "Tecnología y Sociedad", value: "Tecnología y Sociedad" },
-  { label: "Diseño y construcción", value: "Diseño y construcción" },
-  { label: "Materiales", value: "Materiales" },
-  { label: "Representación y expresión técnica", value: "Representación y expresión técnica" },
-  { label: "Ciencia, tecnología y sociedad", value: "Ciencia, tecnología y sociedad" },
-  { label: "Sistemas tecnológicos", value: "Sistemas tecnológicos" },
-  { label: "Información y comunicación", value: "Información y comunicación" },
-  { label: "Pensamiento algorítmico", value: "Pensamiento algorítmico" },
-  { label: "Programación", value: "Programación" },
-  { label: "Robótica", value: "Robótica" },
-  { label: "Inteligencia artificial", value: "Inteligencia artificial" },
+    { label: "Naturaleza y Evolución de la Tecnología", value: "Naturaleza y Evolución de la Tecnología" },
+    { label: "Apropiación y Uso de la Tecnología", value: "Apropiación y Uso de la Tecnología" },
+    { label: "Solución de Problemas con Tecnología", value: "Solución de Problemas con Tecnología" },
+    { label: "Tecnología y Sociedad", value: "Tecnología y Sociedad" },
+    { label: "Diseño y construcción", value: "Diseño y construcción" },
+    { label: "Materiales", value: "Materiales" },
+    { label: "Representación y expresión técnica", value: "Representación y expresión técnica" },
+    { label: "Ciencia, tecnología y sociedad", value: "Ciencia, tecnología y sociedad" },
+    { label: "Sistemas tecnológicos", value: "Sistemas tecnológicos" },
+    { label: "Información y comunicación", value: "Información y comunicación" },
+    { label: "Pensamiento algorítmico", value: "Pensamiento algorítmico" },
+    { label: "Programación", value: "Programación" },
+    { label: "Robótica", value: "Robótica" },
+    { label: "Inteligencia artificial", value: "Inteligencia artificial" },
+    { label: "Componentes de diseño", value: "Componentes de diseño" },
+    { label: "Sistemas operativos", value: "Sistemas operativos" },
+    { label: "Bases de datos", value: "Bases de datos" },
+    { label: "Redes de computadoras", value: "Redes de computadoras" },
 ];
 
 const availableResourcesOptions = [
-  { label: "Computadores", value: "Computadores" },
-  { label: "Acceso a internet", value: "Acceso a internet" },
-  { label: "Software específico", value: "Software específico" },
-  { label: "Laboratorio de informática", value: "Laboratorio de informática" },
-  { label: "Robots educativos", value: "Robots educativos" },
-  { label: "Tabletas", value: "Tabletas" },
-  { label: "Impresora 3D", value: "Impresora 3D" },
-  { label: "Otros materiales", value: "Otros materiales" },
-  { label: "Plataformas de aprendizaje en línea", value: "Plataformas de aprendizaje en línea" },
-  { label: "Herramientas de diseño gráfico", value: "Herramientas de diseño gráfico" },
-  { label: "Simuladores", value: "Simuladores" },
-  { label: "Dispositivos móviles", value: "Dispositivos móviles" },
-  { label: "Realidad virtual/aumentada", value: "Realidad virtual/aumentada" },
+    { label: "Computadores", value: "Computadores" },
+    { label: "Acceso a internet", value: "Acceso a internet" },
+    { label: "Software específico", value: "Software específico" },
+    { label: "Laboratorio de informática", value: "Laboratorio de informática" },
+    { label: "Robots educativos", value: "Robots educativos" },
+    { label: "Tabletas", value: "Tabletas" },
+    { label: "Impresora 3D", value: "Impresora 3D" },
+    { label: "Otros materiales", value: "Otros materiales" },
+    { label: "Plataformas de aprendizaje en línea", value: "Plataformas de aprendizaje en línea" },
+    { label: "Herramientas de diseño gráfico", value: "Herramientas de diseño gráfico" },
+    { label: "Simuladores", value: "Simuladores" },
+    { label: "Dispositivos móviles", value: "Dispositivos móviles" },
+    { label: "Realidad virtual/aumentada", value: "Realidad virtual/aumentada" },
+    { label: "Pizarras digitales interactivas", value: "Pizarras digitales interactivas" },
+    { label: "Kits de electrónica", value: "Kits de electrónica" },
+    { label: "Drones", value: "Drones" },
 ];
 
 const contextAndNeedsOptions = [
-  { label: "Estudiantes con dificultades en programación", value: "Estudiantes con dificultades en programación" },
-  { label: "Estudiantes con alta motivación por la tecnología", value: "Estudiantes con alta motivación por la tecnología" },
-  { label: "Aula con pocos recursos tecnológicos", value: "Aula con pocos recursos tecnológicos" },
-  { label: "Necesidad de integrar la tecnología con otras áreas", value: "Necesidad de integrar la tecnología con otras áreas" },
-  { label: "Promover el aprendizaje autónomo", value: "Promover el aprendizaje autónomo" },
-  { label: "Fomentar la creatividad", value: "Fomentar la creatividad" },
-  { label: "Adaptar la enseñanza a diferentes ritmos de aprendizaje", value: "Adaptar la enseñanza a diferentes ritmos de aprendizaje" },
-  { label: "Estudiantes con necesidades educativas especiales", value: "Estudiantes con necesidades educativas especiales" },
-  { label: "Promover la inclusión digital", value: "Promover la inclusión digital" },
-  { label: "Abordar la brecha digital", value: "Abordar la brecha digital" },
-  { label: "Fomentar el pensamiento crítico", value: "Fomentar el pensamiento crítico" },
-  { label: "Promover el aprendizaje colaborativo", value: "Promover el aprendizaje colaborativo" },
+    { label: "Estudiantes con dificultades en programación", value: "Estudiantes con dificultades en programación" },
+    { label: "Estudiantes con alta motivación por la tecnología", value: "Estudiantes con alta motivación por la tecnología" },
+    { label: "Aula con pocos recursos tecnológicos", value: "Aula con pocos recursos tecnológicos" },
+    { label: "Necesidad de integrar la tecnología con otras áreas", value: "Necesidad de integrar la tecnología con otras áreas" },
+    { label: "Promover el aprendizaje autónomo", value: "Promover el aprendizaje autónomo" },
+    { label: "Fomentar la creatividad", value: "Fomentar la creatividad" },
+    { label: "Adaptar la enseñanza a diferentes ritmos de aprendizaje", value: "Adaptar la enseñanza a diferentes ritmos de aprendizaje" },
+    { label: "Estudiantes con necesidades educativas especiales", value: "Estudiantes con necesidades educativas especiales" },
+    { label: "Promover la inclusión digital", value: "Promover la inclusión digital" },
+    { label: "Abordar la brecha digital", value: "Abordar la brecha digital" },
+    { label: "Fomentar el pensamiento crítico", value: "Fomentar el pensamiento crítico" },
+    { label: "Promover el aprendizaje colaborativo", value: "Promover el aprendizaje colaborativo" },
+    { label: "Fomentar la resolución de problemas", value: "Fomentar la resolución de problemas" },
+    { label: "Desarrollar habilidades de comunicación", value: "Desarrollar habilidades de comunicación" },
 ];
+
 
 export default function Home() {
   const [proposal, setProposal] = useState<string | null>(null);
@@ -195,6 +225,7 @@ export default function Home() {
   const [isEditing, setIsEditing] = useState(false);
   const [editedProposal, setEditedProposal] = useState<string | null>(null);
   const proposalRef = useRef<HTMLDivElement>(null);
+    const [fileType, setFileType] = useState<'html' | 'pdf'>('html');
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -255,27 +286,46 @@ export default function Home() {
     setIsEditing(false);
   };
 
-  const downloadProposal = () => {
-    if (!proposal) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "No hay propuesta para descargar.",
-      });
-      return;
-    }
+    const downloadProposal = () => {
+        if (!proposal) {
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: "No hay propuesta para descargar.",
+            });
+            return;
+        }
 
-    // Download as text
-    const blob = new Blob([proposal], { type: "text/html;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `propuesta_actividad.html`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
+        if (fileType === 'html') {
+            const blob = new Blob([proposal], { type: "text/html;charset=utf-8" });
+            saveAs(blob, `propuesta_actividad.html`);
+        } else if (fileType === 'pdf') {
+            const docDefinition = {
+                content: [
+                    {
+                        text: 'Propuesta de Actividad',
+                        style: 'header'
+                    },
+                    {
+                        text: proposal,
+                        style: 'body'
+                    }
+                ],
+                styles: {
+                    header: {
+                        fontSize: 18,
+                        bold: true,
+                        marginBotton: 20
+                    },
+                    body: {
+                        fontSize: 12
+                    }
+                }
+            };
+
+            pdfMake.createPdf(docDefinition).download('propuesta_actividad.pdf');
+        }
+    };
 
   return (
     <div className="flex justify-center items-start min-h-screen py-12 bg-secondary">
@@ -589,20 +639,29 @@ export default function Home() {
               )}
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button onClick={downloadProposal}>Descargar Propuesta</Button>
-                </AlertDialogTrigger>
+                                    <Button>Descargar Propuesta</Button>
+                                </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
                     <AlertDialogTitle>¿Descargar propuesta?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      ¿Estás seguro de que quieres descargar la propuesta de actividad en formato HTML?
+                      Selecciona el formato para descargar la propuesta de
+                      actividad.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancelar</AlertDialogCancel>
                     <AlertDialogAction onClick={downloadProposal}>
-                      Descargar
-                    </AlertDialogAction>
+                                            <select
+                                                value={fileType}
+                                                onChange={(e) => setFileType(e.target.value as 'html' | 'pdf')}
+                                                className="rounded-md border-input text-sm"
+                                            >
+                                                <option value="html">HTML</option>
+                                                <option value="pdf">PDF</option>
+                                            </select>
+                                            Descargar
+                                        </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
