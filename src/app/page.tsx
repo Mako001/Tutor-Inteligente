@@ -46,7 +46,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { saveAs } from 'file-saver';
 import { Edit } from "lucide-react";
 
 const initialGreeting =
@@ -223,7 +222,7 @@ export default function Home() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const proposalRef = useRef<HTMLDivElement>(null);
-  const [fileType, setFileType] = useState<'html' | 'text'>('html');
+  const [fileType, setFileType] = useState<'html'>('html');
   const [isEditing, setIsEditing] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -276,22 +275,20 @@ export default function Home() {
   }
 
   const downloadProposal = async () => {
-    if (!proposal) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "No hay propuesta para descargar.",
-      });
-      return;
-    }
+      if (!proposal) {
+          toast({
+              variant: "destructive",
+              title: "Error",
+              description: "No hay propuesta para descargar.",
+          });
+          return;
+      }
 
-    if (fileType === 'html') {
-      const blob = new Blob([proposal], { type: "text/html;charset=utf-8" });
-      saveAs(blob, `propuesta_actividad.html`);
-    } else if (fileType === 'text') {
-      const blob = new Blob([proposal], { type: "text/plain;charset=utf-8" });
-      saveAs(blob, `propuesta_actividad.text`);
-    }
+      if (fileType === 'html') {
+          const blob = new Blob([proposal], { type: "text/html;charset=utf-8" });
+          const saveAs = (await import('file-saver')).saveAs;
+          saveAs(blob, `propuesta_actividad.html`);
+      }
   };
 
   return (
@@ -600,7 +597,7 @@ export default function Home() {
               
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button>Descargar Propuesta</Button>
+                  <Button onClick={downloadProposal}>Descargar Propuesta</Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
@@ -613,14 +610,18 @@ export default function Home() {
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancelar</AlertDialogCancel>
                     <AlertDialogAction onClick={downloadProposal}>
-                      <select
+                      <Select
                         value={fileType}
-                        onChange={(e) => setFileType(e.target.value as 'html' | 'text')}
+                        onValueChange={(value) => setFileType(value as 'html')}
                         className="rounded-md border-input text-sm"
                       >
-                        <option value="html">HTML</option>
-                        <option value="text">TEXT</option>
-                      </select>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecciona un formato" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="html">HTML</SelectItem>
+                        </SelectContent>
+                      </Select>
                       Descargar
                     </AlertDialogAction>
                   </AlertDialogFooter>
