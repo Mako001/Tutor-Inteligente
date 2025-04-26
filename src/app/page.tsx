@@ -7,6 +7,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@/components/ui/card";
 import {
   Form,
@@ -51,7 +52,7 @@ const formSchema = z.object({
   centralTheme: z.string().min(1, {
     message: "Por favor, especifica el tema central.",
   }),
-  methodologyPreference: z.string().min(1, {
+  methodologyPreference: z.array(z.string()).min(1, {
     message: "Por favor, especifica la metodología preferida.",
   }),
   competenciesToDevelop: z.array(z.string()).min(1, {
@@ -63,19 +64,35 @@ const formSchema = z.object({
   curricularComponents: z.array(z.string()).min(1, {
     message: "Por favor, especifica los componentes curriculares.",
   }),
-  availableResources: z.string().min(1, {
+  availableResources: z.array(z.string()).min(1, {
     message: "Por favor, especifica los recursos disponibles.",
   }),
-  contextAndNeeds: z.string().min(1, {
+  contextAndNeeds: z.array(z.string()).min(1, {
     message: "Por favor, especifica el contexto y las necesidades.",
   }),
   interdisciplinarity: z.string().optional(),
 });
 
 const gradeOptions = [
+  { label: "6º", value: "6º" },
+  { label: "7º", value: "7º" },
+  { label: "8º", value: "8º" },
+  { label: "9º", value: "9º" },
   { label: "10º", value: "10º" },
   { label: "11º", value: "11º" },
   { label: "Otro", value: "otro" },
+];
+
+const methodologyOptions = [
+  { label: "Aprendizaje Basado en Proyectos (ABP)", value: "Aprendizaje Basado en Proyectos (ABP)" },
+  { label: "Aprendizaje Basado en Problemas (ABPr)", value: "Aprendizaje Basado en Problemas (ABPr)" },
+  { label: "Aula Invertida (Flipped Classroom)", value: "Aula Invertida (Flipped Classroom)" },
+  { label: "Aprendizaje Cooperativo", value: "Aprendizaje Cooperativo" },
+  { label: "Gamificación", value: "Gamificación" },
+  { label: "Enseñanza Explícita", value: "Enseñanza Explícita" },
+  { label: "Aprendizaje por Indagación", value: "Aprendizaje por Indagación" },
+  { label: "Otra", value: "Otra" },
+  { label: "Abierto a sugerencias", value: "Abierto a sugerencias" },
 ];
 
 const competenciesOptions = [
@@ -83,6 +100,10 @@ const competenciesOptions = [
   { label: "Resolución de problemas", value: "Resolución de problemas" },
   { label: "Creatividad e innovación", value: "Creatividad e innovación" },
   { label: "Comunicación y colaboración", value: "Comunicación y colaboración" },
+  { label: "Pensamiento crítico", value: "Pensamiento crítico" },
+  { label: "Aprender a aprender", value: "Aprender a aprender" },
+  { label: "Ciudadanía digital", value: "Ciudadanía digital" },
+  { label: "Ética y responsabilidad", value: "Ética y responsabilidad" },
 ];
 
 const learningEvidencesOptions = [
@@ -90,6 +111,12 @@ const learningEvidencesOptions = [
   { label: "Presentación de un proyecto", value: "Presentación de un proyecto" },
   { label: "Elaboración de un informe", value: "Elaboración de un informe" },
   { label: "Desarrollo de un prototipo", value: "Desarrollo de un prototipo" },
+  { label: "Creación de un video tutorial", value: "Creación de un video tutorial" },
+  { label: "Participación en un debate", value: "Participación en un debate" },
+  { label: "Realización de una investigación", value: "Realización de una investigación" },
+  { label: "Simulación de un proceso", value: "Simulación de un proceso" },
+  { label: "Construcción de un modelo", value: "Construcción de un modelo" },
+  { label: "Desarrollo de una aplicación móvil", value: "Desarrollo de una aplicación móvil" },
 ];
 
 const curricularComponentsOptions = [
@@ -97,6 +124,31 @@ const curricularComponentsOptions = [
   { label: "Apropiación y Uso de la Tecnología", value: "Apropiación y Uso de la Tecnología" },
   { label: "Solución de Problemas con Tecnología", value: "Solución de Problemas con Tecnología" },
   { label: "Tecnología y Sociedad", value: "Tecnología y Sociedad" },
+  { label: "Diseño y construcción", value: "Diseño y construcción" },
+  { label: "Materiales", value: "Materiales" },
+  { label: "Representación y expresión técnica", value: "Representación y expresión técnica" },
+  { label: "Ciencia, tecnología y sociedad", value: "Ciencia, tecnología y sociedad" },
+];
+
+const availableResourcesOptions = [
+  { label: "Computadores", value: "Computadores" },
+  { label: "Acceso a internet", value: "Acceso a internet" },
+  { label: "Software específico", value: "Software específico" },
+  { label: "Laboratorio de informática", value: "Laboratorio de informática" },
+  { label: "Robots educativos", value: "Robots educativos" },
+  { label: "Tabletas", value: "Tabletas" },
+  { label: "Impresora 3D", value: "Impresora 3D" },
+  { label: "Otros materiales", value: "Otros materiales" },
+];
+
+const contextAndNeedsOptions = [
+  { label: "Estudiantes con dificultades en programación", value: "Estudiantes con dificultades en programación" },
+  { label: "Estudiantes con alta motivación por la tecnología", value: "Estudiantes con alta motivación por la tecnología" },
+  { label: "Aula con pocos recursos tecnológicos", value: "Aula con pocos recursos tecnológicos" },
+  { label: "Necesidad de integrar la tecnología con otras áreas", value: "Necesidad de integrar la tecnología con otras áreas" },
+  { label: "Promover el aprendizaje autónomo", value: "Promover el aprendizaje autónomo" },
+  { label: "Fomentar la creatividad", value: "Fomentar la creatividad" },
+  { label: "Adaptar la enseñanza a diferentes ritmos de aprendizaje", value: "Adaptar la enseñanza a diferentes ritmos de aprendizaje" },
 ];
 
 export default function Home() {
@@ -110,12 +162,12 @@ export default function Home() {
       grade: [],
       timeAvailable: "",
       centralTheme: "",
-      methodologyPreference: "",
+      methodologyPreference: [],
       competenciesToDevelop: [],
       learningEvidences: [],
       curricularComponents: [],
-      availableResources: "",
-      contextAndNeeds: "",
+      availableResources: [],
+      contextAndNeeds: [],
       interdisciplinarity: "",
     },
   });
@@ -126,9 +178,12 @@ export default function Home() {
       const aiResponse = await generateActivityProposal({
         ...values,
         grade: values.grade.join(", "),
+        methodologyPreference: values.methodologyPreference.join(", "),
         competenciesToDevelop: values.competenciesToDevelop.join(", "),
         learningEvidences: values.learningEvidences.join(", "),
         curricularComponents: values.curricularComponents.join(", "),
+        availableResources: values.availableResources.join(", "),
+        contextAndNeeds: values.contextAndNeeds.join(", "),
       });
       setProposal(aiResponse?.activityProposal ?? "No se pudo generar la propuesta.");
       toast({
@@ -258,15 +313,25 @@ export default function Home() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>4. Metodología Preferida:</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder='Ej: Aprendizaje Basado en Proyectos, "Abierto a sugerencias"'
-                        {...field}
-                      />
-                    </FormControl>
+                    <div className="grid grid-cols-2 gap-2">
+                      {methodologyOptions.map((option) => (
+                        <FormItem key={option.value} className="flex flex-row items-center space-x-2 space-y-0">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value?.includes(option.value)}
+                              onCheckedChange={(checked) => {
+                                return checked
+                                  ? field.onChange([...(field.value || []), option.value])
+                                  : field.onChange(field.value?.filter((value) => value !== option.value));
+                              }}
+                            />
+                          </FormControl>
+                          <FormLabel className="text-sm font-normal">{option.label}</FormLabel>
+                        </FormItem>
+                      ))}
+                    </div>
                     <FormDescription>
-                      ¿Tienes alguna preferencia metodológica o enfoque pedagógico para esta
-                      actividad?
+                      ¿Tienes alguna preferencia metodológica o enfoque pedagógico para esta actividad?
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -296,9 +361,7 @@ export default function Home() {
                       ))}
                     </div>
                     <FormDescription>
-                      ¿Cuáles son las competencias específicas del área de Tecnología e
-                      Informática que deseas que tus estudiantes desarrollen con esta
-                      actividad?
+                      ¿Cuáles son las competencias específicas del área de Tecnología e Informática que deseas que tus estudiantes desarrollen con esta actividad?
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -328,8 +391,7 @@ export default function Home() {
                       ))}
                     </div>
                     <FormDescription>
-                      ¿Qué evidencias de aprendizaje te permitirán verificar que tus
-                      estudiantes están desarrollando las competencias seleccionadas?
+                      ¿Qué evidencias de aprendizaje te permitirán verificar que tus estudiantes están desarrollando las competencias seleccionadas?
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -359,8 +421,7 @@ export default function Home() {
                       ))}
                     </div>
                     <FormDescription>
-                      ¿Cuáles componentes del área se abordarán principalmente en esta
-                      actividad?
+                      ¿Cuáles componentes del área se abordarán principalmente en esta actividad?
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -372,12 +433,23 @@ export default function Home() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>8. Recursos Disponibles:</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Ej: Computadores, acceso a internet, software"
-                        {...field}
-                      />
-                    </FormControl>
+                    <div className="grid grid-cols-2 gap-2">
+                      {availableResourcesOptions.map((option) => (
+                        <FormItem key={option.value} className="flex flex-row items-center space-x-2 space-y-0">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value?.includes(option.value)}
+                              onCheckedChange={(checked) => {
+                                return checked
+                                  ? field.onChange([...(field.value || []), option.value])
+                                  : field.onChange(field.value?.filter((value) => value !== option.value));
+                              }}
+                            />
+                          </FormControl>
+                          <FormLabel className="text-sm font-normal">{option.label}</FormLabel>
+                        </FormItem>
+                      ))}
+                    </div>
                     <FormDescription>
                       ¿Qué recursos tienes disponibles para esta actividad?
                     </FormDescription>
@@ -391,16 +463,25 @@ export default function Home() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>9. Contexto y Necesidades:</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Ej: Estudiantes con dificultades en programación"
-                        className="resize-none"
-                        {...field}
-                      />
-                    </FormControl>
+                    <div className="grid grid-cols-2 gap-2">
+                      {contextAndNeedsOptions.map((option) => (
+                        <FormItem key={option.value} className="flex flex-row items-center space-x-2 space-y-0">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value?.includes(option.value)}
+                              onCheckedChange={(checked) => {
+                                return checked
+                                  ? field.onChange([...(field.value || []), option.value])
+                                  : field.onChange(field.value?.filter((value) => value !== option.value));
+                              }}
+                            />
+                          </FormControl>
+                          <FormLabel className="text-sm font-normal">{option.label}</FormLabel>
+                        </FormItem>
+                      ))}
+                    </div>
                     <FormDescription>
-                      ¿Hay alguna necesidad o particularidad de tu contexto escolar o de tus
-                      estudiantes que deba considerar al diseñar la actividad?
+                      ¿Hay alguna necesidad o particularidad de tu contexto escolar o de tus estudiantes que deba considerar al diseñar la actividad?
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
