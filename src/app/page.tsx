@@ -223,7 +223,7 @@ export default function Home() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const proposalRef = useRef<HTMLDivElement>(null);
-  const [fileType, setFileType] = useState<'html'>('html');
+  const [fileType, setFileType] = useState<'html' | 'pdf'>('html');
   const [isEditing, setIsEditing] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -288,13 +288,56 @@ export default function Home() {
     if (fileType === 'html') {
       const blob = new Blob([proposal], { type: "text/html;charset=utf-8" });
       saveAs(blob, `propuesta_actividad.html`);
-    } else{
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Formato no compatible para descargar.",
-      });
-      return;
+    } else if (fileType === 'pdf') {
+      try {
+        // Dynamically import the required modules
+        const htmlToPdfmake = (await import('html-to-pdfmake' /* webpackChunkName: "htmlToPdfmake" */)).default;
+        const pdfMake = (await import('pdfmake/build/pdfmake' /* webpackChunkName: "pdfMake" */)).default;
+        const pdfFonts = (await import('pdfmake/build/vfs_fonts' /* webpackChunkName: "pdfFonts" */)).default;
+
+        pdfMake.vfs = pdfFonts.pdfMake.vfs;
+
+        const html = proposalRef.current?.outerHTML;
+
+        if (!html) {
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "No se pudo obtener el HTML de la propuesta.",
+          });
+          return;
+        }
+
+        const documentDefinition = {
+          content: htmlToPdfmake(html, {
+            tableAutoSize: true
+          }),
+          styles: {
+            defaultStyle: {
+              font: 'Roboto'
+            }
+          },
+          defaultStyle: {
+            font: 'Roboto'
+          },
+        };
+
+        const pdfDocGenerator = pdfMake.createPdf(documentDefinition);
+
+        pdfDocGenerator.getDataUrl((dataUrl) => {
+          const link = document.createElement('a');
+          link.href = dataUrl;
+          link.download = 'propuesta_actividad.pdf';
+          link.click();
+        });
+      } catch (error: any) {
+        console.error("Error generating PDF:", error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Error al generar el PDF. Por favor, inténtalo de nuevo.",
+        });
+      }
     }
   };
 
@@ -619,10 +662,11 @@ export default function Home() {
                     <AlertDialogAction onClick={downloadProposal}>
                       <select
                         value={fileType}
-                        onChange={(e) => setFileType(e.target.value)}
+                        onChange={(e) => setFileType(e.target.value as 'html' | 'pdf')}
                         className="rounded-md border-input text-sm"
                       >
                         <option value="html">HTML</option>
+                        <option value="pdf">PDF</option>
                       </select>
                       Descargar
                     </AlertDialogAction>
@@ -636,4 +680,3 @@ export default function Home() {
     </div>
   );
 }
-
