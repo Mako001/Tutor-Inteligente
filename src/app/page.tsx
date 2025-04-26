@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   Card,
   CardContent,
@@ -38,6 +38,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const initialGreeting =
   "¡Hola, colega docente de Informática de bachillerato! Estoy aquí para ayudarte a diseñar actividades de aprendizaje significativas y contextualizadas para tus estudiantes. Para comenzar, necesito que reflexionemos juntos sobre algunos aspectos clave. Responder a las siguientes preguntas me permitirá generar una propuesta de actividad ajustada a tus necesidades y a los lineamientos del MEN.";
@@ -80,7 +88,6 @@ const gradeOptions = [
   { label: "9º", value: "9º" },
   { label: "10º", value: "10º" },
   { label: "11º", value: "11º" },
-  { label: "Otro", value: "otro" },
 ];
 
 const methodologyOptions = [
@@ -104,6 +111,9 @@ const competenciesOptions = [
   { label: "Aprender a aprender", value: "Aprender a aprender" },
   { label: "Ciudadanía digital", value: "Ciudadanía digital" },
   { label: "Ética y responsabilidad", value: "Ética y responsabilidad" },
+  { label: "Modelado y simulación", value: "Modelado y simulación" },
+  { label: "Análisis de datos", value: "Análisis de datos" },
+  { label: "Diseño de interfaces", value: "Diseño de interfaces" },
 ];
 
 const learningEvidencesOptions = [
@@ -117,6 +127,10 @@ const learningEvidencesOptions = [
   { label: "Simulación de un proceso", value: "Simulación de un proceso" },
   { label: "Construcción de un modelo", value: "Construcción de un modelo" },
   { label: "Desarrollo de una aplicación móvil", value: "Desarrollo de una aplicación móvil" },
+  { label: "Creación de un portafolio digital", value: "Creación de un portafolio digital" },
+  { label: "Diseño de una página web", value: "Diseño de una página web" },
+  { label: "Elaboración de un mapa conceptual", value: "Elaboración de un mapa conceptual" },
+  { label: "Desarrollo de un videojuego", value: "Desarrollo de un videojuego" },
 ];
 
 const curricularComponentsOptions = [
@@ -128,6 +142,8 @@ const curricularComponentsOptions = [
   { label: "Materiales", value: "Materiales" },
   { label: "Representación y expresión técnica", value: "Representación y expresión técnica" },
   { label: "Ciencia, tecnología y sociedad", value: "Ciencia, tecnología y sociedad" },
+  { label: "Sistemas tecnológicos", value: "Sistemas tecnológicos" },
+  { label: "Información y comunicación", value: "Información y comunicación" },
 ];
 
 const availableResourcesOptions = [
@@ -139,6 +155,8 @@ const availableResourcesOptions = [
   { label: "Tabletas", value: "Tabletas" },
   { label: "Impresora 3D", value: "Impresora 3D" },
   { label: "Otros materiales", value: "Otros materiales" },
+  { label: "Plataformas de aprendizaje en línea", value: "Plataformas de aprendizaje en línea" },
+  { label: "Herramientas de diseño gráfico", value: "Herramientas de diseño gráfico" },
 ];
 
 const contextAndNeedsOptions = [
@@ -149,12 +167,18 @@ const contextAndNeedsOptions = [
   { label: "Promover el aprendizaje autónomo", value: "Promover el aprendizaje autónomo" },
   { label: "Fomentar la creatividad", value: "Fomentar la creatividad" },
   { label: "Adaptar la enseñanza a diferentes ritmos de aprendizaje", value: "Adaptar la enseñanza a diferentes ritmos de aprendizaje" },
+  { label: "Estudiantes con necesidades educativas especiales", value: "Estudiantes con necesidades educativas especiales" },
+  { label: "Promover la inclusión digital", value: "Promover la inclusión digital" },
 ];
 
 export default function Home() {
   const [proposal, setProposal] = useState<string | null>(null);
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedProposal, setEditedProposal] = useState<string | null>(null);
+  const [downloadFormat, setDownloadFormat] = useState<"docx" | "pdf">("docx");
+  const proposalRef = useRef<HTMLDivElement>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -186,6 +210,7 @@ export default function Home() {
         contextAndNeeds: values.contextAndNeeds.join(", "),
       });
       setProposal(aiResponse?.activityProposal ?? "No se pudo generar la propuesta.");
+      setEditedProposal(aiResponse?.activityProposal ?? "No se pudo generar la propuesta.");
       toast({
         title: "Propuesta generada!",
         description: "La propuesta de actividad ha sido generada exitosamente.",
@@ -200,10 +225,29 @@ export default function Home() {
           "Hubo un error al generar la propuesta. Por favor, intenta de nuevo.",
       });
       setProposal(null);
+      setEditedProposal(null);
     } finally {
       setIsLoading(false);
+      setIsEditing(false);
     }
   }
+
+  const handleEditClick = () => {
+    setIsEditing(true);
+  };
+
+  const handleSaveClick = () => {
+    setProposal(editedProposal);
+    setIsEditing(false);
+    toast({
+      title: "Propuesta editada!",
+      description: "La propuesta de actividad ha sido editada exitosamente.",
+    });
+  };
+
+  const handleProposalChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setEditedProposal(e.target.value);
+  };
 
   const downloadProposal = () => {
     if (!proposal) {
@@ -215,11 +259,13 @@ export default function Home() {
       return;
     }
 
+    // TODO: Implement docx and pdf generation here
+    // For now, just download as text
     const blob = new Blob([proposal], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = "propuesta_actividad.txt";
+    link.download = `propuesta_actividad.${downloadFormat}`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -244,7 +290,7 @@ export default function Home() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>1. Grado(s) Específico(s):</FormLabel>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-3 gap-2">
                       {gradeOptions.map((option) => (
                         <FormItem key={option.value} className="flex flex-row items-center space-x-2 space-y-0">
                           <FormControl>
@@ -514,29 +560,62 @@ export default function Home() {
           </Form>
         </CardContent>
         {proposal && (
-          <CardFooter className="flex justify-between items-center p-6">
-            <div className="text-sm text-muted-foreground">
-              ¡Propuesta lista para ser implementada!
+          <CardFooter className="flex flex-col items-center p-6">
+            <div className="w-full">
+              <h2 className="text-lg font-semibold mb-2">Vista Preliminar de la Propuesta</h2>
+              <ScrollArea className="h-[300px] w-full rounded-md border p-4 mb-4">
+                {isEditing ? (
+                  <Textarea
+                    value={editedProposal || ""}
+                    onChange={handleProposalChange}
+                    className="resize-none"
+                  />
+                ) : (
+                  <div ref={proposalRef}>
+                    {editedProposal || proposal}
+                  </div>
+                )}
+              </ScrollArea>
             </div>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="outline">Descargar Propuesta</Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>¿Descargar propuesta?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    ¿Estás seguro de que quieres descargar la propuesta de actividad?
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                  <AlertDialogAction onClick={downloadProposal}>
-                    Descargar
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            <div className="flex justify-between items-center w-full">
+              {isEditing ? (
+                <Button variant="outline" onClick={handleSaveClick}>
+                  Guardar
+                </Button>
+              ) : (
+                <Button variant="outline" onClick={handleEditClick}>
+                  Editar
+                </Button>
+              )}
+              <Select onValueChange={setDownloadFormat} defaultValue={downloadFormat}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Seleccionar formato" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="docx">.docx</SelectItem>
+                  <SelectItem value="pdf">.pdf</SelectItem>
+                </SelectContent>
+              </Select>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button>Descargar Propuesta</Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>¿Descargar propuesta?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      ¿Estás seguro de que quieres descargar la propuesta de actividad en formato {downloadFormat.toUpperCase()}?
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={downloadProposal}>
+                      Descargar
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
           </CardFooter>
         )}
       </Card>

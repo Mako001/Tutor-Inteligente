@@ -11,7 +11,7 @@ import {ai} from '@/ai/ai-instance';
 import {z} from 'genkit';
 
 const GenerateActivityProposalInputSchema = z.object({
-  grade: z.string().describe('The specific grade(s) for the activity (e.g., 10th, 11th, or both).'),
+  grade: z.string().describe('The specific grade(s) for the activity (e.g., 6th, 7th, or both).'),
   timeAvailable: z.string().describe('The time available for the activity (e.g., one class, two classes, a week).'),
   centralTheme: z.string().describe('The central theme or specific problem to be addressed in the activity.'),
   methodologyPreference: z
@@ -57,7 +57,7 @@ const prompt = ai.definePrompt({
   name: 'generateActivityProposalPrompt',
   input: {
     schema: z.object({
-      grade: z.string().describe('The specific grade(s) for the activity (e.g., 10th, 11th, or both).'),
+      grade: z.string().describe('The specific grade(s) for the activity (e.g., 6th, 7th, or both).'),
       timeAvailable: z.string().describe('The time available for the activity (e.g., one class, two classes, a week).'),
       centralTheme: z.string().describe('The central theme or specific problem to be addressed in the activity.'),
       methodologyPreference: z
