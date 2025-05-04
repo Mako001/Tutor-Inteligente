@@ -4,6 +4,7 @@
 /node_modules
 /.pnp
 .pnp.js
+.yarn/install-state.gz
 
 # testing
 /coverage
@@ -11,41 +12,30 @@
 # next.js
 /.next/
 /out/
-/build
 
 # production
-/dist
+/build
 
 # misc
-/.DS_Store
+.DS_Store
 *.pem
 
 # debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
 
 # local env files
+.env*.local
 .env
-.env.local
-.env.development.local
+
+# vercel
+.vercel
 
 # typescript
 *.tsbuildinfo
+next-env.d.ts
 
-# firebase
-.firebase/
-functions/lib
-functions/node_modules
-
-# vscode
-.vscode/*
-!.vscode/settings.json
-!.vscode/extensions.json
-!.vscode/launch.json
-
-# Cloud Workstations
-.cws/
-
-# netlify
-.netlify/
+# IJ editors
+.idea
