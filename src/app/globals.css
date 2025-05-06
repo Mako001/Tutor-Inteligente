@@ -65,10 +65,8 @@
     @apply border-border;
   }
   body {
-    /* Default body background and text color are now applied via Tailwind classes in layout.tsx */
-    /* e.g., bg-secondary text-foreground */
-    /* The 'antialiased' class in layout.tsx handles font smoothing. */
-    @apply bg-background text-foreground; /* Default fallback, layout.tsx specific classes will take precedence */
+    @apply bg-background text-foreground;
+    /* antialiased class in layout.tsx handles font smoothing */
   }
 }
 
