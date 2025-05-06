@@ -1,71 +1,45 @@
-'use client'; // Firebase SDK is primarily client-side
+// src/lib/firebase/client.ts
+import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
+import { getFirestore, Firestore } from 'firebase/firestore';
+// Importa otros servicios de Firebase si los necesitas (Auth, Storage, etc.)
+// import { getAuth, Auth } from 'firebase/auth';
 
-import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
-import { getStorage } from 'firebase/storage';
-import { getAnalytics, isSupported } from 'firebase/analytics'; // Optional: Add if you need Analytics
+import { getFirebaseConfig } from './config';
 
-import { firebaseConfig, validateFirebaseConfig } from './config';
+let firebaseApp: FirebaseApp | undefined;
+let firestore: Firestore | undefined;
+// let auth: Auth | undefined;
 
-let firebaseApp: FirebaseApp;
+const config = getFirebaseConfig();
 
-// Validate the config during initialization
-validateFirebaseConfig();
-
-// Initialize Firebase only if it hasn't been initialized yet
-if (typeof window !== 'undefined') { // Ensure this runs only on the client
+// Solo inicializa si la configuración es válida (projectId está presente y no es el placeholder)
+// La validación más robusta ya ocurrió en getFirebaseConfig()
+if (config.projectId && config.projectId !== 'YOUR_PROJECT_ID_HERE' && config.apiKey) { // Added apiKey check as it's crucial
   if (!getApps().length) {
     try {
-      firebaseApp = initializeApp(firebaseConfig);
-      console.log('Firebase initialized successfully.');
+      // Type assertion for config, assuming measurementId is optional
+      firebaseApp = initializeApp(config as any);
+      console.log('Firebase App initialized successfully on the client/server.');
     } catch (error) {
-      console.error('Firebase initialization failed:', error);
-      // Handle initialization error appropriately
-      // Maybe disable Firebase features or show an error message
+      console.error('Error initializing Firebase app:', error);
+      // Considera cómo manejar este error en la UI si la app no puede funcionar sin Firebase
     }
   } else {
-    firebaseApp = getApp();
-    console.log('Firebase app already initialized.');
+    firebaseApp = getApp(); // Use getApp() instead of getApps()[0]
+    console.log('Firebase App already initialized.');
+  }
+
+  if (firebaseApp) {
+    try {
+      firestore = getFirestore(firebaseApp);
+      // auth = getAuth(firebaseApp); // Uncomment if you need auth
+      console.log('Firestore (and other services) initialized.');
+    } catch (error) {
+      console.error('Error initializing Firebase services (Firestore, Auth, etc.):', error);
+    }
   }
 } else {
-  // Handle server-side case if necessary, though Firebase client SDK is client-side
-  console.warn('Firebase initialization attempted on server-side. Firestore and Auth might not work here.');
-  // Initialize a placeholder or throw an error if server-side access is critical and unexpected
+  console.error("CLIENT_SIDE_ERROR: Firebase config not valid, projectId is a placeholder, or apiKey is missing. Firebase services won't be initialized.");
 }
 
-
-// Export Firebase services - Ensure firebaseApp is initialized before calling these
-// Using a function to get services ensures firebaseApp is ready
-const getFirebaseAuth = () => getAuth(firebaseApp);
-const getFirebaseFirestore = () => getFirestore(firebaseApp);
-const getFirebaseStorage = () => getStorage(firebaseApp);
-// const getFirebaseAnalytics = async () => isSupported().then(yes => yes ? getAnalytics(firebaseApp) : null); // Optional
-
-// Re-exporting initialized services for direct use where appropriate
-// Check if firebaseApp exists before initializing to prevent errors during SSR or initial load
-const auth = typeof window !== 'undefined' ? getFirebaseAuth() : null;
-const firestore = typeof window !== 'undefined' ? getFirebaseFirestore() : null;
-const storage = typeof window !== 'undefined' ? getFirebaseStorage() : null;
-// let analytics = null; // Initialize analytics carefully
-// if (typeof window !== 'undefined') {
-//   isSupported().then(yes => { if(yes) analytics = getAnalytics(firebaseApp) });
-// }
-
-
-export { firebaseApp, auth, firestore, storage /*, analytics*/ }; // Export potentially null services
-
-// Example of how to use in a component:
-// import { auth } from '@/lib/firebase/client';
-// import { useAuthState } from 'react-firebase-hooks/auth'; // Example hook
-//
-// function MyComponent() {
-//   const [user, loading, error] = useAuthState(auth); // auth might be null initially
-//   useEffect(() => {
-//      // check if auth is initialized before using it
-//      if(auth) {
-//         // proceed with auth operations
-//      }
-//   }, [auth])
-//   // ... use user, loading, error ...
-// }
+export { firebaseApp, firestore /*, auth */ };

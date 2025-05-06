@@ -1,47 +1,26 @@
+// src/app/layout.tsx
+import type { Metadata } from 'next';
+import { Inter } from 'next/font/google'; // O la fuente Geist si la prefieres y está configurada
+import './globals.css'; // Asegúrate que este archivo exista y tenga los estilos base de Tailwind
 
-'use client';
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
+// Si usas Geist:
+// import { GeistSans } from 'geist/font/sans';
+// import { GeistMono } from 'geist/font/mono';
 
-import type {Metadata} from 'next';
-import {Geist, Geist_Mono} from 'next/font/google';
-import './globals.css';
-import {useEffect, useState} from 'react';
-
-// Metadata should be defined in a server component or exported separately
-// export const metadata: Metadata = {
-//   title: 'AprendeTech Colombia',
-//   description: 'Asistente para el diseño de actividades de aprendizaje en el aula de informática',
-// };
-
-const geistSans = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
-});
-
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
-});
+export const metadata: Metadata = {
+  title: 'Tutor Inteligente - AprendeTech',
+  description: 'Asistente IA para diseño de actividades educativas',
+};
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  // Add suppressHydrationWarning to the body tag to mitigate hydration errors
-  // caused by browser extensions injecting attributes during development.
-  // Also, apply class names only on the client side to avoid mismatch.
   return (
-    <html lang="es">
-      <body
-        className={isClient ? `${geistSans.variable} ${geistMono.variable} antialiased` : ''}
-        suppressHydrationWarning={true} // Add this line
-      >
+    <html lang="es" className={inter.variable}> {/* O `${GeistSans.variable} ${GeistMono.variable}` */}
+      <body className="antialiased bg-gray-100 text-gray-900"> {/* Estilos base del body */}
         {children}
       </body>
     </html>

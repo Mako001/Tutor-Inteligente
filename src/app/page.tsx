@@ -1,703 +1,236 @@
-"use client";
+// src/app/page.tsx
+'use client'; // Esta página necesita ser un Client Component por los hooks y el manejo de eventos
 
-import { useState, useEffect, useRef } from "react"; // Added useRef
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  CardFooter,
-} from "@/components/ui/card";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
-
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
-import { Checkbox } from "@/components/ui/checkbox";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Toaster } from "@/components/ui/toaster";
-
-// Firebase Firestore imports
-import { firestore } from '@/lib/firebase/client'; // Correct import path
+import { useState, FormEvent, ChangeEvent } from 'react';
+import { firestore } from '@/lib/firebase/client'; // Asegúrate que la ruta sea correcta
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
+// Componentes de UI (asumimos que existen en @/components/ui/)
+// Necesitarás crearlos o asegurarte de que están ahí.
+// Por simplicidad, usaré elementos HTML básicos aquí, puedes reemplazarlos.
 
-const initialGreeting =
-  "¡Hola, colega docente de Informática de bachillerato! Estoy aquí para ayudarte a diseñar actividades de aprendizaje significativas y contextualizadas para tus estudiantes. Para comenzar, necesito que reflexionemos juntos sobre algunos aspectos clave. Responder a las siguientes preguntas me permitirá generar una propuesta de actividad ajustada a tus necesidades y a los lineamientos del MEN.";
-
-const formSchema = z.object({
-  grade: z.array(z.string()).min(1, {
-    message: "Por favor, especifica el grado.",
-  }),
-  timeAvailable: z.string().min(1, {
-    message: "Por favor, especifica el tiempo disponible.",
-  }),
-  centralTheme: z.string().min(1, {
-    message: "Por favor, especifica el tema central.",
-  }),
-  methodologyPreference: z.array(z.string()).min(1, {
-    message: "Por favor, especifica la metodología preferida.",
-  }),
-  competenciesToDevelop: z.array(z.string()).min(1, {
-    message: "Por favor, especifica las competencias a desarrollar.",
-  }),
-  learningEvidences: z.array(z.string()).min(1, {
-    message: "Por favor, especifica las evidencias de aprendizaje.",
-  }),
-  curricularComponents: z.array(z.string()).min(1, {
-    message: "Por favor, especifica los componentes curriculares.",
-  }),
-  availableResources: z.array(z.string()).min(1, {
-    message: "Por favor, especifica los recursos disponibles.",
-  }),
-  contextAndNeeds: z.array(z.string()).min(1, {
-    message: "Por favor, especifica el contexto y las necesidades.",
-  }),
-  interdisciplinarity: z.string().optional(),
-});
-
-type FormData = z.infer<typeof formSchema>;
-
-const gradeOptions = [
-  { label: "6º", value: "6º" },
-  { label: "7º", value: "7º" },
-  { label: "8º", value: "8º" },
-  { label: "9º", value: "9º" },
-  { label: "10º", value: "10º" },
-  { label: "11º", value: "11º" },
-];
-
-const methodologyOptions = [
-  { label: "Aprendizaje Basado en Proyectos (ABP)", value: "Aprendizaje Basado en Proyectos (ABP)" },
-  { label: "Aprendizaje Basado en Problemas (ABPr)", value: "Aprendizaje Basado en Problemas (ABPr)" },
-  { label: "Aula Invertida (Flipped Classroom)", value: "Aula Invertida (Flipped Classroom)" },
-  { label: "Aprendizaje Cooperativo", value: "Aprendizaje Cooperativo" },
-  { label: "Gamificación", value: "Gamificación" },
-  { label: "Enseñanza Explícita", value: "Enseñanza Explícita" },
-  { label: "Aprendizaje por Indagación", value: "Aprendizaje por Indagación" },
-  { label: "Otra", value: "Otra" },
-  { label: "Abierto a sugerencias", value: "Abierto a sugerencias" },
-];
-
-const competenciesOptions = [
-    { label: "Pensamiento algorítmico", value: "Pensamiento algorítmico" },
-    { label: "Resolución de problemas", value: "Resolución de problemas" },
-    { label: "Creatividad e innovación", value: "Creatividad e innovación" },
-    { label: "Comunicación y colaboración", value: "Comunicación y colaboración" },
-    { label: "Pensamiento crítico", value: "Pensamiento crítico" },
-    { label: "Aprender a aprender", value: "Aprender a aprender" },
-    { label: "Ciudadanía digital", value: "Ciudadanía digital" },
-    { label: "Ética y responsabilidad", value: "Ética y responsabilidad" },
-    { label: "Modelado y simulación", value: "Modelado y simulación" },
-    { label: "Análisis de datos", value: "Análisis de datos" },
-    { label: "Diseño de interfaces", value: "Diseño de interfaces" },
-    { label: "Desarrollo de videojuegos", value: "Desarrollo de videojuegos" },
-    { label: "Diseño de aplicaciones móviles", value: "Diseño de aplicaciones móviles" },
-    { label: "Robótica", value: "Robótica" },
-    { label: "Inteligencia Artificial", value: "Inteligencia Artificial" },
-    { label: "Pensamiento computacional", value: "Pensamiento computacional" },
-    { label: "Ciberseguridad", value: "Ciberseguridad" },
-    { label: "Realidad Virtual y Aumentada", value: "Realidad Virtual y Aumentada" },
-    { label: "Internet de las Cosas (IoT)", value: "Internet de las Cosas (IoT)" },
-    { label: "Analítica de datos", value: "Analítica de datos" },
-    { label: "Desarrollo de software", value: "Desarrollo de software" },
-];
-
-const learningEvidencesOptions = [
-    { label: "Diseño de un programa", value: "Diseño de un programa" },
-    { label: "Presentación de un proyecto", value: "Presentación de un proyecto" },
-    { label: "Elaboración de un informe", value: "Elaboración de un informe" },
-    { label: "Desarrollo de un prototipo", value: "Desarrollo de un prototipo" },
-    { label: "Creación de un video tutorial", value: "Creación de un video tutorial" },
-    { label: "Participación en un debate", value: "Participación en un debate" },
-    { label: "Realización de una investigación", value: "Realización de una investigación" },
-    { label: "Simulación de un proceso", value: "Simulación de un proceso" },
-    { label: "Construcción de un modelo", value: "Construcción de un modelo" },
-    { label: "Desarrollo de una aplicación móvil", value: "Desarrollo de una aplicación móvil" },
-    { label: "Creación de un portafolio digital", value: "Creación de un portafolio digital" },
-    { label: "Diseño de una página web", value: "Diseño de una página web" },
-    { label: "Elaboración de un mapa conceptual", value: "Elaboración de un mapa conceptual" },
-    { label: "Desarrollo de un videojuego", value: "Desarrollo de un videojuego" },
-    { label: "Diseño de una base de datos", value: "Diseño de una base de datos" },
-    { label: "Creación de una presentación multimedia", value: "Creación de una presentación multimedia" },
-    { label: "Desarrollo de un sistema de información", value: "Desarrollo de un sistema de información" },
-    { label: "Elaboración de un blog", value: "Elaboración de un blog" },
-    { label: "Creación de un podcast", value: "Creación de un podcast" },
-    { label: "Diseño de una infografía", value: "Diseño de una infografía" },
-    { label: "Desarrollo de un proyecto de robótica", value: "Desarrollo de un proyecto de robótica" },
-    { label: "Creación de una simulación interactiva", value: "Creación de una simulación interactiva" },
-    { label: "Diseño de una animación digital", value: "Diseño de una animación digital" },
-    { label: "Desarrollo de una solución de ciberseguridad", value: "Desarrollo de una solución de ciberseguridad" },
-    { label: "Diseño de un plan de marketing digital", value: "Diseño de un plan de marketing digital" },
-    { label: "Implementación de una estrategia de e-commerce", value: "Implementación de una estrategia de e-commerce" },
-    { label: "Creación de un gemelo digital", value: "Creación de un gemelo digital" },
-];
-
-const curricularComponentsOptions = [
-    { label: "Naturaleza y Evolución de la Tecnología", value: "Naturaleza y Evolución de la Tecnología" },
-    { label: "Apropiación y Uso de la Tecnología", value: "Apropiación y Uso de la Tecnología" },
-    { label: "Solución de Problemas con Tecnología", value: "Solución de Problemas con Tecnología" },
-    { label: "Tecnología y Sociedad", value: "Tecnología y Sociedad" },
-    { label: "Diseño y construcción", value: "Diseño y construcción" },
-    { label: "Materiales", value: "Materiales" },
-    { label: "Representación y expresión técnica", value: "Representación y expresión técnica" },
-    { label: "Ciencia, tecnología y sociedad", value: "Ciencia, tecnología y sociedad" },
-    { label: "Sistemas tecnológicos", value: "Sistemas tecnológicos" },
-    { label: "Información y comunicación", value: "Información y comunicación" },
-    { label: "Pensamiento algorítmico", value: "Pensamiento algorítmico" },
-    { label: "Programación", value: "Programación" },
-    { label: "Robótica", value: "Robótica" },
-    { label: "Inteligencia artificial", value: "Inteligencia artificial" },
-    { label: "Componentes de diseño", value: "Componentes de diseño" },
-    { label: "Sistemas operativos", value: "Sistemas operativos" },
-    { label: "Bases de datos", value: "Bases de datos" },
-    { label: "Redes de computadoras", value: "Redes de computadoras" },
-    { label: "Ingeniería del software", value: "Ingeniería del software" },
-    { label: "Modelación de sistemas", value: "Modelación de sistemas" },
-];
-
-const availableResourcesOptions = [
-    { label: "Computadores", value: "Computadores" },
-    { label: "Acceso a internet", value: "Acceso a internet" },
-    { label: "Software específico", value: "Software específico" },
-    { label: "Laboratorio de informática", value: "Laboratorio de informática" },
-    { label: "Robots educativos", value: "Robots educativos" },
-    { label: "Tabletas", value: "Tabletas" },
-    { label: "Impresora 3D", value: "Impresora 3D" },
-    { label: "Otros materiales", value: "Otros materiales" },
-    { label: "Plataformas de aprendizaje en línea", value: "Plataformas de aprendizaje en línea" },
-    { label: "Herramientas de diseño gráfico", value: "Herramientas de diseño gráfico" },
-    { label: "Simuladores", value: "Simuladores" },
-    { label: "Dispositivos móviles", value: "Dispositivos móviles" },
-    { label: "Realidad virtual/aumentada", value: "Realidad virtual/aumentada" },
-    { label: "Pizarras digitales interactivas", value: "Pizarras digitales interactivas" },
-    { label: "Kits de electrónica", value: "Kits de electrónica" },
-    { label: "Drones", value: "Drones" },
-];
-
-const contextAndNeedsOptions = [
-    { label: "Estudiantes con dificultades en programación", value: "Estudiantes con dificultades en programación" },
-    { label: "Estudiantes con alta motivación por la tecnología", value: "Estudiantes con alta motivación por la tecnología" },
-    { label: "Aula con pocos recursos tecnológicos", value: "Aula con pocos recursos tecnológicos" },
-    { label: "Necesidad de integrar la tecnología con otras áreas", value: "Necesidad de integrar la tecnología con otras áreas" },
-    { label: "Promover el aprendizaje autónomo", value: "Promover el aprendizaje autónomo" },
-    { label: "Fomentar la creatividad", value: "Fomentar la creatividad" },
-    { label: "Adaptar la enseñanza a diferentes ritmos de aprendizaje", value: "Adaptar la enseñanza a diferentes ritmos de aprendizaje" },
-    { label: "Estudiantes con necesidades educativas especiales", value: "Estudiantes con necesidades educativas especiales" },
-    { label: "Promover la inclusión digital", value: "Promover la inclusión digital" },
-    { label: "Abordar la brecha digital", value: "Abordar la brecha digital" },
-    { label: "Fomentar el pensamiento crítico", value: "Fomentar el pensamiento crítico" },
-    { label: "Promover el aprendizaje colaborativo", value: "Promover el aprendizaje colaborativo" },
-    { label: "Fomentar la resolución de problemas", value: "Fomentar la resolución de problemas" },
-    { label: "Desarrollar habilidades de comunicación", value: "Desarrollar habilidades de comunicación" },
-];
-
-// --- Función para guardar la propuesta en Firebase ---
-async function guardarPropuestaEnFirebase(propuestaTexto: string, datosFormulario: FormData) {
-    try {
-        // Obtén una referencia a la colección 'propuestas'
-        const propuestasCollectionRef = collection(firestore, "propuestas");
-
-        // Añade un nuevo documento a la colección
-        const docRef = await addDoc(propuestasCollectionRef, {
-            textoGenerado: propuestaTexto,
-            grado: datosFormulario.grade.join(", "), // Guardar como string
-            tiempoDisponible: datosFormulario.timeAvailable,
-            temaCentral: datosFormulario.centralTheme,
-            metodologiaPreferida: datosFormulario.methodologyPreference.join(", "), // Guardar como string
-            competencias: datosFormulario.competenciesToDevelop.join(", "), // Guardar como string
-            evidencias: datosFormulario.learningEvidences.join(", "), // Guardar como string
-            componentes: datosFormulario.curricularComponents.join(", "), // Guardar como string
-            recursos: datosFormulario.availableResources.join(", "), // Guardar como string
-            contexto: datosFormulario.contextAndNeeds.join(", "), // Guardar como string
-            interdisciplinaridad: datosFormulario.interdisciplinarity || '',
-            timestamp: serverTimestamp() // Usa la función importada para la marca de tiempo
-        });
-
-        console.log("Propuesta guardada en Firebase con ID: ", docRef.id);
-        return true; // Indica éxito
-
-    } catch (error) {
-        console.error("Error al guardar en Firebase: ", error);
-        return false; // Indica fallo
-    }
+// Interfaz para los datos del formulario (opcional pero buena práctica)
+interface FormData {
+  tema: string;
+  nivel: string;
+  objetivo: string;
+  tiempo: string;
+  recursos: string;
+  // Añade otros campos según tu formulario original
 }
 
-
-export default function Home() {
-  const [proposal, setProposal] = useState<string | null>(null);
-  const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
-  const [proposalHtml, setProposalHtml] = useState<string | null>(null); // State to hold the proposal
-  const proposalRef = useRef<HTMLDivElement>(null); // Ref for the proposal container
-
-
-  const form = useForm<FormData>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      grade: [],
-      timeAvailable: "",
-      centralTheme: "",
-      methodologyPreference: [],
-      competenciesToDevelop: [],
-      learningEvidences: [],
-      curricularComponents: [],
-      availableResources: [],
-      contextAndNeeds: [],
-      interdisciplinarity: "",
-    },
+export default function HomePage() {
+  const [formData, setFormData] = useState<FormData>({
+    tema: '',
+    nivel: '6', // Valor inicial
+    objetivo: '',
+    tiempo: '',
+    recursos: '',
   });
+  const [resultadoTexto, setResultadoTexto] = useState<string>('');
+  const [cargando, setCargando] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
 
-  // --- Simulación de llamada a Gemini (Puedes reemplazar con tu lógica real) ---
-  async function llamarGeminiAPI(promptCompleto: string): Promise<string> {
-    console.log("Enviando a Gemini (simulado):", promptCompleto);
-    // Simulación con demora:
-    return new Promise(resolve => {
-        setTimeout(() => {
-            const formValues = form.getValues(); // Obtener valores dentro de la simulación
-            resolve(`--- Respuesta Simulada de Gemini ---
-            **Actividad Didáctica Generada**
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
 
-            **Tema:** ${formValues.centralTheme}
-            **Grado(s):** ${formValues.grade.join(', ')}
-            **Tiempo Disponible:** ${formValues.timeAvailable}
-            **Metodología Preferida:** ${formValues.methodologyPreference.join(', ')}
-            **Competencias a Desarrollar:** ${formValues.competenciesToDevelop.join(', ')}
-            **Evidencias de Aprendizaje:** ${formValues.learningEvidences.join(', ')}
-            **Componentes Curriculares:** ${formValues.curricularComponents.join(', ')}
-            **Recursos Disponibles:** ${formValues.availableResources.join(', ')}
-            **Contexto y Necesidades:** ${formValues.contextAndNeeds.join(', ')}
-            **Interdisciplinariedad:** ${formValues.interdisciplinarity || 'No especificada'}
+  // --- SIMULACIÓN DE LA API DE GEMINI ---
+  const llamarGeminiAPI = async (prompt: string): Promise<string> => {
+    console.log("Enviando a Gemini (simulado):", prompt);
+    await new Promise(resolve => setTimeout(resolve, 1500)); // Simula delay
+    // En una implementación real, aquí harías fetch a tu API de Gemini
+    return `Respuesta simulada para el prompt sobre "${formData.tema}".\nDetalles:\n- Nivel: ${formData.nivel}\n- Objetivo: ${formData.objetivo}`;
+  };
 
-            **Instrucciones Detalladas:**
-            <p>Aquí iría la descripción paso a paso generada por la IA...</p>
-            <ol><li>Paso 1</li><li>Paso 2</li></ol>
+  // --- GUARDAR EN FIREBASE ---
+  const guardarPropuestaEnFirebase = async (propuesta: string, datos: FormData) => {
+    if (!firestore) {
+      console.error("Firestore no está disponible. No se puede guardar.");
+      setError("Error: No se pudo conectar a la base de datos para guardar.");
+      return;
+    }
+    try {
+      await addDoc(collection(firestore, "propuestas"), {
+        ...datos,
+        textoGenerado: propuesta,
+        timestamp: serverTimestamp(),
+      });
+      console.log("Propuesta guardada en Firebase");
+    } catch (e) {
+      console.error("Error al guardar en Firebase: ", e);
+      setError("Error al guardar la propuesta en la base de datos.");
+    }
+  };
 
-            **Materiales Específicos:**
-            <ul><li>Material A</li><li>Material B</li></ul>
+  // --- MANEJADOR DEL ENVÍO DEL FORMULARIO ---
+  const handleGenerarPropuesta = async (e: FormEvent) => {
+    e.preventDefault(); // Prevenir recarga de página si es un form real
+    setCargando(true);
+    setResultadoTexto('');
+    setError('');
 
-            **Evaluación:**
-            <p>Criterios e instrumentos de evaluación alineados...</p>
-            --- Fin Respuesta Simulada ---`);
-        }, 1500); // Simula 1.5 segundos de espera
-    });
-  }
+    // Validaciones básicas (puedes expandir)
+    if (!formData.tema || !formData.objetivo) {
+      setError("Por favor, completa los campos de tema y objetivo.");
+      setCargando(false);
+      return;
+    }
 
-  // --- Función onSubmit del formulario ---
-  async function onSubmit(values: FormData) {
-    setProposalHtml(null); // Reset proposal state FIRST
-    setIsLoading(true); // Then set loading
+    // Construye el prompt
+    const promptCompleto = `Genera una actividad educativa:
+    Tema: ${formData.tema}
+    Nivel: ${formData.nivel}
+    Objetivo: ${formData.objetivo}
+    Tiempo disponible: ${formData.tiempo}
+    Recursos: ${formData.recursos}
+    ---`; // Adapta tu prompt
 
     try {
-       const promptCompleto = `Genera una propuesta de actividad didáctica detallada para docentes de Tecnología e Informática en bachillerato, siguiendo los lineamientos del MEN Colombia y la Guía 30.
-        Grado(s): ${values.grade.join(", ")}
-        Tiempo Disponible: ${values.timeAvailable}
-        Tema Central o Problema: ${values.centralTheme}
-        Metodología Preferida: ${values.methodologyPreference.join(", ")}
-        Competencias a Desarrollar (citar textualmente o adaptar de Orientaciones MEN): ${values.competenciesToDevelop.join("; ")}
-        Evidencias de Aprendizaje (citar textualmente o adaptar de Orientaciones MEN): ${values.learningEvidences.join("; ")}
-        Componentes Curriculares a abordar (justificar brevemente): ${values.curricularComponents.join(", ")}
-        Recursos Disponibles: ${values.availableResources.join(", ")}
-        Contexto y Necesidades Particulares: ${values.contextAndNeeds.join(", ")}
-        Interdisciplinariedad (si aplica): ${values.interdisciplinarity || 'No especificada'}
-
-        Estructura la respuesta de forma clara y organizada incluyendo:
-        *   Título de la Actividad
-        *   Objetivo(s) de Aprendizaje (alineados con las competencias)
-        *   Descripción Completa (pasos detallados, fases, roles de estudiantes y docente)
-        *   Preguntas Orientadoras para los estudiantes
-        *   Recursos Necesarios (detallados)
-        *   Producto(s) Esperado(s) (tangibles o intangibles)
-        *   Criterios e Instrumentos de Evaluación (rúbricas, listas de chequeo, etc., alineados con competencias y evidencias)
-        *   Posibles Adaptaciones (para diferentes ritmos, necesidades, o recursos limitados)
-        *   Justificación de los Componentes Curriculares seleccionados.
-
-        Asegúrate de que la propuesta NO sea genérica, esté contextualizada a Colombia y sea práctica para implementación en aula.`;
-
-
-      const respuestaGemini = await llamarGeminiAPI(promptCompleto); // Usando simulación por ahora
-
-      setProposalHtml(respuestaGemini); // Update state with the response
-
-      toast({
-        title: "Propuesta generada!",
-        description: "La propuesta de actividad ha sido generada exitosamente.",
-      });
-
-      // --- Guardar en Firebase DESPUÉS de generar ---
-      const guardadoExitoso = await guardarPropuestaEnFirebase(respuestaGemini, values);
-      if (guardadoExitoso) {
-          toast({
-              title: "Guardado Exitoso",
-              description: "La propuesta también se ha guardado en la base de datos.",
-              variant: "default", // Opcional: puedes usar 'success' si tienes esa variante
-          });
-      } else {
-          toast({
-              variant: "destructive",
-              title: "Error al Guardar",
-              description: "No se pudo guardar la propuesta en la base de datos.",
-          });
-      }
-
-
-    } catch (error: any) {
-      console.error("Error generating proposal:", error);
-      setProposalHtml('<p style="color: red;">Error al generar la propuesta. Revisa la consola para más detalles.</p>'); // Update state with error message
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description:
-          error?.message ||
-          "Hubo un error al generar la propuesta. Por favor, intenta de nuevo.",
-      });
+      const respuesta = await llamarGeminiAPI(promptCompleto);
+      setResultadoTexto(respuesta);
+      await guardarPropuestaEnFirebase(respuesta, formData);
+    } catch (apiError) {
+      console.error("Error llamando a la API de Gemini:", apiError);
+      setError("Hubo un error al generar la propuesta con la IA.");
     } finally {
-      setIsLoading(false);
+      setCargando(false);
     }
-  }
+  };
 
+  // --- RENDERIZADO (JSX) ---
+  // Usa clases de Tailwind CSS para estilizar
   return (
-    <div className="flex justify-center items-start min-h-screen py-12 bg-secondary">
-      <Card className="w-full max-w-3xl shadow-md rounded-lg overflow-hidden">
-        <CardHeader className="py-4 px-6 bg-accent text-foreground">
-          <CardTitle className="text-lg font-semibold">
-            AprendeTech Colombia - Asistente para el Diseño de Actividades
-          </CardTitle>
-          <CardDescription className="text-sm">{initialGreeting}</CardDescription>
-        </CardHeader>
-        <CardContent className="p-6">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              {/* Grade */}
-              <FormField
-                control={form.control}
-                name="grade"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>1. Grado(s) Específico(s):</FormLabel>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                      {gradeOptions.map((option) => (
-                        <FormItem key={option.value} className="flex flex-row items-center space-x-2 space-y-0">
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value?.includes(option.value)}
-                              onCheckedChange={(checked) => {
-                                return checked
-                                  ? field.onChange([...(field.value || []), option.value])
-                                  : field.onChange(field.value?.filter((value) => value !== option.value));
-                              }}
-                            />
-                          </FormControl>
-                          <FormLabel className="text-sm font-normal">{option.label}</FormLabel>
-                        </FormItem>
-                      ))}
-                    </div>
-                    <FormDescription>
-                      ¿Para qué grado(s) de bachillerato estás diseñando esta actividad?
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              {/* Time Available */}
-              <FormField
-                control={form.control}
-                name="timeAvailable"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>2. Tiempo Disponible:</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Ej: 90 minutos, 2 bloques de 45 min, 1 semana"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      ¿De cuánto tiempo dispones para implementar esta actividad? (Sé específico)
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              {/* Central Theme */}
-              <FormField
-                control={form.control}
-                name="centralTheme"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>3. Tema Central o Problema:</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Ej: Introducción a HTML y CSS, Creación de un blog sencillo, Análisis de datos de redes sociales, Diseño de un prototipo para resolver X problema local"
-                        className="resize-none"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      ¿Cuál es el tema central, habilidad específica o problema a resolver que deseas abordar? Describe detalladamente si es un problema.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              {/* Methodology */}
-               <FormField
-                control={form.control}
-                name="methodologyPreference"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>4. Metodología Preferida:</FormLabel>
-                     <ScrollArea className="h-40 w-full rounded-md border p-2">
-                      <div className="grid grid-cols-1 gap-2">
-                        {methodologyOptions.map((option) => (
-                          <FormItem key={option.value} className="flex flex-row items-center space-x-2 space-y-0">
-                            <FormControl>
-                              <Checkbox
-                                checked={field.value?.includes(option.value)}
-                                onCheckedChange={(checked) => {
-                                  return checked
-                                    ? field.onChange([...(field.value || []), option.value])
-                                    : field.onChange(field.value?.filter((value) => value !== option.value));
-                                }}
-                              />
-                            </FormControl>
-                            <FormLabel className="text-sm font-normal">{option.label}</FormLabel>
-                          </FormItem>
-                        ))}
-                      </div>
-                    </ScrollArea>
-                    <FormDescription>
-                      Selecciona las metodologías o enfoques pedagógicos que prefieres (o elige "Abierto a sugerencias").
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              {/* Competencies */}
-               <FormField
-                control={form.control}
-                name="competenciesToDevelop"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>5. Competencias a Desarrollar (MEN - Guía 30):</FormLabel>
-                     <ScrollArea className="h-40 w-full rounded-md border p-2">
-                      <div className="grid grid-cols-1 gap-2">
-                        {competenciesOptions.map((option) => (
-                          <FormItem key={option.value} className="flex flex-row items-center space-x-2 space-y-0">
-                            <FormControl>
-                              <Checkbox
-                                checked={field.value?.includes(option.value)}
-                                onCheckedChange={(checked) => {
-                                  return checked
-                                    ? field.onChange([...(field.value || []), option.value])
-                                    : field.onChange(field.value?.filter((value) => value !== option.value));
-                                }}
-                              />
-                            </FormControl>
-                            <FormLabel className="text-sm font-normal">{option.label}</FormLabel>
-                          </FormItem>
-                        ))}
-                      </div>
-                    </ScrollArea>
-                    <FormDescription>
-                      Elige las competencias clave del área de Tecnología e Informática (y S.XXI) que la actividad buscará fortalecer. (Sé lo más específico posible, cita textualmente de las Orientaciones si es posible).
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              {/* Learning Evidences */}
-               <FormField
-                control={form.control}
-                name="learningEvidences"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>6. Evidencias de Aprendizaje:</FormLabel>
-                     <ScrollArea className="h-40 w-full rounded-md border p-2">
-                      <div className="grid grid-cols-1 gap-2">
-                        {learningEvidencesOptions.map((option) => (
-                          <FormItem key={option.value} className="flex flex-row items-center space-x-2 space-y-0">
-                            <FormControl>
-                              <Checkbox
-                                checked={field.value?.includes(option.value)}
-                                onCheckedChange={(checked) => {
-                                  return checked
-                                    ? field.onChange([...(field.value || []), option.value])
-                                    : field.onChange(field.value?.filter((value) => value !== option.value));
-                                }}
-                              />
-                            </FormControl>
-                            <FormLabel className="text-sm font-normal">{option.label}</FormLabel>
-                          </FormItem>
-                        ))}
-                      </div>
-                    </ScrollArea>
-                    <FormDescription>
-                      ¿Qué productos, desempeños o acciones concretas te permitirán verificar el desarrollo de las competencias seleccionadas? (Sé lo más específico posible, cita o adapta de las Orientaciones).
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              {/* Curricular Components */}
-               <FormField
-                control={form.control}
-                name="curricularComponents"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>7. Componentes Curriculares (Orientaciones MEN):</FormLabel>
-                    <ScrollArea className="h-40 w-full rounded-md border p-2">
-                      <div className="grid grid-cols-1 gap-2">
-                        {curricularComponentsOptions.map((option) => (
-                          <FormItem key={option.value} className="flex flex-row items-center space-x-2 space-y-0">
-                            <FormControl>
-                              <Checkbox
-                                checked={field.value?.includes(option.value)}
-                                onCheckedChange={(checked) => {
-                                  return checked
-                                    ? field.onChange([...(field.value || []), option.value])
-                                    : field.onChange(field.value?.filter((value) => value !== option.value));
-                                }}
-                              />
-                            </FormControl>
-                            <FormLabel className="text-sm font-normal">{option.label}</FormLabel>
-                          </FormItem>
-                        ))}
-                      </div>
-                    </ScrollArea>
-                    <FormDescription>
-                      Selecciona los componentes del área que se abordarán principalmente. Justifica brevemente si es necesario.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              {/* Available Resources */}
-              <FormField
-                control={form.control}
-                name="availableResources"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>8. Recursos Disponibles:</FormLabel>
-                    <ScrollArea className="h-40 w-full rounded-md border p-2">
-                      <div className="grid grid-cols-1 gap-2">
-                        {availableResourcesOptions.map((option) => (
-                          <FormItem key={option.value} className="flex flex-row items-center space-x-2 space-y-0">
-                            <FormControl>
-                              <Checkbox
-                                checked={field.value?.includes(option.value)}
-                                onCheckedChange={(checked) => {
-                                  return checked
-                                    ? field.onChange([...(field.value || []), option.value])
-                                    : field.onChange(field.value?.filter((value) => value !== option.value));
-                                }}
-                              />
-                            </FormControl>
-                            <FormLabel className="text-sm font-normal">{option.label}</FormLabel>
-                          </FormItem>
-                        ))}
-                      </div>
-                    </ScrollArea>
-                    <FormDescription>
-                      Marca los recursos tecnológicos y materiales con los que cuentas para esta actividad. (Sé muy específico).
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              {/* Context and Needs */}
-              <FormField
-                control={form.control}
-                name="contextAndNeeds"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>9. Contexto y Necesidades Particulares:</FormLabel>
-                    <ScrollArea className="h-40 w-full rounded-md border p-2">
-                      <div className="grid grid-cols-1 gap-2">
-                        {contextAndNeedsOptions.map((option) => (
-                          <FormItem key={option.value} className="flex flex-row items-center space-x-2 space-y-0">
-                            <FormControl>
-                              <Checkbox
-                                checked={field.value?.includes(option.value)}
-                                onCheckedChange={(checked) => {
-                                  return checked
-                                    ? field.onChange([...(field.value || []), option.value])
-                                    : field.onChange(field.value?.filter((value) => value !== option.value));
-                                }}
-                              />
-                            </FormControl>
-                            <FormLabel className="text-sm font-normal">{option.label}</FormLabel>
-                          </FormItem>
-                        ))}
-                      </div>
-                    </ScrollArea>
-                    <FormDescription>
-                      ¿Hay alguna característica específica de tu grupo, institución o entorno que sea relevante considerar?
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              {/* Interdisciplinarity */}
-              <FormField
-                control={form.control}
-                name="interdisciplinarity"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>10. Interdisciplinariedad (Opcional):</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Ej: Integración con Matemáticas (estadística), Artes (diseño visual), Ciencias Sociales (impacto tecnológico)"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      ¿Deseas que la actividad se conecte explícitamente con otra área del conocimiento? Si es así, indica cuál(es).
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+    <div className="container mx-auto p-4 md:p-8 min-h-screen flex flex-col items-center">
+      <header className="text-center mb-10">
+        <h1 className="text-4xl font-bold text-blue-600">AprendeTech Colombia</h1>
+        <p className="text-xl text-gray-700 mt-2">Asistente para el Diseño de Actividades Educativas</p>
+      </header>
 
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? "Generando propuesta..." : "Generar Propuesta"}
-              </Button>
-            </form>
-          </Form>
-        </CardContent>
-          {/* NUEVO: Contenedor para mostrar el resultado de la IA */}
-          <CardFooter className="p-6 pt-0">
-              <div id="resultadoIA" className="resultado-container w-full" aria-live="polite">
-                  {isLoading ? (
-                       <>
-                          <p>Generando propuesta con IA...</p>
-                          <div className="spinner"></div>
-                       </>
-                  ) : proposalHtml ? (
-                      // Render the HTML string safely
-                      <div dangerouslySetInnerHTML={{ __html: proposalHtml }} ref={proposalRef} />
-                  ) : (
-                      <p className="text-muted-foreground">La propuesta generada aparecerá aquí.</p>
-                  )}
-              </div>
-          </CardFooter>
+      <main className="w-full max-w-3xl bg-white p-8 rounded-lg shadow-xl">
+        <form onSubmit={handleGenerarPropuesta} className="space-y-6">
+          {/* Campo Tema */}
+          <div>
+            <label htmlFor="tema" className="block text-sm font-medium text-gray-700 mb-1">
+              1. Tema Central o Problema:
+            </label>
+            <input
+              type="text"
+              name="tema"
+              id="tema"
+              value={formData.tema}
+              onChange={handleInputChange}
+              required
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              placeholder="Ej: Introducción a HTML y CSS"
+            />
+          </div>
 
-      </Card>
-      <Toaster /> {/* Add Toaster component here */}
+          {/* Campo Nivel (Select) */}
+          <div>
+            <label htmlFor="nivel" className="block text-sm font-medium text-gray-700 mb-1">
+              2. Grado(s) Específico(s):
+            </label>
+            <select
+              name="nivel"
+              id="nivel"
+              value={formData.nivel}
+              onChange={handleInputChange}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            >
+              <option value="6">6°</option>
+              <option value="7">7°</option>
+              <option value="8">8°</option>
+              <option value="9">9°</option>
+              <option value="10">10°</option>
+              <option value="11">11°</option>
+            </select>
+          </div>
+
+          {/* Campo Objetivo */}
+          <div>
+            <label htmlFor="objetivo" className="block text-sm font-medium text-gray-700 mb-1">
+              3. Objetivo Principal de la Actividad:
+            </label>
+            <textarea
+              name="objetivo"
+              id="objetivo"
+              rows={3}
+              value={formData.objetivo}
+              onChange={handleInputChange}
+              required
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              placeholder="Ej: Que los estudiantes comprendan la estructura básica de una página web."
+            />
+          </div>
+          
+          {/* Campo Tiempo */}
+           <div>
+            <label htmlFor="tiempo" className="block text-sm font-medium text-gray-700 mb-1">
+              4. Tiempo Disponible:
+            </label>
+            <input
+              type="text"
+              name="tiempo"
+              id="tiempo"
+              value={formData.tiempo}
+              onChange={handleInputChange}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              placeholder="Ej: 90 minutos, 2 bloques de 45 min"
+            />
+          </div>
+
+          {/* Campo Recursos */}
+          <div>
+            <label htmlFor="recursos" className="block text-sm font-medium text-gray-700 mb-1">
+              5. Recursos Necesarios:
+            </label>
+            <textarea
+              name="recursos"
+              id="recursos"
+              rows={2}
+              value={formData.recursos}
+              onChange={handleInputChange}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              placeholder="Ej: Computadoras con acceso a internet, editor de código (VS Code, Sublime Text), proyector."
+            />
+          </div>
+
+
+          {/* Botón de Envío */}
+          <div className="pt-4">
+            <button
+              type="submit"
+              disabled={cargando}
+              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400"
+            >
+              {cargando ? (
+                <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div>
+              ) : (
+                'Generar Propuesta de Actividad'
+              )}
+            </button>
+          </div>
+
+          {/* Mensaje de Error */}
+          {error && <p className="text-sm text-red-600 mt-2 text-center">{error}</p>}
+        </form>
+
+        {/* Sección de Resultado */}
+        {(resultadoTexto && !cargando) && (
+          <section className="mt-10 p-6 border border-gray-200 rounded-lg bg-gray-50">
+            <h2 className="text-2xl font-semibold text-gray-800 mb-4">Propuesta Generada:</h2>
+            <pre className="whitespace-pre-wrap text-sm text-gray-700 p-4 bg-white border rounded-md overflow-x-auto">
+              {resultadoTexto}
+            </pre>
+          </section>
+        )}
+      </main>
+
+      <footer className="text-center mt-12 py-4 text-sm text-gray-500">
+        <p>© {new Date().getFullYear()} AprendeTech Colombia. Todos los derechos reservados.</p>
+      </footer>
     </div>
   );
 }
-

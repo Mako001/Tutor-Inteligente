@@ -1,42 +1,45 @@
+/* src/app/globals.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* Puedes añadir estilos globales adicionales aquí si es necesario */
 body {
-  font-family: 'Open Sans', sans-serif;
+  /* Ejemplo: mejor renderizado de fuentes */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
+/* Additional styles based on original globals.css for theme variables if needed */
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
+    --background: 0 0% 100%; /* White */
+    --foreground: 0 0% 3.9%; /* Almost Black */
     --card: 0 0% 100%;
     --card-foreground: 0 0% 3.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 3.9%;
-    --primary: 218 80% 48%; /* Indigo */
+    --primary: 218 80% 48%; /* Default Blue - can be adjusted */
     --primary-foreground: 0 0% 98%;
-    --secondary: 220 14.3% 95.9%; /* Light Gray */
+    --secondary: 0 0% 94.1%; /* Light Gray - adjusted from F0F0F0 */
     --secondary-foreground: 0 0% 9%;
-    --muted: 220 14.3% 95.9%;
-    --muted-foreground: 220 8.9% 46.1%;
-    --accent: 150 80% 50%; /* Emerald Green */
-    --accent-foreground: 0 0% 9%;
+    --muted: 0 0% 94.1%;
+    --muted-foreground: 0 0% 46.1%;
+    --accent: 145 63% 49%; /* Emerald Green - 50C878 */
+    --accent-foreground: 0 0% 98%; /* White for good contrast on green */
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 218 80% 48%;
+    --border: 0 0% 89.8%; /* Slightly darker gray for borders */
+    --input: 0 0% 89.8%;
+    --ring: 218 80% 48%; /* Default Blue */
     --radius: 0.5rem;
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* AprendeTech Specific Colors */
+    --aprende-white: 0 0% 100%;
+    --aprende-light-gray: 0 0% 94.1%; /* #F0F0F0 */
+    --aprende-emerald-green: 145 63% 49%; /* #50C878 */
   }
+
   .dark {
     --background: 0 0% 3.9%;
     --foreground: 0 0% 98%;
@@ -50,26 +53,18 @@ body {
     --secondary-foreground: 0 0% 98%;
     --muted: 0 0% 14.9%;
     --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
+    --accent: 145 63% 49%; /* Emerald Green for dark mode */
     --accent-foreground: 0 0% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
     --border: 0 0% 14.9%;
     --input: 0 0% 14.9%;
     --ring: 218 80% 48%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+
+     /* AprendeTech Specific Colors Dark */
+    --aprende-white: 0 0% 10%; /* Darker equivalent for white */
+    --aprende-light-gray: 0 0% 12%; /* Darker gray */
+    --aprende-emerald-green: 145 55% 55%; /* Adjusted green for dark */
   }
 }
 
@@ -78,126 +73,24 @@ body {
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    /* Use the theme variables or AprendeTech specific ones */
+    /* background-color: hsl(var(--aprende-white)); */
+    /* color: hsl(var(--foreground)); */
+    /* Using default theme background for body as per new layout.tsx */
+     @apply bg-background text-foreground;
   }
 }
 
-/* Form Styles */
-label {
-  @apply block text-sm font-medium text-foreground pb-2;
-}
-
-input,
-textarea,
-select {
-  @apply bg-background border border-input rounded-md text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 w-full py-2 px-3;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
-}
-
-textarea {
-  @apply resize-none;
-}
-
-button {
-  @apply inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 py-2 px-4 transition-colors transform-gpu hover:scale-105;
-  transition: background-color 0.3s ease, transform 0.1s ease;
-}
-
-button:hover {
-  @apply bg-primary/80;
-}
-
-button:active {
-  transform: scale(0.98);
-}
-
-/* Alert Styles */
-.alert {
-  @apply relative w-full rounded-md border p-4 text-sm;
-}
-
-.alert-title {
-  @apply text-lg font-semibold;
-}
-
-.alert-description {
-  @apply text-sm text-muted-foreground;
-}
-
-input:focus,
-textarea:focus,
-select:focus {
-  @apply border-primary shadow-md outline-none;
-  border-color: hsl(var(--primary));
-  box-shadow: 0 0 5px hsla(var(--primary), 0.5);
-  outline: none;
-}
-
-/* Responsive Design */
-.container {
-  display: flex;
-  flex-direction: column;
-  width: 90%;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.form-section { /* Keep if still used for structure */
-  width: 100%;
-  margin-bottom: 20px;
-}
-
-@media (min-width: 768px) {
-  .container {
-    flex-direction: row;
-    justify-content: space-between;
-  }
-
-  .form-section {
-    width: 55%;
-    margin-right: 5%;
-    margin-bottom: 0;
-  }
-}
-
-input,
-textarea,
-select {
-  width: 100%;
-  box-sizing: border-box;
-}
-
-/* NUEVO: Estilos para el contenedor del resultado */
-.resultado-container {
-  @apply mt-6 p-4 border border-border rounded-md bg-muted/50 min-h-[100px] whitespace-pre-wrap font-sans leading-relaxed;
-  /* margin-top: 30px; */
-  /* padding: 20px; */
-  /* border: 1px solid #e0e0e0; */ /* Replaced with Tailwind border */
-  /* border-radius: 8px; */ /* Replaced with Tailwind rounded-md */
-  /* background-color: #f8f9fa; */ /* Replaced with Tailwind bg-muted/50 */
-  /* min-height: 100px; */
-  /* white-space: pre-wrap; */ /* Keep this behavior */
-  /* font-family: sans-serif; */ /* Let Tailwind handle fonts or set explicitly */
-  /* line-height: 1.6; */ /* Replaced with Tailwind leading-relaxed */
-}
-
-/* Estilos para el spinner (si usas la clase .spinner) */
-.resultado-container .spinner {
-  border: 4px solid rgba(0, 0, 0, 0.1);
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border-left-color: hsl(var(--primary)); /* Use theme color */
-  animation: spin 1s ease infinite;
-  margin: 20px auto; /* Centrar el spinner */
+/* Spinner for loading states (as used in page.tsx) */
+.animate-spin {
+  animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-/* Estilos específicos para el mensaje de error dentro del contenedor */
-.resultado-container p[style*="color: red"] {
-    @apply font-semibold text-destructive; /* Use theme color */
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
