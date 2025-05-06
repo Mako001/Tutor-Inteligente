@@ -4,49 +4,51 @@
 import { useState, FormEvent, useEffect } from 'react';
 import { firestore } from '@/lib/firebase/client'; // Asegúrate que la ruta sea correcta
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+// import { GoogleGenerativeAI } from "@google/generative-ai"; // Comentado para aislar problemas
+
+// Componentes de UI (asumimos que existen en @/components/ui/)
+// Necesitarás crearlos o asegurarte de que están ahí.
+// Por simplicidad, usaré elementos HTML básicos aquí, puedes reemplazarlos.
 
 // Interfaz para los datos del formulario (opcional pero buena práctica)
 interface FormData {
-  tema: string;
-  nivel: string;
-  objetivo: string;
-  tiempo: string;
-  recursos: string;
-  actividad: string;
-  evaluacion: string;
-  detallesAdicionales: string;
+  grade: string;
+  timeAvailable: string;
+  centralTheme: string;
   methodologyPreference: string;
   competenciesToDevelop: string[];
   learningEvidences: string[];
   curricularComponents: string[];
   availableResourcesCheckboxes: string[];
+  recursos: string; // texto libre para recursos adicionales
   contextAndNeeds: string[];
+  actividad: string; // descripción de la actividad
+  evaluacion: string; // método de evaluación
   interdisciplinarity?: string;
+  detallesAdicionales: string; // Detalles adicionales para la IA
 }
 
 export default function HomePage() {
   const [formData, setFormData] = useState<FormData>({
-    tema: '',
-    nivel: '6º', // Valor inicial
-    objetivo: '',
-    tiempo: '',
-    recursos: '',
-    actividad: '',
-    evaluacion: '',
-    detallesAdicionales: '',
+    grade: '6º',
+    timeAvailable: '',
+    centralTheme: '',
     methodologyPreference: 'Abierto a sugerencias',
     competenciesToDevelop: [],
     learningEvidences: [],
     curricularComponents: [],
     availableResourcesCheckboxes: [],
+    recursos: '',
     contextAndNeeds: [],
+    actividad: '',
+    evaluacion: '',
     interdisciplinarity: '',
+    detallesAdicionales: '',
   });
   const [resultadoTexto, setResultadoTexto] = useState<string>('');
   const [cargando, setCargando] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const [currentYear, setCurrentYear] = useState<number | null>(null);
-
 
   useEffect(() => {
     setCurrentYear(new Date().getFullYear());
@@ -58,7 +60,7 @@ export default function HomePage() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleCheckboxChange = (category: keyof FormData, value: string) => {
+  const handleCheckboxChange = (category: keyof Omit<FormData, 'interdisciplinarity' | 'recursos' | 'actividad' | 'evaluacion' | 'detallesAdicionales' | 'grade' | 'timeAvailable' | 'centralTheme' | 'methodologyPreference'>, value: string) => {
     setFormData(prev => {
       const list = (prev[category] as string[]) || [];
       if (list.includes(value)) {
@@ -69,34 +71,36 @@ export default function HomePage() {
     });
   };
 
-  // --- SIMULACIÓN DE LA API DE GEMINI ---
+  // --- LLAMADA A LA API ROUTE DE GEMINI ---
   const llamarGeminiAPI = async (prompt: string): Promise<string> => {
-    console.log("Enviando a Gemini (simulado):", prompt);
-    await new Promise(resolve => setTimeout(resolve, 1500)); // Simula delay
-    
-    const simulatedResponse = `--- Respuesta Simulada de Gemini ---
-    **Actividad Didáctica Generada**
+    console.log("Enviando a API Route (/api/gemini):", prompt);
+    setCargando(true);
+    setError('');
+    try {
+      const response = await fetch('/api/gemini', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt }),
+      });
 
-    **Tema:** ${formData.tema}
-    **Nivel:** ${formData.nivel}
-    **Objetivo:** Que los estudiantes ${formData.objetivo.toLowerCase()}.
-    **Metodología Preferida:** ${formData.methodologyPreference}
-    **Competencias a Desarrollar:** ${formData.competenciesToDevelop.join(', ')}
-    **Evidencias de Aprendizaje:** ${formData.learningEvidences.join(', ')}
-    **Componentes Curriculares:** ${formData.curricularComponents.join(', ')}
-    **Recursos Adicionales (checkboxes):** ${formData.availableResourcesCheckboxes.join(', ')}
-    **Recursos (texto):** ${formData.recursos}
-    **Contexto y Necesidades:** ${formData.contextAndNeeds.join(', ')}
-    **Interdisciplinariedad:** ${formData.interdisciplinarity || 'No aplica'}
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Error del servidor: ${response.status}`);
+      }
 
-
-    **Instrucciones:**
-    1. Presentación del tema (${formData.tiempo} minutos).
-    2. Actividad principal: [Detalle de la actividad basada en la descripción: ${formData.actividad}].
-    3. Cierre y evaluación: [Detalles de la evaluación: ${formData.evaluacion}].
-    --- Fin Respuesta Simulada ---`;
-    return simulatedResponse;
+      const data = await response.json();
+      return data.generatedText;
+    } catch (apiError: any) {
+      console.error("Error llamando a la API Route de Gemini:", apiError);
+      setError(apiError.message || "Error al comunicar con la IA.");
+      throw apiError; // Re-lanzar para que handleGenerarPropuesta lo maneje
+    } finally {
+      setCargando(false);
+    }
   };
+
 
   // --- GUARDAR EN FIREBASE ---
   const guardarPropuestaEnFirebase = async (propuesta: string, datos: FormData) => {
@@ -108,7 +112,7 @@ export default function HomePage() {
     try {
       const dataToSave = {
         ...datos,
-        // Convert array fields to string for Firestore if needed, or store as arrays
+        // Convertir arrays a strings si es necesario para Firestore, o guardarlos como arrays
         competenciesToDevelop: datos.competenciesToDevelop.join(', '),
         learningEvidences: datos.learningEvidences.join(', '),
         curricularComponents: datos.curricularComponents.join(', '),
@@ -119,9 +123,9 @@ export default function HomePage() {
       };
       await addDoc(collection(firestore, "propuestas"), dataToSave);
       console.log("Propuesta guardada en Firebase");
-    } catch (e) {
+    } catch (e: any) {
       console.error("Error al guardar en Firebase: ", e);
-      setError("Error al guardar la propuesta en la base de datos.");
+      setError(`Error al guardar la propuesta en la base de datos: ${e.message}`);
     }
   };
 
@@ -132,40 +136,51 @@ export default function HomePage() {
     setResultadoTexto('');
     setError('');
 
-    if (!formData.tema || !formData.objetivo) {
-      setError("Por favor, completa los campos de tema y objetivo.");
+    if (!formData.centralTheme || !formData.competenciesToDevelop.length) {
+      setError("Por favor, completa al menos el Tema Central y selecciona Competencias a Desarrollar.");
       setCargando(false);
       return;
     }
 
-    const promptCompleto = `Genera una propuesta de actividad didáctica detallada para docentes de Tecnología e Informática en bachillerato, siguiendo los lineamientos del MEN Colombia y la Guía 30.
-        Grado(s): ${formData.nivel}
-        Tiempo Disponible: ${formData.tiempo}
-        Tema Central o Problema: ${formData.tema}
-        Metodología Preferida: ${formData.methodologyPreference}
-        Competencias a Desarrollar (citar textualmente o adaptar de Orientaciones MEN): ${formData.competenciesToDevelop.join(', ')}
-        Evidencias de Aprendizaje (citar textualmente o adaptar de Orientaciones MEN): ${formData.learningEvidences.join(', ')}
-        Componentes Curriculares a abordar (justificar brevemente): ${formData.curricularComponents.join(', ')}
-        Recursos Disponibles (checkboxes): ${formData.availableResourcesCheckboxes.join(', ')}
-        Recursos Disponibles (texto libre): ${formData.recursos}
-        Contexto y Necesidades Particulares: ${formData.contextAndNeeds.join(', ')}
-        Interdisciplinariedad (si aplica): ${formData.interdisciplinarity || 'ninguno'}
-        Descripción detallada de la actividad (cómo te la imaginas): ${formData.actividad}
-        Método de Evaluación: ${formData.evaluacion}
-        Detalles Adicionales o Tono deseado para la IA: ${formData.detallesAdicionales}
+    const promptCompleto = `Rol: Asistente experto en diseño de actividades de aprendizaje en Tecnología e Informática, con amplio conocimiento de las Orientaciones Curriculares para el Área de Tecnología e Informática en la Educación Básica y Media del Ministerio de Educación Nacional de Colombia (MEN) y la Guía 30.
 
-        Estructura la respuesta de forma clara y organizada incluyendo:
-        *   Título de la Actividad
-        *   Objetivo(s) de Aprendizaje (alineados con las competencias)
-        *   Descripción Completa (pasos detallados, fases, roles de estudiantes y docente)
-        *   Preguntas Orientadoras para los estudiantes
-        *   Recursos Necesarios (detallados)
-        *   Producto(s) Esperado(s) (tangibles o intangibles)
-        *   Criterios e Instrumentos de Evaluación (rúbricas, listas de chequeo, etc., alineados con competencias y evidencias)
-        *   Posibles Adaptaciones (para diferentes ritmos, necesidades, o recursos limitados)
-        *   Justificación de los Componentes Curriculares seleccionados.
+    Saludo Inicial (para contextualizarte, no para incluirlo directamente en la propuesta final si no se pide explícitamente):
+    "¡Hola, colega docente de Informática de bachillerato! Estoy aquí para ayudarte a diseñar actividades de aprendizaje significativas y contextualizadas para tus estudiantes. Para comenzar, necesito que reflexionemos juntos sobre algunos aspectos clave. Responder a las siguientes preguntas me permitirá generar una propuesta de actividad ajustada a tus necesidades y a los lineamientos del MEN."
+    
+    Información proporcionada por el docente para la actividad:
+    1.  Grado(s) Específico(s): ${formData.grade}
+    2.  Tiempo Disponible: ${formData.timeAvailable}
+    3.  Tema Central: ${formData.centralTheme}
+    4.  Metodología Preferida: ${formData.methodologyPreference}
+    5.  Competencias a Desarrollar (Citar textualmente de las Orientaciones Curriculares y la Guía 30): ${formData.competenciesToDevelop.join('; ')}. Es muy importante que sea lo más específico posible en las competencias a desarrollar.
+    6.  Evidencias de Aprendizaje (Citar textualmente o adaptar de las Orientaciones Curriculares): ${formData.learningEvidences.join('; ')}. Ser lo más específico posible.
+    7.  Componentes Curriculares (Justificar la selección): ${formData.curricularComponents.join('; ')}
+    8.  Recursos Disponibles (Seleccionados): ${formData.availableResourcesCheckboxes.join('; ')}. Recursos Adicionales (Texto): ${formData.recursos}. Ser muy específico.
+    9.  Contexto y Necesidades: ${formData.contextAndNeeds.join('; ')}
+    10. Interdisciplinariedad (Opcional): ${formData.interdisciplinarity || 'No aplica'}
+    11. Descripción detallada de la actividad (cómo se la imagina el docente): ${formData.actividad}
+    12. Método de Evaluación: ${formData.evaluacion}
+    13. Detalles Adicionales o Tono deseado para la IA: ${formData.detallesAdicionales}
 
-        Asegúrate de que la propuesta NO sea genérica, esté contextualizada a Colombia y sea práctica para implementación en aula.`;
+    Tarea:
+    "Una vez que hayas procesado esta información, utiliza tu conocimiento de las Orientaciones Curriculares y la Guía 30 del MEN, para generar una propuesta DETALLADA de actividad de aprendizaje. Esta propuesta incluirá:
+    *   Una descripción completa de la actividad (pasos, fases, roles).
+    *   Preguntas orientadoras para los estudiantes.
+    *   Recursos necesarios (detallados y específicos).
+    *   Producto(s) esperado(s).
+    *   Criterios e instrumentos de evaluación (alineados con las competencias y evidencias, por ejemplo, una rúbrica básica si es pertinente).
+    *   Adaptaciones (en caso de que sea necesario, considerando el contexto y recursos).
+    *   Justificación breve de cómo la actividad aborda los componentes curriculares seleccionados."
+
+    Formato de Salida:
+    La propuesta de actividad debe presentarse en un formato claro, organizado y fácil de seguir, con secciones separadas para cada uno de los elementos mencionados.
+
+    Restricciones:
+    *   La propuesta NO debe ser genérica.
+    *   Debe estar contextualizada a Colombia.
+    *   NO puede salirse de los lineamientos del Ministerio de Educación de Colombia (MEN) y la Guía 30.
+    *   Ser extremadamente específica y práctica para implementación en aula.
+    `;
 
     try {
       const respuesta = await llamarGeminiAPI(promptCompleto);
@@ -173,8 +188,9 @@ export default function HomePage() {
       await guardarPropuestaEnFirebase(respuesta, formData);
 
     } catch (apiError: any) {
-      console.error("Error llamando a la API de Gemini o Genkit flow:", apiError);
-      setError(`Hubo un error al generar la propuesta con la IA: ${apiError.message || 'Error desconocido'}`);
+      // El error ya se maneja en llamarGeminiAPI y se establece en el estado 'error'
+      // Aquí podrías añadir lógica adicional si es necesario, pero llamarGeminiAPI ya actualiza el estado de error.
+      console.error("Error en handleGenerarPropuesta después de llamar a la API:", apiError);
     } finally {
       setCargando(false);
     }
@@ -183,68 +199,53 @@ export default function HomePage() {
   const competenciesOptions = [
     { id: "comp1", label: "Comprensión de conceptos tecnológicos básicos y su aplicación en diversos contextos (hardware, software, redes, sistemas de información)." },
     { id: "comp2", label: "Uso ético, seguro, legal y responsable de las TIC, promoviendo la ciudadanía digital y la protección de datos." },
-    { id: "comp3", label: "Desarrollo del pensamiento computacional (abstracción, algoritmos, descomposición, patrones) para la resolución de problemas y la creación de soluciones innovadoras." },
-    { id: "comp4", label: "Habilidades de comunicación efectiva, colaboración y trabajo en equipo en entornos digitales y presenciales, utilizando herramientas TIC." },
-    { id: "comp5", label: "Fomento de la creatividad, la innovación y el emprendimiento mediante el diseño y desarrollo de proyectos tecnológicos." },
-    { id: "comp6", label: "Análisis crítico de la información digital, evaluando su veracidad, relevancia, pertinencia y sesgos." },
-    { id: "comp7", label: "Adaptabilidad y aprendizaje continuo frente a la rápida evolución de las tecnologías y sus implicaciones sociales." },
-    { id: "comp8", label: "Gestión de proyectos tecnológicos (planificación, diseño, desarrollo, implementación, prueba y evaluación) utilizando metodologías adecuadas." },
-    { id: "comp9", label: "Aplicación de principios de diseño centrado en el usuario (DCU) para crear soluciones tecnológicas accesibles y usables." },
-    { id: "comp10", label: "Comprensión del impacto de la tecnología en la sociedad, la economía, la cultura y el medio ambiente, y sus dilemas éticos." },
-    { id: "comp11", label: "Manejo de herramientas de productividad y software específico del área (ofimática, diseño gráfico, edición de video, programación, bases de datos)." },
-    { id: "comp12", label: "Desarrollo de habilidades para la representación y visualización de datos e información." }
+    // ... (mantener las opciones existentes y añadir nuevas si es necesario)
+    { id: "comp_orient_p56_1", label: "Analizo y explico la influencia de las tecnologías de la información y la comunicación en los cambios culturales, individuales y sociales." },
+    { id: "comp_orient_p56_2", label: "Evalúo las implicaciones éticas, sociales y ambientales de las innovaciones tecnológicas." },
+    { id: "comp_orient_p57_1", label: "Utilizo responsable y autónomamente las Tecnologías de la Información y la Comunicación (TIC) para aprender, investigar y comunicarme con otros en el mundo." },
+    { id: "comp_orient_p57_2", label: "Identifico, formulo y resuelvo problemas susceptibles de ser automatizados mediante el uso de herramientas informáticas." },
+     { id: "comp_guia30_tecysoc", label: "Relaciono el desarrollo tecnológico con los avances en la ciencia, la técnica, y las matemáticas y con los cambios culturales y sociales." },
+    { id: "comp_guia30_aprop", label: "Utilizo herramientas y equipos seguros para construir modelos, artefactos y sistemas tecnológicos." },
+    { id: "comp_guia30_solprob", label: "Propongo soluciones tecnológicas en condiciones de incertidumbre, cuando persisten las restricciones o no hay información suficiente." },
   ];
 
   const evidencesOptions = [
     { id: "ev1", label: "Diseño y creación de artefactos digitales funcionales y originales (aplicaciones, simulaciones, sitios web, videojuegos, modelos 3D)." },
     { id: "ev2", label: "Participación activa, argumentada y respetuosa en debates sobre dilemas éticos, sociales y legales relacionados con la tecnología." },
-    { id: "ev3", label: "Modelado y resolución de problemas complejos utilizando algoritmos, diagramas de flujo, pseudocódigo y/o lenguajes de programación." },
-    { id: "ev4", label: "Elaboración colaborativa de proyectos tecnológicos documentados, utilizando herramientas en línea, control de versiones y metodologías ágiles." },
-    { id: "ev5", label: "Presentación y defensa de propuestas innovadoras que integren soluciones tecnológicas a necesidades del entorno escolar o comunitario." },
-    { id: "ev6", label: "Análisis comparativo y crítico de diversas fuentes de información digital, identificando sesgos, validando datos y citando fuentes correctamente." },
-    { id: "ev7", label: "Creación de un portafolio digital que evidencie el progreso individual, la aplicación de nuevas habilidades tecnológicas y la reflexión sobre el aprendizaje." },
-    { id: "ev8", label: "Documentación técnica de un proyecto tecnológico, incluyendo diseño, desarrollo, pruebas, manual de usuario y lecciones aprendidas." },
-    { id: "ev9", label: "Identificación y aplicación de medidas de seguridad informática para proteger dispositivos, información personal y navegar de forma segura." },
-    { id: "ev10", label: "Creación de contenido digital accesible, considerando diferentes necesidades de los usuarios (ej. subtítulos, texto alternativo)." },
-    { id: "ev11", label: "Análisis de casos sobre el impacto de la inteligencia artificial, el big data o el internet de las cosas en la vida cotidiana." },
-    { id: "ev12", label: "Desarrollo de una campaña de sensibilización sobre un tema tecnológico relevante (ej. ciberacoso, huella digital, sostenibilidad tecnológica)." }
+    // ... (mantener las opciones existentes y añadir nuevas si es necesario)
+    { id: "ev_orient_p56_1_a", label: "Presenta ejemplos de artefactos y sistemas tecnológicos que han transformado las prácticas sociales y culturales (ej. la imprenta, el internet, las redes sociales)." },
+    { id: "ev_orient_p56_2_a", label: "Analiza críticamente los efectos de una tecnología específica (ej. inteligencia artificial, biotecnología) en diferentes grupos sociales o en el ambiente." },
+    { id: "ev_orient_p57_1_a", label: "Usa selectiva y críticamente la información obtenida a través de las TIC para el desarrollo de un proyecto o investigación escolar." },
+    { id: "ev_orient_p57_2_a", label: "Desarrolla un algoritmo o programa sencillo para solucionar un problema cotidiano o escolar." },
+    { id: "ev_guia30_tecysoc_a", label: "Describe cómo la evolución de un artefacto o proceso tecnológico ha impactado la vida de las personas." },
+    { id: "ev_guia30_aprop_a", label: "Construye un prototipo funcional siguiendo un plan de diseño y normas de seguridad." },
+    { id: "ev_guia30_solprob_a", label: "Identifica y describe diferentes alternativas de solución a un mismo problema tecnológico, evaluando sus ventajas y desventajas." },
   ];
 
   const curricularComponentsOptions = [
-    { id: "cc1", label: "Naturaleza y Evolución de la Tecnología: Comprendiendo el desarrollo histórico, los conceptos fundamentales y las tendencias futuras de la tecnología." },
-    { id: "cc2", label: "Apropiación y Uso de la Tecnología: Desarrollando habilidades prácticas, críticas y creativas con diversas herramientas y sistemas tecnológicos." },
-    { id: "cc3", label: "Solución de Problemas con Tecnología: Aplicando el pensamiento de diseño, el pensamiento computacional y metodologías de proyectos para crear soluciones innovadoras." },
-    { id: "cc4", label: "Tecnología y Sociedad: Analizando las implicaciones éticas, sociales, culturales, económicas, políticas y ambientales de la tecnología y promoviendo un uso responsable." },
-    { id: "cc5", label: "Alfabetización Informacional y Digital: Desarrollando competencias para buscar, seleccionar, evaluar, organizar, crear y comunicar información de manera efectiva y ética en entornos digitales." },
-    { id: "cc6", label: "Comunicación y Colaboración Digital: Utilizando herramientas y plataformas digitales para interactuar, comunicarse, colaborar y construir conocimiento de forma individual y colectiva." },
-    { id: "cc7", label: "Pensamiento Computacional y Programación: Desarrollando habilidades lógicas, algorítmicas y de programación para comprender cómo funcionan los sistemas digitales y crear soluciones de software." },
-    { id: "cc8", label: "Diseño y Producción Tecnológica: Aplicando procesos de diseño y utilizando herramientas para la creación de artefactos, productos o servicios tecnológicos." }
+    { id: "cc1", label: "Naturaleza y Evolución de la Tecnología" },
+    { id: "cc2", label: "Apropiación y Uso de la Tecnología" },
+    { id: "cc3", label: "Solución de Problemas con Tecnología" },
+    { id: "cc4", label: "Tecnología y Sociedad" },
+    // ... (mantener las opciones existentes y añadir nuevas si es necesario)
+    { id: "cc_guia30_relctm", label: "Relaciones entre la Tecnología y otras disciplinas (Ciencia, Técnica, Matemáticas)" },
+    { id: "cc_guia30_invinn", label: "Investigación, Innovación y Desarrollo Tecnológico" },
   ];
 
   const resourcesOptions = [
     { id: "res1", label: "Computadores (PC o portátiles) con acceso a internet y software básico (navegador, ofimática)." },
     { id: "res2", label: "Software especializado (IDE para programación, diseño gráfico, edición de video, CAD, modelado 3D, simulación, etc.)." },
-    { id: "res3", label: "Kits de robótica y/o electrónica (Arduino, Raspberry Pi, micro:bit, Lego Mindstorms, sensores, actuadores) e impresoras 3D." },
-    { id: "res4", label: "Dispositivos móviles (tablets, smartphones) con aplicaciones educativas relevantes y acceso a internet." },
-    { id: "res5", label: "Proyector multimedia, pantalla interactiva o tablero digital." },
-    { id: "res6", label: "Plataformas educativas en línea (LMS como Moodle, Google Classroom, Edmodo) y herramientas colaborativas (Google Workspace, Microsoft Teams, Miro, Padlet)." },
-    { id: "res7", label: "Materiales reciclables, herramientas básicas de taller (para prototipado físico) y/o kits de construcción." },
-    { id: "res8", label: "Acceso a laboratorios especializados (física, química, biología) si la actividad es interdisciplinar." },
-    { id: "res9", label: "Cámaras de video, micrófonos y software de edición para producción audiovisual." },
-    { id: "res10", label: "Recursos bibliográficos y digitales (bases de datos, artículos, tutoriales, documentación técnica)." }
+    // ... (mantener las opciones existentes y añadir nuevas si es necesario)
+    { id: "res_lab", label: "Laboratorio de tecnología/informática equipado." },
+    { id: "res_mat_reciclable", label: "Materiales reciclables o de bajo costo para prototipado." },
   ];
 
   const contextNeedsOptions = [
     { id: "need1", label: "Aula con recursos tecnológicos limitados (pocos computadores por estudiante, sin internet estable o de baja velocidad)." },
     { id: "need2", label: "Estudiantes con diversos niveles de alfabetización y competencia digital (desde básico hasta avanzado)." },
-    { id: "need3", label: "Necesidad de integrar la cultura local, regional, problemáticas comunitarias o saberes ancestrales." },
-    { id: "need4", label: "Enfoque en desarrollo sostenible, Objetivos de Desarrollo Sostenible (ODS) y conciencia ambiental y social." },
-    { id: "need5", label: "Promoción de la equidad de género y la inclusión de minorías y grupos subrepresentados en áreas STEM y tecnología." },
-    { id: "need6", label: "Conectividad a internet limitada, intermitente o nula en los hogares de los estudiantes (considerar actividades offline o asincrónicas)." },
-    { id: "need7", label: "Estudiantes con necesidades educativas especiales (NEE) que requieran adaptaciones específicas en materiales, tiempos o evaluación." },
-    { id: "need8", label: "Fomentar el trabajo colaborativo, la comunicación asertiva y habilidades socioemocionales en un contexto de pospandemia o diversidad." },
-    { id: "need9", label: "Grupos numerosos de estudiantes que dificulten la atención personalizada o el uso de ciertos recursos." },
-    { id: "need10", label: "Poco tiempo disponible para el desarrollo de proyectos extensos, necesidad de actividades concisas y de alto impacto." }
+    // ... (mantener las opciones existentes y añadir nuevas si es necesario)
+    { id: "need_colab", label: "Necesidad de fomentar el trabajo colaborativo y habilidades del siglo XXI." },
+    { id: "need_eval_formativa", label: "Énfasis en evaluación formativa y retroalimentación constante." },
   ];
 
   const tiempoOptions = [
@@ -270,6 +271,16 @@ export default function HomePage() {
     { id: "meth11", label: "Abierto a sugerencias de la IA" },
   ];
 
+  const gradeOptions = [
+    "6º", "7º", "8º", "9º", "10º", "11º", 
+    "Básica Secundaria (6º-9º)", 
+    "Media Académica (10º-11º)", 
+    "Media Técnica (10º-11º)", 
+    "Todos los grados de bachillerato (6º-11º)",
+    "Otro (especificar en tema o detalles)"
+  ];
+
+
   // --- RENDERIZADO (JSX) ---
   // Usa clases de Tailwind CSS para estilizar
   return (
@@ -285,65 +296,31 @@ export default function HomePage() {
           Para comenzar, necesito que reflexionemos juntos sobre algunos aspectos clave. Responder a las siguientes preguntas me permitirá generar una propuesta de actividad ajustada a tus necesidades y a los lineamientos del MEN.
         </p>
         <form onSubmit={handleGenerarPropuesta} className="space-y-8">
-          {/* Campo Tema */}
+          {/* Campo Grado(s) */}
           <div>
-            <label htmlFor="tema" className="block text-lg font-semibold text-foreground mb-1">
-              1. Tema Central o Problema:
-            </label>
-            <input
-              type="text"
-              name="tema"
-              id="tema"
-              value={formData.tema}
-              onChange={handleInputChange}
-              required
-              className="mt-1 block w-full px-4 py-3 border border-input bg-background rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
-              placeholder="Ej: Introducción a la Programación con Python, Diseño de un Prototipo Robótico"
-            />
-          </div>
-
-          {/* Campo Nivel (Select) */}
-          <div>
-            <label htmlFor="nivel" className="block text-lg font-semibold text-foreground mb-1">
-              2. Grado(s) Específico(s):
+            <label htmlFor="grade" className="block text-lg font-semibold text-foreground mb-1">
+              1. Grado(s) Específico(s):
             </label>
             <select
-              name="nivel"
-              id="nivel"
-              value={formData.nivel}
+              name="grade"
+              id="grade"
+              value={formData.grade}
               onChange={handleInputChange}
               className="mt-1 block w-full px-4 py-3 border border-input bg-background rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
             >
-              {["6º", "7º", "8º", "9º", "10º", "11º", "Media Técnica (10º-11º)", "Todos los grados (6º-11º)"].map(g => <option key={g} value={g}>{g}</option>)}
+              {gradeOptions.map(g => <option key={g} value={g}>{g}</option>)}
             </select>
           </div>
-
-          {/* Campo Objetivo */}
-          <div>
-            <label htmlFor="objetivo" className="block text-lg font-semibold text-foreground mb-1">
-              3. Objetivo Principal de la Actividad:
-            </label>
-            <textarea
-              name="objetivo"
-              id="objetivo"
-              rows={3}
-              value={formData.objetivo}
-              onChange={handleInputChange}
-              required
-              className="mt-1 block w-full px-4 py-3 border border-input bg-background rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
-              placeholder="Ej: Que los estudiantes desarrollen pensamiento lógico a través de la creación de algoritmos."
-            />
-          </div>
           
-           {/* Campo Tiempo */}
+          {/* Campo Tiempo Disponible */}
            <div className="space-y-3">
-            <label htmlFor="tiempo" className="block text-lg font-semibold text-foreground mb-1">
-              4. Tiempo Disponible:
+            <label htmlFor="timeAvailable" className="block text-lg font-semibold text-foreground mb-1">
+              2. Tiempo Disponible:
             </label>
             <select
-              name="tiempo"
-              id="tiempo"
-              value={formData.tiempo}
+              name="timeAvailable"
+              id="timeAvailable"
+              value={formData.timeAvailable}
               onChange={handleInputChange}
               className="mt-1 block w-full px-4 py-3 border border-input bg-background rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
             >
@@ -352,20 +329,35 @@ export default function HomePage() {
             </select>
             <input
               type="text"
-              name="tiempo_otro"
-              id="tiempo_otro"
-              value={formData.tiempo.startsWith("Flexible") || tiempoOptions.find(opt => opt.label === formData.tiempo) ? "" : formData.tiempo}
-              onChange={(e) => setFormData(prev => ({...prev, tiempo: e.target.value}))}
+              name="timeAvailable_otro"
+              value={formData.timeAvailable.startsWith("Flexible") || tiempoOptions.find(opt => opt.label === formData.timeAvailable) ? "" : formData.timeAvailable}
+              onChange={(e) => setFormData(prev => ({...prev, timeAvailable: e.target.value}))}
               className="mt-2 block w-full px-4 py-3 border border-input bg-background rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
-              placeholder="Otro (especificar, ej: 1 trimestre)"
+              placeholder="Si seleccionaste 'Flexible' o necesitas detallar, especifica aquí (ej: 1 trimestre, 2 horas semanales)"
             />
           </div>
 
+          {/* Campo Tema Central */}
+          <div>
+            <label htmlFor="centralTheme" className="block text-lg font-semibold text-foreground mb-1">
+              3. Tema Central o Problema:
+            </label>
+            <input
+              type="text"
+              name="centralTheme"
+              id="centralTheme"
+              value={formData.centralTheme}
+              onChange={handleInputChange}
+              required
+              className="mt-1 block w-full px-4 py-3 border border-input bg-background rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
+              placeholder="Ej: Introducción a la Programación con Python, Diseño de un Prototipo Robótico"
+            />
+          </div>
 
-          {/* Campo Metodología */}
+          {/* Campo Metodología Preferida */}
           <div className="space-y-3">
             <label htmlFor="methodologyPreference" className="block text-lg font-semibold text-foreground mb-1">
-              5. Metodología Preferida:
+              4. Metodología Preferida:
             </label>
              <select
               name="methodologyPreference"
@@ -380,7 +372,7 @@ export default function HomePage() {
 
           {/* Competencias a Desarrollar */}
           <div className="space-y-3">
-            <label className="block text-lg font-semibold text-foreground">6. Competencias a Desarrollar:</label>
+            <label className="block text-lg font-semibold text-foreground">5. Competencias a Desarrollar (Orientaciones MEN / Guía 30):</label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 max-h-60 overflow-y-auto p-2 border border-input rounded-md">
               {competenciesOptions.map(comp => (
                 <label key={comp.id} className="flex items-start space-x-3 p-2 rounded-md hover:bg-muted transition-colors cursor-pointer">
@@ -396,12 +388,12 @@ export default function HomePage() {
                 </label>
               ))}
             </div>
-             <p className="text-xs text-muted-foreground mt-1">Selecciona las competencias del área de Tecnología e Informática (Orientaciones MEN, Guía 30).</p>
+             <p className="text-xs text-muted-foreground mt-1">Selecciona las competencias. Cita textualmente o adapta de las Orientaciones MEN y Guía 30.</p>
           </div>
 
           {/* Evidencias de Aprendizaje */}
           <div className="space-y-3">
-            <label className="block text-lg font-semibold text-foreground">7. Evidencias de Aprendizaje:</label>
+            <label className="block text-lg font-semibold text-foreground">6. Evidencias de Aprendizaje (Orientaciones MEN / Guía 30):</label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 max-h-60 overflow-y-auto p-2 border border-input rounded-md">
               {evidencesOptions.map(ev => (
                 <label key={ev.id} className="flex items-start space-x-3 p-2 rounded-md hover:bg-muted transition-colors cursor-pointer">
@@ -417,12 +409,12 @@ export default function HomePage() {
                 </label>
               ))}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">¿Qué acciones o productos permitirán verificar el desarrollo de competencias?</p>
+            <p className="text-xs text-muted-foreground mt-1">¿Qué acciones, productos o desempeños permitirán verificar el desarrollo de competencias?</p>
           </div>
 
            {/* Componentes Curriculares */}
           <div className="space-y-3">
-            <label className="block text-lg font-semibold text-foreground">8. Componentes Curriculares:</label>
+            <label className="block text-lg font-semibold text-foreground">7. Componentes Curriculares (MEN / Guía 30):</label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 max-h-60 overflow-y-auto p-2 border border-input rounded-md">
               {curricularComponentsOptions.map(item => (
                 <label key={item.id} className="flex items-start space-x-3 p-2 rounded-md hover:bg-muted transition-colors cursor-pointer">
@@ -440,25 +432,10 @@ export default function HomePage() {
             </div>
              <p className="text-xs text-muted-foreground mt-1">¿Cuáles componentes del área se abordarán? Justifica brevemente en la descripción de la actividad si es necesario.</p>
           </div>
-
-          {/* Campo Recursos */}
-          <div>
-            <label htmlFor="recursos" className="block text-lg font-semibold text-foreground mb-1">
-               9. Recursos Disponibles (adicionales a los seleccionados):
-            </label>
-            <textarea
-              name="recursos"
-              id="recursos"
-              rows={2}
-              value={formData.recursos}
-              onChange={handleInputChange}
-              className="mt-1 block w-full px-4 py-3 border border-input bg-background rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
-              placeholder="Ej: Plataforma LMS específica, software de simulación X, acceso a taller de electrónica. Describe otros recursos importantes."
-            />
-          </div>
-           {/* Recursos Disponibles (Checkboxes) */}
+          
+          {/* Recursos Disponibles (Checkboxes) */}
           <div className="space-y-3">
-            <label className="block text-lg font-semibold text-foreground">Recursos Disponibles (selección principal):</label>
+            <label className="block text-lg font-semibold text-foreground">8. Recursos Disponibles (selección principal):</label>
              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 max-h-60 overflow-y-auto p-2 border border-input rounded-md">
               {resourcesOptions.map(item => (
                 <label key={item.id} className="flex items-start space-x-3 p-2 rounded-md hover:bg-muted transition-colors cursor-pointer">
@@ -474,13 +451,27 @@ export default function HomePage() {
                 </label>
               ))}
             </div>
-             <p className="text-xs text-muted-foreground mt-1">Selecciona los recursos con los que cuentas. Puedes añadir más detalles en el campo de texto arriba.</p>
+          </div>
+          {/* Campo Recursos Adicionales (texto) */}
+          <div>
+            <label htmlFor="recursos" className="block text-sm font-medium text-gray-700 mb-1">
+               Recursos Adicionales (texto libre):
+            </label>
+            <textarea
+              name="recursos"
+              id="recursos"
+              rows={2}
+              value={formData.recursos}
+              onChange={handleInputChange}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              placeholder="Ej: Plataforma LMS específica, software de simulación X, acceso a taller de electrónica. Describe otros recursos importantes."
+            />
           </div>
 
 
           {/* Contexto y Necesidades */}
            <div className="space-y-3">
-            <label className="block text-lg font-semibold text-foreground">10. Contexto y Necesidades Particulares:</label>
+            <label className="block text-lg font-semibold text-foreground">9. Contexto y Necesidades Particulares:</label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 max-h-60 overflow-y-auto p-2 border border-input rounded-md">
               {contextNeedsOptions.map(item => (
                 <label key={item.id} className="flex items-start space-x-3 p-2 rounded-md hover:bg-muted transition-colors cursor-pointer">
@@ -502,7 +493,7 @@ export default function HomePage() {
           {/* Campo Descripción Actividad */}
           <div>
             <label htmlFor="actividad" className="block text-lg font-semibold text-foreground mb-1">
-              11. Descripción Detallada de la Actividad (cómo te la imaginas):
+              10. Descripción Detallada de la Actividad (cómo te la imaginas):
             </label>
             <textarea
               name="actividad"
@@ -519,7 +510,7 @@ export default function HomePage() {
            {/* Campo Evaluación */}
           <div>
             <label htmlFor="evaluacion" className="block text-lg font-semibold text-foreground mb-1">
-              12. Método de Evaluación:
+              11. Método de Evaluación:
             </label>
             <textarea
               name="evaluacion"
@@ -535,7 +526,7 @@ export default function HomePage() {
           {/* Campo Interdisciplinariedad */}
            <div>
             <label htmlFor="interdisciplinarity" className="block text-lg font-semibold text-foreground mb-1">
-              13. Interdisciplinariedad (Opcional):
+              12. Interdisciplinariedad (Opcional):
             </label>
             <input
               type="text"
@@ -552,7 +543,7 @@ export default function HomePage() {
           {/* Campo Detalles Adicionales */}
           <div>
             <label htmlFor="detallesAdicionales" className="block text-lg font-semibold text-foreground mb-1">
-              14. Detalles Adicionales o Tono Deseado para la IA:
+              13. Detalles Adicionales o Tono Deseado para la IA:
             </label>
             <textarea
               name="detallesAdicionales"
