@@ -3,41 +3,33 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Puedes añadir estilos globales adicionales aquí si es necesario */
-body {
-  /* Ejemplo: mejor renderizado de fuentes */
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-/* Additional styles based on original globals.css for theme variables if needed */
 @layer base {
   :root {
     --background: 0 0% 100%; /* White */
-    --foreground: 0 0% 3.9%; /* Almost Black */
+    --foreground: 0 0% 3.9%; /* Almost Black for text */
     --card: 0 0% 100%;
     --card-foreground: 0 0% 3.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 3.9%;
-    --primary: 218 80% 48%; /* Default Blue - can be adjusted */
+    --primary: 218 80% 48%; /* Default Blue - can be adjusted if AprendeTech has a specific primary */
     --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 94.1%; /* Light Gray - adjusted from F0F0F0 */
-    --secondary-foreground: 0 0% 9%;
+    --secondary: 0 0% 94.1%; /* Light Gray #F0F0F0 - for secondary backgrounds */
+    --secondary-foreground: 0 0% 9%; /* Dark text on light gray */
     --muted: 0 0% 94.1%;
     --muted-foreground: 0 0% 46.1%;
-    --accent: 145 63% 49%; /* Emerald Green - 50C878 */
+    --accent: 145 63% 49%; /* Emerald Green #50C878 - for accents */
     --accent-foreground: 0 0% 98%; /* White for good contrast on green */
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
     --border: 0 0% 89.8%; /* Slightly darker gray for borders */
     --input: 0 0% 89.8%;
-    --ring: 218 80% 48%; /* Default Blue */
+    --ring: 218 80% 48%; /* Default Blue for focus rings */
     --radius: 0.5rem;
 
-    /* AprendeTech Specific Colors */
-    --aprende-white: 0 0% 100%;
-    --aprende-light-gray: 0 0% 94.1%; /* #F0F0F0 */
-    --aprende-emerald-green: 145 63% 49%; /* #50C878 */
+    /* AprendeTech Specific Aliases (already mapped to above for consistency) */
+    --aprende-white: var(--background); /* Using theme's background for white */
+    --aprende-light-gray: var(--secondary); /* Using theme's secondary for light gray */
+    --aprende-emerald-green: var(--accent); /* Using theme's accent for emerald green */
   }
 
   .dark {
@@ -61,7 +53,7 @@ body {
     --input: 0 0% 14.9%;
     --ring: 218 80% 48%;
 
-     /* AprendeTech Specific Colors Dark */
+     /* AprendeTech Specific Colors Dark Aliases */
     --aprende-white: 0 0% 10%; /* Darker equivalent for white */
     --aprende-light-gray: 0 0% 12%; /* Darker gray */
     --aprende-emerald-green: 145 55% 55%; /* Adjusted green for dark */
@@ -73,11 +65,10 @@ body {
     @apply border-border;
   }
   body {
-    /* Use the theme variables or AprendeTech specific ones */
-    /* background-color: hsl(var(--aprende-white)); */
-    /* color: hsl(var(--foreground)); */
-    /* Using default theme background for body as per new layout.tsx */
-     @apply bg-background text-foreground;
+    /* Default body background and text color are now applied via Tailwind classes in layout.tsx */
+    /* e.g., bg-secondary text-foreground */
+    /* The 'antialiased' class in layout.tsx handles font smoothing. */
+    @apply bg-background text-foreground; /* Default fallback, layout.tsx specific classes will take precedence */
   }
 }
 
