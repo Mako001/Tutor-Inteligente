@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -23,30 +23,39 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { generateActivityProposal } from "@/ai/flows/generate-activity-proposal";
 import { useToast } from "@/hooks/use-toast";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+// Remove unused imports for download functionality
+// import {
+//   AlertDialog,
+//   AlertDialogAction,
+//   AlertDialogCancel,
+//   AlertDialogContent,
+//   AlertDialogDescription,
+//   AlertDialogFooter,
+//   AlertDialogHeader,
+//   AlertDialogTitle,
+//   AlertDialogTrigger,
+// } from "@/components/ui/alert-dialog";
+// import {
+//   Select,
+//   SelectContent,
+//   SelectItem,
+//   SelectTrigger,
+//   SelectValue,
+// } from "@/components/ui/select";
+// import { saveAs } from 'file-saver';
+// import * as docx from 'docx'; // Removed - DOCX generation logic deleted
+
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Edit } from "lucide-react";
+import { Toaster } from "@/components/ui/toaster"; // Import Toaster
+
+// Firebase Firestore imports - Assuming you might use them later
+import { firestore } from '@/lib/firebase/client'; // Correct import path
+import { collection, addDoc, getDocs } from 'firebase/firestore';
+
 
 const initialGreeting =
   "¡Hola, colega docente de Informática de bachillerato! Estoy aquí para ayudarte a diseñar actividades de aprendizaje significativas y contextualizadas para tus estudiantes. Para comenzar, necesito que reflexionemos juntos sobre algunos aspectos clave. Responder a las siguientes preguntas me permitirá generar una propuesta de actividad ajustada a tus necesidades y a los lineamientos del MEN.";
@@ -221,9 +230,9 @@ export default function Home() {
   const [proposal, setProposal] = useState<string | null>(null);
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const proposalRef = useRef<HTMLDivElement>(null);
-  const [fileType, setFileType] = useState<'html'>('html');
-  const [isEditing, setIsEditing] = useState(false);
+  const resultadoRef = useRef<HTMLDivElement>(null); // Renamed from proposalRef
+  // const [fileType, setFileType] = useState<'html' | 'pdf' | 'docx'>('html'); // Removed fileType state
+  // const [isEditing, setIsEditing] = useState(false); // Removed isEditing state
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -241,26 +250,82 @@ export default function Home() {
     },
   });
 
+  // --- Simulación de llamada a Gemini (Puedes reemplazar con tu lógica real) ---
+  async function llamarGeminiAPI(promptCompleto: string): Promise<string> {
+    console.log("Enviando a Gemini (simulado):", promptCompleto);
+    // Aquí iría tu fetch real a la API de Gemini
+    // Ejemplo: const response = await fetch('/api/gemini', { method: 'POST', body: JSON.stringify({ prompt: promptCompleto }) });
+    // const data = await response.json();
+    // return data.text; // O como sea que Gemini te devuelva el texto
+
+    // Simulación con demora:
+    return new Promise(resolve => {
+        setTimeout(() => {
+            // Accede a los valores del formulario usando form.getValues() dentro de la simulación si es necesario
+            const formValues = form.getValues();
+            resolve(`--- Respuesta Simulada de Gemini ---
+            **Actividad Didáctica Generada**
+
+            **Tema:** ${formValues.centralTheme}
+            **Nivel:** ${formValues.grade.join(', ')}
+            **Objetivo:** Que los estudiantes desarrollen competencias en ${formValues.competenciesToDevelop.join(', ')}.
+
+            **Instrucciones:**
+            1. Presentación del tema (${formValues.timeAvailable}).
+            2. Actividad principal: [Detalle de la actividad basada en la descripción, usando los recursos: ${formValues.availableResources.join(', ')} y considerando ${formValues.contextAndNeeds.join(', ')}].
+            3. Cierre y evaluación con base en ${formValues.learningEvidences.join(', ')}.
+
+            **Recursos:** ${formValues.availableResources.join(', ')}
+            **Evaluación:** Evidencias: ${formValues.learningEvidences.join(', ')}
+            --- Fin Respuesta Simulada ---`);
+        }, 1500); // Simula 1.5 segundos de espera
+    });
+  }
+
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
+    setProposal(null); // Clear previous proposal
+    if (resultadoRef.current) {
+      resultadoRef.current.innerHTML = '<p>Generando propuesta con IA...</p><div class="spinner"></div>'; // Show loading in the result div
+    }
+
     try {
-      const aiResponse = await generateActivityProposal({
-        ...values,
-        grade: values.grade.join(", "),
-        methodologyPreference: values.methodologyPreference.join(", "),
-        competenciesToDevelop: values.competenciesToDevelop.join(", "),
-        learningEvidences: values.learningEvidences.join(", "),
-        curricularComponents: values.curricularComponents.join(", "),
-        availableResources: values.availableResources.join(", "),
-        contextAndNeeds: values.contextAndNeeds.join(", "),
-      });
-      setProposal(aiResponse?.activityProposal ?? "No se pudo generar la propuesta.");
+      const promptCompleto = `Genera una propuesta de actividad didáctica detallada para docentes.
+        Tema: ${values.centralTheme}
+        Grado(s): ${values.grade.join(", ")}
+        Tiempo Disponible: ${values.timeAvailable}
+        Metodología Preferida: ${values.methodologyPreference.join(", ")}
+        Competencias a Desarrollar: ${values.competenciesToDevelop.join(", ")}
+        Evidencias de Aprendizaje: ${values.learningEvidences.join(", ")}
+        Componentes Curriculares: ${values.curricularComponents.join(", ")}
+        Recursos Disponibles: ${values.availableResources.join(", ")}
+        Contexto y Necesidades: ${values.contextAndNeeds.join(", ")}
+        Interdisciplinariedad: ${values.interdisciplinarity || 'No especificada'}
+
+        Estructura la respuesta claramente con secciones como Título, Objetivo, Descripción paso a paso, Materiales, Tiempo por sección, Evaluación.`;
+
+      // Replace this with your actual AI call if needed, or use the simulated one
+      // const aiResponse = await generateActivityProposal({ ... }); // Using the imported Genkit flow
+      const respuestaGemini = await llamarGeminiAPI(promptCompleto); // Using the simulated function for now
+
+      setProposal(respuestaGemini); // Store the AI response
+      if (resultadoRef.current) {
+         resultadoRef.current.innerText = respuestaGemini; // Display the response in the result div
+         // Or use innerHTML if you trust the source and it contains HTML/Markdown:
+         // resultadoRef.current.innerHTML = marked.parse(respuestaGemini); // Requires 'marked' library
+      }
+
       toast({
         title: "Propuesta generada!",
         description: "La propuesta de actividad ha sido generada exitosamente.",
       });
+
     } catch (error: any) {
       console.error("Error generating proposal:", error);
+      if (resultadoRef.current) {
+         resultadoRef.current.innerHTML = '<p style="color: red;">Error al generar la propuesta. Revisa la consola para más detalles.</p>';
+      }
       toast({
         variant: "destructive",
         title: "Error",
@@ -274,22 +339,7 @@ export default function Home() {
     }
   }
 
-  const downloadProposal = async () => {
-      if (!proposal) {
-          toast({
-              variant: "destructive",
-              title: "Error",
-              description: "No hay propuesta para descargar.",
-          });
-          return;
-      }
-
-      if (fileType === 'html') {
-          const blob = new Blob([proposal], { type: "text/html;charset=utf-8" });
-          const saveAs = (await import('file-saver')).saveAs;
-          saveAs(blob, `propuesta_actividad.html`);
-      }
-  };
+  // Removed downloadProposal function as download functionality is removed
 
   return (
     <div className="flex justify-center items-start min-h-screen py-12 bg-secondary">
@@ -301,85 +351,89 @@ export default function Home() {
           <CardDescription className="text-sm">{initialGreeting}</CardDescription>
         </CardHeader>
         <CardContent className="p-6">
-          {!isEditing ? (
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="grade"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>1. Grado(s) Específico(s):</FormLabel>
-                      <div className="flex flex-col gap-2">
-                        {gradeOptions.map((option) => (
-                          <FormItem key={option.value} className="flex flex-row items-center space-x-2 space-y-0">
-                            <FormControl>
-                              <Checkbox
-                                checked={field.value?.includes(option.value)}
-                                onCheckedChange={(checked) => {
-                                  return checked
-                                    ? field.onChange([...(field.value || []), option.value])
-                                    : field.onChange(field.value?.filter((value) => value !== option.value));
-                                }}
-                              />
-                            </FormControl>
-                            <FormLabel className="text-sm font-normal">{option.label}</FormLabel>
-                          </FormItem>
-                        ))}
-                      </div>
-                      <FormDescription>
-                        ¿Para qué grado(s) de bachillerato estás diseñando esta actividad?
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="timeAvailable"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>2. Tiempo Disponible:</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Ej: Una clase, dos clases, una semana"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        ¿De cuánto tiempo dispones para implementar esta actividad?
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="centralTheme"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>3. Tema Central:</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Ej: Programación en Python, Robótica Educativa"
-                          className="resize-none"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        ¿Cuál es el tema central que deseas abordar en esta actividad?
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="methodologyPreference"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>4. Metodología Preferida:</FormLabel>
-                      <div className="flex flex-col gap-2">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              {/* Grade */}
+              <FormField
+                control={form.control}
+                name="grade"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>1. Grado(s) Específico(s):</FormLabel>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                      {gradeOptions.map((option) => (
+                        <FormItem key={option.value} className="flex flex-row items-center space-x-2 space-y-0">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value?.includes(option.value)}
+                              onCheckedChange={(checked) => {
+                                return checked
+                                  ? field.onChange([...(field.value || []), option.value])
+                                  : field.onChange(field.value?.filter((value) => value !== option.value));
+                              }}
+                            />
+                          </FormControl>
+                          <FormLabel className="text-sm font-normal">{option.label}</FormLabel>
+                        </FormItem>
+                      ))}
+                    </div>
+                    <FormDescription>
+                      ¿Para qué grado(s) de bachillerato estás diseñando esta actividad?
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              {/* Time Available */}
+              <FormField
+                control={form.control}
+                name="timeAvailable"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>2. Tiempo Disponible:</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Ej: 90 minutos, 2 bloques de 45 min, 1 semana"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      ¿De cuánto tiempo dispones para implementar esta actividad?
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              {/* Central Theme */}
+              <FormField
+                control={form.control}
+                name="centralTheme"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>3. Tema Central o Problema:</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Ej: Introducción a HTML y CSS, Creación de un blog sencillo, Análisis de datos de redes sociales, Diseño de un prototipo para resolver X problema local"
+                        className="resize-none"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      ¿Cuál es el tema central, habilidad específica o problema a resolver que deseas abordar?
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              {/* Methodology */}
+               <FormField
+                control={form.control}
+                name="methodologyPreference"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>4. Metodología Preferida:</FormLabel>
+                     <ScrollArea className="h-40 w-full rounded-md border p-2">
+                      <div className="grid grid-cols-1 gap-2">
                         {methodologyOptions.map((option) => (
                           <FormItem key={option.value} className="flex flex-row items-center space-x-2 space-y-0">
                             <FormControl>
@@ -396,20 +450,23 @@ export default function Home() {
                           </FormItem>
                         ))}
                       </div>
-                      <FormDescription>
-                        ¿Tienes alguna preferencia metodológica o enfoque pedagógico para esta actividad?
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="competenciesToDevelop"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>5. Competencias a Desarrollar:</FormLabel>
-                      <div className="flex flex-col gap-2">
+                    </ScrollArea>
+                    <FormDescription>
+                      Selecciona las metodologías o enfoques pedagógicos que prefieres (o elige "Abierto a sugerencias").
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              {/* Competencies */}
+               <FormField
+                control={form.control}
+                name="competenciesToDevelop"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>5. Competencias a Desarrollar (MEN - Guía 30):</FormLabel>
+                     <ScrollArea className="h-40 w-full rounded-md border p-2">
+                      <div className="grid grid-cols-1 gap-2">
                         {competenciesOptions.map((option) => (
                           <FormItem key={option.value} className="flex flex-row items-center space-x-2 space-y-0">
                             <FormControl>
@@ -426,20 +483,23 @@ export default function Home() {
                           </FormItem>
                         ))}
                       </div>
-                      <FormDescription>
-                        ¿Cuáles son las competencias específicas del área de Tecnología e Informática que deseas que tus estudiantes desarrollen con esta actividad?
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="learningEvidences"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>6. Evidencias de Aprendizaje:</FormLabel>
-                      <div className="flex flex-col gap-2">
+                    </ScrollArea>
+                    <FormDescription>
+                      Elige las competencias clave del área de Tecnología e Informática (y S.XXI) que la actividad buscará fortalecer.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              {/* Learning Evidences */}
+               <FormField
+                control={form.control}
+                name="learningEvidences"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>6. Evidencias de Aprendizaje:</FormLabel>
+                     <ScrollArea className="h-40 w-full rounded-md border p-2">
+                      <div className="grid grid-cols-1 gap-2">
                         {learningEvidencesOptions.map((option) => (
                           <FormItem key={option.value} className="flex flex-row items-center space-x-2 space-y-0">
                             <FormControl>
@@ -456,20 +516,23 @@ export default function Home() {
                           </FormItem>
                         ))}
                       </div>
-                      <FormDescription>
-                        ¿Qué evidencias de aprendizaje te permitirán verificar que tus estudiantes están desarrollando las competencias seleccionadas?
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="curricularComponents"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>7. Componentes Curriculares:</FormLabel>
-                      <div className="flex flex-col gap-2">
+                    </ScrollArea>
+                    <FormDescription>
+                      ¿Qué productos, desempeños o acciones concretas te permitirán verificar el desarrollo de las competencias seleccionadas?
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              {/* Curricular Components */}
+               <FormField
+                control={form.control}
+                name="curricularComponents"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>7. Componentes Curriculares (Orientaciones MEN):</FormLabel>
+                    <ScrollArea className="h-40 w-full rounded-md border p-2">
+                      <div className="grid grid-cols-1 gap-2">
                         {curricularComponentsOptions.map((option) => (
                           <FormItem key={option.value} className="flex flex-row items-center space-x-2 space-y-0">
                             <FormControl>
@@ -486,20 +549,23 @@ export default function Home() {
                           </FormItem>
                         ))}
                       </div>
-                      <FormDescription>
-                        ¿Cuáles componentes del área se abordarán principalmente en esta actividad?
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="availableResources"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>8. Recursos Disponibles:</FormLabel>
-                      <div className="flex flex-col gap-2">
+                    </ScrollArea>
+                    <FormDescription>
+                      Selecciona los componentes del área que se abordarán principalmente. Justifica brevemente si es necesario.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              {/* Available Resources */}
+              <FormField
+                control={form.control}
+                name="availableResources"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>8. Recursos Disponibles:</FormLabel>
+                    <ScrollArea className="h-40 w-full rounded-md border p-2">
+                      <div className="grid grid-cols-1 gap-2">
                         {availableResourcesOptions.map((option) => (
                           <FormItem key={option.value} className="flex flex-row items-center space-x-2 space-y-0">
                             <FormControl>
@@ -516,20 +582,23 @@ export default function Home() {
                           </FormItem>
                         ))}
                       </div>
-                      <FormDescription>
-                        ¿Qué recursos tienes disponibles para esta actividad?
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="contextAndNeeds"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>9. Contexto y Necesidades:</FormLabel>
-                      <div className="flex flex-col gap-2">
+                    </ScrollArea>
+                    <FormDescription>
+                      Marca los recursos tecnológicos y materiales con los que cuentas para esta actividad.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              {/* Context and Needs */}
+              <FormField
+                control={form.control}
+                name="contextAndNeeds"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>9. Contexto y Necesidades Particulares:</FormLabel>
+                    <ScrollArea className="h-40 w-full rounded-md border p-2">
+                      <div className="grid grid-cols-1 gap-2">
                         {contextAndNeedsOptions.map((option) => (
                           <FormItem key={option.value} className="flex flex-row items-center space-x-2 space-y-0">
                             <FormControl>
@@ -546,91 +615,53 @@ export default function Home() {
                           </FormItem>
                         ))}
                       </div>
-                      <FormDescription>
-                        ¿Hay alguna necesidad o particularidad de tu contexto escolar o de tus estudiantes que deba considerar al diseñar la actividad?
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="interdisciplinarity"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>10. Interdisciplinariedad (Opcional):</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Ej: Integración con Matemáticas, Ciencias"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        ¿Te gustaría integrar esta actividad con otras áreas del conocimiento?
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                    </ScrollArea>
+                    <FormDescription>
+                      ¿Hay alguna característica específica de tu grupo, institución o entorno que sea relevante considerar?
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              {/* Interdisciplinarity */}
+              <FormField
+                control={form.control}
+                name="interdisciplinarity"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>10. Interdisciplinariedad (Opcional):</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Ej: Integración con Matemáticas (estadística), Artes (diseño visual), Ciencias Sociales (impacto tecnológico)"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      ¿Deseas que la actividad se conecte explícitamente con otra área del conocimiento? Si es así, indica cuál(es).
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-                <Button type="submit" disabled={isLoading}>
-                  {isLoading ? "Generando propuesta..." : "Generar Propuesta"}
-                </Button>
-              </form>
-            </Form>
-          ) : (
-            // Display a message or an empty state when not editing
-            <div className="text-center py-4">
-              <p>Edición deshabilitada.</p>
-            </div>
-          )}
+              <Button type="submit" disabled={isLoading}>
+                {isLoading ? "Generando propuesta..." : "Generar Propuesta"}
+              </Button>
+            </form>
+          </Form>
         </CardContent>
-        {proposal && (
-          <CardFooter className="flex flex-col items-center p-6">
-            <div className="w-full">
-              <h2 className="text-lg font-semibold mb-2">Vista Preliminar de la Propuesta</h2>
-              <ScrollArea className="h-[300px] w-full rounded-md border p-4 mb-4">
-                <div ref={proposalRef} dangerouslySetInnerHTML={{ __html: proposal }} />
-              </ScrollArea>
-            </div>
-            <div className="flex justify-between items-center w-full">
-              
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button onClick={downloadProposal}>Descargar Propuesta</Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>¿Descargar propuesta?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Selecciona el formato para descargar la propuesta de
-                      actividad.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction onClick={downloadProposal}>
-                      <Select
-                        value={fileType}
-                        onValueChange={(value) => setFileType(value as 'html')}
-                        className="rounded-md border-input text-sm"
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecciona un formato" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="html">HTML</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      Descargar
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </div>
+          {/* Footer removed as download/edit functionality is gone */}
+          {/* {proposal && ( ... CardFooter removed ... )} */}
+          {/* NUEVO: Contenedor para mostrar el resultado de la IA */}
+          <CardFooter className="p-6 pt-0">
+              <div id="resultadoIA" ref={resultadoRef} className="resultado-container w-full" aria-live="polite">
+                  {/* Initial message or loading state can be handled here if needed, currently handled in onSubmit */}
+                  {!isLoading && !proposal && <p className="text-muted-foreground">La propuesta generada aparecerá aquí.</p>}
+              </div>
           </CardFooter>
-        )}
+
       </Card>
+      <Toaster /> {/* Add Toaster component here */}
     </div>
   );
 }

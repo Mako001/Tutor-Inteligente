@@ -142,8 +142,7 @@ select:focus {
   margin: 0 auto;
 }
 
-.form-section,
-.preview-section {
+.form-section { /* Keep if still used for structure */
   width: 100%;
   margin-bottom: 20px;
 }
@@ -159,10 +158,6 @@ select:focus {
     margin-right: 5%;
     margin-bottom: 0;
   }
-
-  .preview-section {
-    width: 40%;
-  }
 }
 
 input,
@@ -170,4 +165,39 @@ textarea,
 select {
   width: 100%;
   box-sizing: border-box;
+}
+
+/* NUEVO: Estilos para el contenedor del resultado */
+.resultado-container {
+  @apply mt-6 p-4 border border-border rounded-md bg-muted/50 min-h-[100px] whitespace-pre-wrap font-sans leading-relaxed;
+  /* margin-top: 30px; */
+  /* padding: 20px; */
+  /* border: 1px solid #e0e0e0; */ /* Replaced with Tailwind border */
+  /* border-radius: 8px; */ /* Replaced with Tailwind rounded-md */
+  /* background-color: #f8f9fa; */ /* Replaced with Tailwind bg-muted/50 */
+  /* min-height: 100px; */
+  /* white-space: pre-wrap; */ /* Keep this behavior */
+  /* font-family: sans-serif; */ /* Let Tailwind handle fonts or set explicitly */
+  /* line-height: 1.6; */ /* Replaced with Tailwind leading-relaxed */
+}
+
+/* Estilos para el spinner (si usas la clase .spinner) */
+.resultado-container .spinner {
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border-left-color: hsl(var(--primary)); /* Use theme color */
+  animation: spin 1s ease infinite;
+  margin: 20px auto; /* Centrar el spinner */
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Estilos específicos para el mensaje de error dentro del contenedor */
+.resultado-container p[style*="color: red"] {
+    @apply font-semibold text-destructive; /* Use theme color */
 }
