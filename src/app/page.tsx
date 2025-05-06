@@ -1,16 +1,24 @@
 // src/app/page.tsx
-'use client'; // Esta página necesita ser un Client Component por los hooks y el manejo de eventos
+'use client'; 
 
-import { useState, FormEvent, useEffect } from 'react';
-import { firestore } from '@/lib/firebase/client'; // Asegúrate que la ruta sea correcta
+import { useState, FormEvent, useEffect, useRef } from 'react';
+import { firestore } from '@/lib/firebase/client'; 
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-// import { GoogleGenerativeAI } from "@google/generative-ai"; // Comentado para aislar problemas
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-// Componentes de UI (asumimos que existen en @/components/ui/)
-// Necesitarás crearlos o asegurarte de que están ahí.
-// Por simplicidad, usaré elementos HTML básicos aquí, puedes reemplazarlos.
 
-// Interfaz para los datos del formulario (opcional pero buena práctica)
+// Interfaz para los datos del formulario
 interface FormData {
   grade: string;
   timeAvailable: string;
@@ -20,20 +28,108 @@ interface FormData {
   learningEvidences: string[];
   curricularComponents: string[];
   availableResourcesCheckboxes: string[];
-  recursos: string; // texto libre para recursos adicionales
+  recursos: string; 
   contextAndNeeds: string[];
-  actividad: string; // descripción de la actividad
-  evaluacion: string; // método de evaluación
+  actividad: string; 
+  evaluacion: string; 
   interdisciplinarity?: string;
-  detallesAdicionales: string; // Detalles adicionales para la IA
+  detallesAdicionales: string; 
 }
+
+// Opciones para los campos de selección múltiple y selectores
+const gradeOptions = [
+  "6º", "7º", "8º", "9º", "10º", "11º",
+  "Básica Secundaria (6º-9º)",
+  "Media Académica (10º-11º)",
+  "Media Técnica (10º-11º)",
+  "Todos los grados de bachillerato (6º-11º)",
+  "Otro (especificar en tema o detalles)"
+];
+
+const tiempoOptions = [
+  { id: "t1", label: "1-2 horas clase (Sesión única o doble)" },
+  { id: "t2", label: "3-4 horas clase (Varias sesiones, ej. 1 semana)" },
+  { id: "t3", label: "Proyecto corto (5-8 horas clase, ej. 2 semanas)" },
+  { id: "t4", label: "Proyecto mediano (9-15 horas clase, ej. 3-4 semanas)" },
+  { id: "t5", label: "Proyecto largo o trimestral (+16 horas clase)" },
+  { id: "t6", label: "Flexible / A definir según avance" },
+];
+
+const methodologyOptions = [
+  { id: "meth_abp", label: "Aprendizaje Basado en Proyectos (ABP)" },
+  { id: "meth_abpr", label: "Aprendizaje Basado en Problemas (ABPr)" },
+  { id: "meth_gam", label: "Gamificación / Aprendizaje Basado en Juegos" },
+  { id: "meth_inv", label: "Aula Invertida (Flipped Classroom)" },
+  { id: "meth_design", label: "Pensamiento de Diseño (Design Thinking)" },
+  { id: "meth_colab", label: "Aprendizaje Colaborativo / Cooperativo" },
+  { id: "meth_steam", label: "Aprendizaje STEAM (Ciencia, Tecnología, Ingeniería, Artes y Matemáticas)" },
+  { id: "meth_sugg", label: "Abierto a sugerencias de la IA" },
+  { id: "meth_other", label: "Otro (especificar en detalles)" },
+];
+
+const competenciesOptions = [
+  { id: "comp_pens_crit", label: "Desarrollo del pensamiento crítico y reflexivo frente a la tecnología y sus implicaciones." },
+  { id: "comp_sol_prob", label: "Capacidad para identificar, formular y resolver problemas utilizando tecnología de manera creativa e innovadora." },
+  { id: "comp_uso_tic", label: "Uso ético, seguro, legal y responsable de las Tecnologías de la Información y la Comunicación (TIC)." },
+  { id: "comp_com_dig", label: "Habilidades para la comunicación y colaboración en entornos digitales." },
+  { id: "comp_info_data", label: "Alfabetización informacional y manejo de datos (búsqueda, evaluación, organización y presentación de información)." },
+  { id: "comp_ciudad_dig", label: "Ejercicio de la ciudadanía digital de forma activa y participativa." },
+  { id: "comp_tec_soc", label: "Comprensión de las relaciones entre tecnología, ciencia, sociedad y ambiente." },
+  { id: "comp_innov", label: "Fomento de la creatividad, la innovación y el emprendimiento con base tecnológica." },
+  { id: "comp_modelado", label: "Capacidad para modelar y simular fenómenos o sistemas utilizando herramientas tecnológicas." },
+  { id: "comp_prog_basic", label: "Introducción al pensamiento computacional y principios básicos de programación/codificación." },
+  { id: "comp_seg_dig", label: "Conocimiento y aplicación de medidas de seguridad digital y protección de la privacidad." },
+];
+
+const learningEvidencesOptions = [
+  { id: "ev_proy_dig", label: "Creación de un proyecto digital (presentación, video, podcast, blog, sitio web básico) que demuestre comprensión del tema." },
+  { id: "ev_sol_tec", label: "Diseño y/o prototipado de una solución tecnológica a un problema planteado." },
+  { id: "ev_analisis_crit", label: "Análisis crítico y debate argumentado sobre el impacto de una tecnología específica." },
+  { id: "ev_colab_linea", label: "Participación activa y constructiva en actividades colaborativas en línea." },
+  { id: "ev_pres_info", label: "Presentación oral o escrita de información investigada, utilizando herramientas TIC." },
+  { id: "ev_prog_simple", label: "Desarrollo de un algoritmo o programa sencillo para resolver una tarea específica." },
+  { id: "ev_diag_tec", label: "Diagnóstico de problemas en artefactos o sistemas tecnológicos simples y propuesta de soluciones." },
+  { id: "ev_uso_herram", label: "Uso efectivo de herramientas de software específicas para la creación de contenido o análisis de datos." },
+  { id: "ev_portafolio", label: "Construcción de un portafolio digital con los trabajos y reflexiones del periodo." },
+  { id: "ev_autoeval", label: "Autoevaluación y coevaluación del proceso de aprendizaje y los productos generados." },
+];
+
+const curricularComponentsOptions = [
+  { id: "cc_nat_tec", label: "Naturaleza y Evolución de la Tecnología" },
+  { id: "cc_aprop_uso", label: "Apropiación y Uso de la Tecnología" },
+  { id: "cc_sol_prob_tec", label: "Solución de Problemas con Tecnología" },
+  { id: "cc_tec_soc", label: "Tecnología y Sociedad" },
+  { id: "cc_pens_comp", label: "Pensamiento Computacional (transversal)" },
+];
+
+const resourcesOptions = [
+  { id: "res_comp_int", label: "Computadores (PC o portátiles) con acceso a internet." },
+  { id: "res_software_basico", label: "Software básico (navegador, ofimática, editor de texto plano)." },
+  { id: "res_software_esp", label: "Software especializado (IDE, diseño gráfico, modelado 3D, etc., según actividad)." },
+  { id: "res_dispmov", label: "Dispositivos móviles (tablets, smartphones) de los estudiantes (si se permite y es pertinente)." },
+  { id: "res_proyector", label: "Proyector o pantalla para visualización en clase." },
+  { id: "res_plataf_colab", label: "Plataformas colaborativas en línea (Google Workspace, Microsoft Teams, Moodle, etc.)." },
+  { id: "res_mat_prototipado", label: "Materiales para prototipado (cartón, material reciclable, kits básicos de electrónica/robótica si aplica)." },
+  { id: "res_biblio_web", label: "Acceso a bibliotecas digitales y recursos web confiables." },
+];
+
+const contextNeedsOptions = [
+  { id: "need_conect_limit", label: "Conectividad a internet limitada o intermitente." },
+  { id: "need_pocos_equipos", label: "Número limitado de computadores por estudiante." },
+  { id: "need_diversidad_habil", label: "Estudiantes con diversos niveles de alfabetización y competencia digital." },
+  { id: "need_inclusion", label: "Necesidad de adaptaciones para estudiantes con necesidades educativas especiales." },
+  { id: "need_foco_colab", label: "Énfasis en el desarrollo de habilidades de trabajo colaborativo." },
+  { id: "need_motiv", label: "Contexto con baja motivación estudiantil hacia el área." },
+  { id: "need_recursos_especificos", label: "Disponibilidad (o falta) de software o hardware específico." },
+  { id: "need_seguridad", label: "Necesidad de reforzar prácticas de seguridad y privacidad en línea." },
+];
 
 export default function HomePage() {
   const [formData, setFormData] = useState<FormData>({
     grade: '6º',
     timeAvailable: '',
     centralTheme: '',
-    methodologyPreference: 'Abierto a sugerencias',
+    methodologyPreference: 'Abierto a sugerencias de la IA',
     competenciesToDevelop: [],
     learningEvidences: [],
     curricularComponents: [],
@@ -59,8 +155,12 @@ export default function HomePage() {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
+  
+  const handleSelectChange = (name: keyof FormData, value: string) => {
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
 
-  const handleCheckboxChange = (category: keyof Omit<FormData, 'interdisciplinarity' | 'recursos' | 'actividad' | 'evaluacion' | 'detallesAdicionales' | 'grade' | 'timeAvailable' | 'centralTheme' | 'methodologyPreference'>, value: string) => {
+  const handleCheckboxChange = (category: keyof Pick<FormData, 'competenciesToDevelop' | 'learningEvidences' | 'curricularComponents' | 'availableResourcesCheckboxes' | 'contextAndNeeds'>, value: string) => {
     setFormData(prev => {
       const list = (prev[category] as string[]) || [];
       if (list.includes(value)) {
@@ -71,51 +171,45 @@ export default function HomePage() {
     });
   };
 
-  // --- LLAMADA REAL A TU API ROUTE DE GEMINI ---
-  const llamarGeminiAPI = async (prompt: string): Promise<string> => {
-    console.log("Enviando prompt al backend:", prompt);
-    setError(''); // Limpiar errores anteriores
+// --- LLAMADA REAL A TU API ROUTE DE GEMINI ---
+const llamarGeminiAPI = async (prompt: string): Promise<string> => {
+  console.log("Frontend: Enviando prompt al backend (/api/gemini):", prompt.substring(0,100) + "...");
+  setError(''); // Si tienes una función setError para la UI, límpiala aquí
 
-    try {
-      const response = await fetch('/api/gemini', { // Llama a tu API Route
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ prompt: prompt }), // Envía el prompt en el cuerpo
-      });
+  try {
+    const response = await fetch('/api/gemini', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ prompt: prompt }),
+    });
 
-      if (!response.ok) {
-        // Intenta leer el error del cuerpo de la respuesta si es posible
-        let errorBody;
-        try {
-          errorBody = await response.json();
-        } catch (e) {
-          // El cuerpo no era JSON o no había cuerpo
-        }
-        const errorMessage = errorBody?.error || `Error del servidor: ${response.status} ${response.statusText}`;
-        console.error("Error desde la API Route de Gemini:", errorMessage);
-        throw new Error(errorMessage);
-      }
+    const data = await response.json(); // Intenta parsear JSON siempre
 
-      const data = await response.json();
-      if (data.error) {
-          console.error("Error devuelto por la API de Gemini (via backend):", data.error);
-          throw new Error(data.error);
-      }
-      
-      console.log("Respuesta del backend (Gemini):", data.generatedText);
-      return data.generatedText; // Devuelve solo el texto generado
-
-    } catch (fetchError) {
-      console.error("Error al hacer fetch a /api/gemini:", fetchError);
-      // Asegúrate de que el error se propague para que el bloque catch en handleGenerarPropuesta lo maneje
-      if (fetchError instanceof Error) {
-          throw new Error(`No se pudo conectar con el asistente de IA: ${fetchError.message}`);
-      }
-      throw new Error("No se pudo conectar con el asistente de IA: error desconocido.");
+    if (!response.ok) {
+      const errorMessage = data?.error || `Error del servidor: ${response.status} ${response.statusText}`;
+      console.error("Frontend: Error desde la API Route de Gemini:", errorMessage);
+      throw new Error(errorMessage);
     }
-  };
+    
+    // Si llegamos aquí y response.ok es true, data debería tener generatedText
+    if (data.error) { // Por si la API devuelve 200 OK pero con un error en el cuerpo
+        console.error("Frontend: Error en el cuerpo de la respuesta de la API de Gemini (via backend):", data.error);
+        throw new Error(data.error);
+    }
+    
+    console.log("Frontend: Respuesta del backend (Gemini):", data.generatedText ? data.generatedText.substring(0,100) + "..." : "Sin texto generado");
+    return data.generatedText || ""; // Devuelve el texto generado o un string vacío si no existe
+
+  } catch (fetchError) {
+    console.error("Frontend: Error al hacer fetch a /api/gemini:", fetchError);
+    if (fetchError instanceof Error) {
+        throw new Error(`No se pudo conectar con el asistente de IA: ${fetchError.message}`);
+    }
+    throw new Error("No se pudo conectar con el asistente de IA: error desconocido.");
+  }
+};
 
 
   // --- GUARDAR EN FIREBASE ---
@@ -128,7 +222,6 @@ export default function HomePage() {
     try {
       const dataToSave = {
         ...datos,
-        // Convertir arrays a strings si es necesario para Firestore, o guardarlos como arrays
         competenciesToDevelop: datos.competenciesToDevelop.join(', '),
         learningEvidences: datos.learningEvidences.join(', '),
         curricularComponents: datos.curricularComponents.join(', '),
@@ -160,18 +253,15 @@ export default function HomePage() {
 
     const promptCompleto = `Rol: Asistente experto en diseño de actividades de aprendizaje en Tecnología e Informática, con amplio conocimiento de las Orientaciones Curriculares para el Área de Tecnología e Informática en la Educación Básica y Media del Ministerio de Educación Nacional de Colombia (MEN) y la Guía 30.
 
-    Saludo Inicial (para contextualizarte, no para incluirlo directamente en la propuesta final si no se pide explícitamente):
-    "¡Hola, colega docente de Informática de bachillerato! Estoy aquí para ayudarte a diseñar actividades de aprendizaje significativas y contextualizadas para tus estudiantes. Para comenzar, necesito que reflexionemos juntos sobre algunos aspectos clave. Responder a las siguientes preguntas me permitirá generar una propuesta de actividad ajustada a tus necesidades y a los lineamientos del MEN."
-    
     Información proporcionada por el docente para la actividad:
     1.  Grado(s) Específico(s): ${formData.grade}
     2.  Tiempo Disponible: ${formData.timeAvailable}
     3.  Tema Central: ${formData.centralTheme}
     4.  Metodología Preferida: ${formData.methodologyPreference}
-    5.  Competencias a Desarrollar (Citar textualmente de las Orientaciones Curriculares y la Guía 30): ${formData.competenciesToDevelop.join('; ')}. Es muy importante que sea lo más específico posible en las competencias a desarrollar.
-    6.  Evidencias de Aprendizaje (Citar textualmente o adaptar de las Orientaciones Curriculares): ${formData.learningEvidences.join('; ')}. Ser lo más específico posible.
+    5.  Competencias a Desarrollar: ${formData.competenciesToDevelop.join('; ')}.
+    6.  Evidencias de Aprendizaje: ${formData.learningEvidences.join('; ')}.
     7.  Componentes Curriculares (Justificar la selección): ${formData.curricularComponents.join('; ')}
-    8.  Recursos Disponibles (Seleccionados): ${formData.availableResourcesCheckboxes.join('; ')}. Recursos Adicionales (Texto): ${formData.recursos}. Ser muy específico.
+    8.  Recursos Disponibles (Seleccionados): ${formData.availableResourcesCheckboxes.join('; ')}. Recursos Adicionales (Texto): ${formData.recursos}.
     9.  Contexto y Necesidades: ${formData.contextAndNeeds.join('; ')}
     10. Interdisciplinariedad (Opcional): ${formData.interdisciplinarity || 'No aplica'}
     11. Descripción detallada de la actividad (cómo se la imagina el docente): ${formData.actividad}
@@ -179,23 +269,23 @@ export default function HomePage() {
     13. Detalles Adicionales o Tono deseado para la IA: ${formData.detallesAdicionales}
 
     Tarea:
-    "Una vez que hayas procesado esta información, utiliza tu conocimiento de las Orientaciones Curriculares y la Guía 30 del MEN, para generar una propuesta DETALLADA de actividad de aprendizaje. Esta propuesta incluirá:
-    *   Una descripción completa de la actividad (pasos, fases, roles).
-    *   Preguntas orientadoras para los estudiantes.
-    *   Recursos necesarios (detallados y específicos).
+    Generar una propuesta DETALLADA de actividad de aprendizaje. Incluir:
+    *   Descripción completa (pasos, fases, roles).
+    *   Preguntas orientadoras.
+    *   Recursos necesarios (detallados).
     *   Producto(s) esperado(s).
-    *   Criterios e instrumentos de evaluación (alineados con las competencias y evidencias, por ejemplo, una rúbrica básica si es pertinente).
-    *   Adaptaciones (en caso de que sea necesario, considerando el contexto y recursos).
-    *   Justificación breve de cómo la actividad aborda los componentes curriculares seleccionados."
+    *   Criterios e instrumentos de evaluación (alineados con competencias y evidencias).
+    *   Adaptaciones (considerando contexto y recursos).
+    *   Justificación de componentes curriculares.
 
     Formato de Salida:
-    La propuesta de actividad debe presentarse en un formato claro, organizado y fácil de seguir, con secciones separadas para cada uno de los elementos mencionados.
+    Claro, organizado, fácil de seguir, con secciones separadas.
 
     Restricciones:
-    *   La propuesta NO debe ser genérica.
-    *   Debe estar contextualizada a Colombia.
-    *   NO puede salirse de los lineamientos del Ministerio de Educación de Colombia (MEN) y la Guía 30.
-    *   Ser extremadamente específica y práctica para implementación en aula.
+    *   NO genérica.
+    *   Contextualizada a Colombia.
+    *   Adherirse a lineamientos MEN y Guía 30.
+    *   Específica y práctica para aula.
     `;
 
     try {
@@ -215,93 +305,8 @@ export default function HomePage() {
     }
   };
   
-  const competenciesOptions = [
-    { id: "comp1", label: "Comprensión de conceptos tecnológicos básicos y su aplicación en diversos contextos (hardware, software, redes, sistemas de información)." },
-    { id: "comp2", label: "Uso ético, seguro, legal y responsable de las TIC, promoviendo la ciudadanía digital y la protección de datos." },
-    // ... (mantener las opciones existentes y añadir nuevas si es necesario)
-    { id: "comp_orient_p56_1", label: "Analizo y explico la influencia de las tecnologías de la información y la comunicación en los cambios culturales, individuales y sociales." },
-    { id: "comp_orient_p56_2", label: "Evalúo las implicaciones éticas, sociales y ambientales de las innovaciones tecnológicas." },
-    { id: "comp_orient_p57_1", label: "Utilizo responsable y autónomamente las Tecnologías de la Información y la Comunicación (TIC) para aprender, investigar y comunicarme con otros en el mundo." },
-    { id: "comp_orient_p57_2", label: "Identifico, formulo y resuelvo problemas susceptibles de ser automatizados mediante el uso de herramientas informáticas." },
-     { id: "comp_guia30_tecysoc", label: "Relaciono el desarrollo tecnológico con los avances en la ciencia, la técnica, y las matemáticas y con los cambios culturales y sociales." },
-    { id: "comp_guia30_aprop", label: "Utilizo herramientas y equipos seguros para construir modelos, artefactos y sistemas tecnológicos." },
-    { id: "comp_guia30_solprob", label: "Propongo soluciones tecnológicas en condiciones de incertidumbre, cuando persisten las restricciones o no hay información suficiente." },
-  ];
-
-  const evidencesOptions = [
-    { id: "ev1", label: "Diseño y creación de artefactos digitales funcionales y originales (aplicaciones, simulaciones, sitios web, videojuegos, modelos 3D)." },
-    { id: "ev2", label: "Participación activa, argumentada y respetuosa en debates sobre dilemas éticos, sociales y legales relacionados con la tecnología." },
-    // ... (mantener las opciones existentes y añadir nuevas si es necesario)
-    { id: "ev_orient_p56_1_a", label: "Presenta ejemplos de artefactos y sistemas tecnológicos que han transformado las prácticas sociales y culturales (ej. la imprenta, el internet, las redes sociales)." },
-    { id: "ev_orient_p56_2_a", label: "Analiza críticamente los efectos de una tecnología específica (ej. inteligencia artificial, biotecnología) en diferentes grupos sociales o en el ambiente." },
-    { id: "ev_orient_p57_1_a", label: "Usa selectiva y críticamente la información obtenida a través de las TIC para el desarrollo de un proyecto o investigación escolar." },
-    { id: "ev_orient_p57_2_a", label: "Desarrolla un algoritmo o programa sencillo para solucionar un problema cotidiano o escolar." },
-    { id: "ev_guia30_tecysoc_a", label: "Describe cómo la evolución de un artefacto o proceso tecnológico ha impactado la vida de las personas." },
-    { id: "ev_guia30_aprop_a", label: "Construye un prototipo funcional siguiendo un plan de diseño y normas de seguridad." },
-    { id: "ev_guia30_solprob_a", label: "Identifica y describe diferentes alternativas de solución a un mismo problema tecnológico, evaluando sus ventajas y desventajas." },
-  ];
-
-  const curricularComponentsOptions = [
-    { id: "cc1", label: "Naturaleza y Evolución de la Tecnología" },
-    { id: "cc2", label: "Apropiación y Uso de la Tecnología" },
-    { id: "cc3", label: "Solución de Problemas con Tecnología" },
-    { id: "cc4", label: "Tecnología y Sociedad" },
-    // ... (mantener las opciones existentes y añadir nuevas si es necesario)
-    { id: "cc_guia30_relctm", label: "Relaciones entre la Tecnología y otras disciplinas (Ciencia, Técnica, Matemáticas)" },
-    { id: "cc_guia30_invinn", label: "Investigación, Innovación y Desarrollo Tecnológico" },
-  ];
-
-  const resourcesOptions = [
-    { id: "res1", label: "Computadores (PC o portátiles) con acceso a internet y software básico (navegador, ofimática)." },
-    { id: "res2", label: "Software especializado (IDE para programación, diseño gráfico, edición de video, CAD, modelado 3D, simulación, etc.)." },
-    // ... (mantener las opciones existentes y añadir nuevas si es necesario)
-    { id: "res_lab", label: "Laboratorio de tecnología/informática equipado." },
-    { id: "res_mat_reciclable", label: "Materiales reciclables o de bajo costo para prototipado." },
-  ];
-
-  const contextNeedsOptions = [
-    { id: "need1", label: "Aula con recursos tecnológicos limitados (pocos computadores por estudiante, sin internet estable o de baja velocidad)." },
-    { id: "need2", label: "Estudiantes con diversos niveles de alfabetización y competencia digital (desde básico hasta avanzado)." },
-    // ... (mantener las opciones existentes y añadir nuevas si es necesario)
-    { id: "need_colab", label: "Necesidad de fomentar el trabajo colaborativo y habilidades del siglo XXI." },
-    { id: "need_eval_formativa", label: "Énfasis en evaluación formativa y retroalimentación constante." },
-  ];
-
-  const tiempoOptions = [
-    { id: "t1", label: "1-2 horas clase (Sesión única o doble)"},
-    { id: "t2", label: "3-4 horas clase (Varias sesiones, ej. 1 semana)"},
-    { id: "t3", label: "Proyecto corto (5-8 horas clase, ej. 2 semanas)"},
-    { id: "t4", label: "Proyecto mediano (9-15 horas clase, ej. 3-4 semanas)"},
-    { id: "t5", label: "Proyecto largo o trimestral (+16 horas clase)"},
-    { id: "t6", label: "Flexible / A definir según avance"},
-  ];
-
-  const methodologyOptions = [
-    { id: "meth1", label: "Aprendizaje Basado en Proyectos (ABP)" },
-    { id: "meth2", label: "Aprendizaje Basado en Problemas (ABPr)" },
-    { id: "meth3", label: "Gamificación / Aprendizaje Basado en Juegos" },
-    { id: "meth4", label: "Aula Invertida (Flipped Classroom)" },
-    { id: "meth5", label: "Pensamiento de Diseño (Design Thinking)" },
-    { id: "meth6", label: "Aprendizaje Colaborativo / Cooperativo" },
-    { id: "meth7", label: "Instrucción Directa con Práctica Guiada e Independiente" },
-    { id: "meth8", label: "Aprendizaje por Descubrimiento / Indagación" },
-    { id: "meth9", label: "Estudio de Casos" },
-    { id: "meth10", label: "Aprendizaje STEAM (Ciencia, Tecnología, Ingeniería, Artes y Matemáticas)" },
-    { id: "meth11", label: "Abierto a sugerencias de la IA" },
-  ];
-
-  const gradeOptions = [
-    "6º", "7º", "8º", "9º", "10º", "11º", 
-    "Básica Secundaria (6º-9º)", 
-    "Media Académica (10º-11º)", 
-    "Media Técnica (10º-11º)", 
-    "Todos los grados de bachillerato (6º-11º)",
-    "Otro (especificar en tema o detalles)"
-  ];
-
 
   // --- RENDERIZADO (JSX) ---
-  // Usa clases de Tailwind CSS para estilizar
   return (
     <div className="container mx-auto p-4 md:p-8 min-h-screen flex flex-col items-center bg-secondary" suppressHydrationWarning={true}>
       <header className="text-center mb-10 py-6">
@@ -311,284 +316,258 @@ export default function HomePage() {
 
       <main className="w-full max-w-4xl bg-card p-8 rounded-xl shadow-2xl" suppressHydrationWarning={true}>
       <p className="text-muted-foreground mb-6 text-center">
-          ¡Hola, colega docente de Informática de bachillerato! Estoy aquí para ayudarte a diseñar actividades de aprendizaje significativas y contextualizadas para tus estudiantes.
-          Para comenzar, necesito que reflexionemos juntos sobre algunos aspectos clave. Responder a las siguientes preguntas me permitirá generar una propuesta de actividad ajustada a tus necesidades y a los lineamientos del MEN.
+          ¡Hola, colega docente de Informática! Completa la siguiente información para generar una propuesta de actividad ajustada a tus necesidades y a los lineamientos del MEN.
         </p>
         <form onSubmit={handleGenerarPropuesta} className="space-y-8">
           {/* Campo Grado(s) */}
           <div>
-            <label htmlFor="grade" className="block text-lg font-semibold text-foreground mb-1">
+            <Label htmlFor="grade" className="block text-lg font-semibold text-foreground mb-1">
               1. Grado(s) Específico(s):
-            </label>
-            <select
-              name="grade"
-              id="grade"
-              value={formData.grade}
-              onChange={handleInputChange}
-              className="mt-1 block w-full px-4 py-3 border border-input bg-background rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
-            >
-              {gradeOptions.map(g => <option key={g} value={g}>{g}</option>)}
-            </select>
+            </Label>
+            <Select name="grade" value={formData.grade} onValueChange={(value) => handleSelectChange('grade', value)}>
+              <SelectTrigger id="grade" className="mt-1 w-full">
+                <SelectValue placeholder="Selecciona el grado" />
+              </SelectTrigger>
+              <SelectContent>
+                {gradeOptions.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+              </SelectContent>
+            </Select>
           </div>
           
           {/* Campo Tiempo Disponible */}
            <div className="space-y-3">
-            <label htmlFor="timeAvailable" className="block text-lg font-semibold text-foreground mb-1">
+            <Label htmlFor="timeAvailable" className="block text-lg font-semibold text-foreground mb-1">
               2. Tiempo Disponible:
-            </label>
-            <select
-              name="timeAvailable"
-              id="timeAvailable"
-              value={formData.timeAvailable}
-              onChange={handleInputChange}
-              className="mt-1 block w-full px-4 py-3 border border-input bg-background rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
-            >
-              <option value="" disabled>Selecciona el tiempo disponible</option>
-              {tiempoOptions.map(t => <option key={t.id} value={t.label}>{t.label}</option>)}
-            </select>
-            <input
+            </Label>
+            <Select name="timeAvailable" value={formData.timeAvailable} onValueChange={(value) => handleSelectChange('timeAvailable', value)}>
+                <SelectTrigger id="timeAvailable" className="mt-1 w-full">
+                    <SelectValue placeholder="Selecciona el tiempo" />
+                </SelectTrigger>
+                <SelectContent>
+                    {tiempoOptions.map(t => <SelectItem key={t.id} value={t.label}>{t.label}</SelectItem>)}
+                </SelectContent>
+            </Select>
+            <Input
               type="text"
               name="timeAvailable_otro"
               value={formData.timeAvailable.startsWith("Flexible") || tiempoOptions.find(opt => opt.label === formData.timeAvailable) ? "" : formData.timeAvailable}
               onChange={(e) => setFormData(prev => ({...prev, timeAvailable: e.target.value}))}
-              className="mt-2 block w-full px-4 py-3 border border-input bg-background rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
-              placeholder="Si seleccionaste 'Flexible' o necesitas detallar, especifica aquí (ej: 1 trimestre, 2 horas semanales)"
+              className="mt-2"
+              placeholder="Si es flexible o necesitas detallar, especifica aquí"
             />
           </div>
 
           {/* Campo Tema Central */}
           <div>
-            <label htmlFor="centralTheme" className="block text-lg font-semibold text-foreground mb-1">
+            <Label htmlFor="centralTheme" className="block text-lg font-semibold text-foreground mb-1">
               3. Tema Central o Problema:
-            </label>
-            <input
+            </Label>
+            <Input
               type="text"
               name="centralTheme"
               id="centralTheme"
               value={formData.centralTheme}
               onChange={handleInputChange}
               required
-              className="mt-1 block w-full px-4 py-3 border border-input bg-background rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
-              placeholder="Ej: Introducción a la Programación con Python, Diseño de un Prototipo Robótico"
+              placeholder="Ej: Introducción a la Programación con Python"
             />
           </div>
 
           {/* Campo Metodología Preferida */}
           <div className="space-y-3">
-            <label htmlFor="methodologyPreference" className="block text-lg font-semibold text-foreground mb-1">
+            <Label htmlFor="methodologyPreference" className="block text-lg font-semibold text-foreground mb-1">
               4. Metodología Preferida:
-            </label>
-             <select
-              name="methodologyPreference"
-              id="methodologyPreference"
-              value={formData.methodologyPreference}
-              onChange={handleInputChange}
-              className="mt-1 block w-full px-4 py-3 border border-input bg-background rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
-            >
-              {methodologyOptions.map(m => <option key={m.id} value={m.label}>{m.label}</option>)}
-            </select>
+            </Label>
+            <Select name="methodologyPreference" value={formData.methodologyPreference} onValueChange={(value) => handleSelectChange('methodologyPreference', value)}>
+                <SelectTrigger id="methodologyPreference" className="mt-1 w-full">
+                    <SelectValue placeholder="Selecciona la metodología" />
+                </SelectTrigger>
+                <SelectContent>
+                    {methodologyOptions.map(m => <SelectItem key={m.id} value={m.label}>{m.label}</SelectItem>)}
+                </SelectContent>
+            </Select>
           </div>
 
           {/* Competencias a Desarrollar */}
           <div className="space-y-3">
-            <label className="block text-lg font-semibold text-foreground">5. Competencias a Desarrollar (Orientaciones MEN / Guía 30):</label>
+            <Label className="block text-lg font-semibold text-foreground">5. Competencias a Desarrollar:</Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 max-h-60 overflow-y-auto p-2 border border-input rounded-md">
               {competenciesOptions.map(comp => (
-                <label key={comp.id} className="flex items-start space-x-3 p-2 rounded-md hover:bg-muted transition-colors cursor-pointer">
-                  <input
-                    type="checkbox"
-                    name="competenciesToDevelop"
-                    value={comp.label} 
+                <div key={comp.id} className="flex items-start space-x-3 p-2 rounded-md hover:bg-muted transition-colors">
+                  <Checkbox
+                    id={`comp-${comp.id}`}
                     checked={(formData.competenciesToDevelop || []).includes(comp.label)}
-                    onChange={() => handleCheckboxChange('competenciesToDevelop', comp.label)}
-                    className="form-checkbox h-5 w-5 text-primary rounded border-input focus:ring-primary mt-0.5"
+                    onCheckedChange={() => handleCheckboxChange('competenciesToDevelop', comp.label)}
                   />
-                  <span className="text-sm text-foreground/90">{comp.label}</span>
-                </label>
+                  <Label htmlFor={`comp-${comp.id}`} className="text-sm text-foreground/90 cursor-pointer">{comp.label}</Label>
+                </div>
               ))}
             </div>
-             <p className="text-xs text-muted-foreground mt-1">Selecciona las competencias. Cita textualmente o adapta de las Orientaciones MEN y Guía 30.</p>
+             <p className="text-xs text-muted-foreground mt-1">Selecciona las competencias clave (MEN / Guía 30).</p>
           </div>
 
           {/* Evidencias de Aprendizaje */}
           <div className="space-y-3">
-            <label className="block text-lg font-semibold text-foreground">6. Evidencias de Aprendizaje (Orientaciones MEN / Guía 30):</label>
+            <Label className="block text-lg font-semibold text-foreground">6. Evidencias de Aprendizaje:</Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 max-h-60 overflow-y-auto p-2 border border-input rounded-md">
-              {evidencesOptions.map(ev => (
-                <label key={ev.id} className="flex items-start space-x-3 p-2 rounded-md hover:bg-muted transition-colors cursor-pointer">
-                  <input
-                    type="checkbox"
-                    name="learningEvidences"
-                    value={ev.label}
+              {learningEvidencesOptions.map(ev => (
+                <div key={ev.id} className="flex items-start space-x-3 p-2 rounded-md hover:bg-muted transition-colors">
+                  <Checkbox
+                    id={`ev-${ev.id}`}
                     checked={(formData.learningEvidences || []).includes(ev.label)}
-                    onChange={() => handleCheckboxChange('learningEvidences', ev.label)}
-                    className="form-checkbox h-5 w-5 text-primary rounded border-input focus:ring-primary mt-0.5"
+                    onCheckedChange={() => handleCheckboxChange('learningEvidences', ev.label)}
                   />
-                  <span className="text-sm text-foreground/90">{ev.label}</span>
-                </label>
+                  <Label htmlFor={`ev-${ev.id}`} className="text-sm text-foreground/90 cursor-pointer">{ev.label}</Label>
+                </div>
               ))}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">¿Qué acciones, productos o desempeños permitirán verificar el desarrollo de competencias?</p>
+            <p className="text-xs text-muted-foreground mt-1">¿Qué acciones o productos permitirán verificar el aprendizaje?</p>
           </div>
 
            {/* Componentes Curriculares */}
           <div className="space-y-3">
-            <label className="block text-lg font-semibold text-foreground">7. Componentes Curriculares (MEN / Guía 30):</label>
+            <Label className="block text-lg font-semibold text-foreground">7. Componentes Curriculares:</Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 max-h-60 overflow-y-auto p-2 border border-input rounded-md">
               {curricularComponentsOptions.map(item => (
-                <label key={item.id} className="flex items-start space-x-3 p-2 rounded-md hover:bg-muted transition-colors cursor-pointer">
-                  <input
-                    type="checkbox"
-                    name="curricularComponents"
-                    value={item.label}
+                <div key={item.id} className="flex items-start space-x-3 p-2 rounded-md hover:bg-muted transition-colors">
+                   <Checkbox
+                    id={`cc-${item.id}`}
                     checked={(formData.curricularComponents || []).includes(item.label)}
-                    onChange={() => handleCheckboxChange('curricularComponents', item.label)}
-                    className="form-checkbox h-5 w-5 text-primary rounded border-input focus:ring-primary mt-0.5"
+                    onCheckedChange={() => handleCheckboxChange('curricularComponents', item.label)}
                   />
-                  <span className="text-sm text-foreground/90">{item.label}</span>
-                </label>
+                  <Label htmlFor={`cc-${item.id}`} className="text-sm text-foreground/90 cursor-pointer">{item.label}</Label>
+                </div>
               ))}
             </div>
-             <p className="text-xs text-muted-foreground mt-1">¿Cuáles componentes del área se abordarán? Justifica brevemente en la descripción de la actividad si es necesario.</p>
+             <p className="text-xs text-muted-foreground mt-1">¿Cuáles componentes del área se abordarán?</p>
           </div>
           
           {/* Recursos Disponibles (Checkboxes) */}
           <div className="space-y-3">
-            <label className="block text-lg font-semibold text-foreground">8. Recursos Disponibles (selección principal):</label>
+            <Label className="block text-lg font-semibold text-foreground">8. Recursos Disponibles (selección principal):</Label>
              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 max-h-60 overflow-y-auto p-2 border border-input rounded-md">
               {resourcesOptions.map(item => (
-                <label key={item.id} className="flex items-start space-x-3 p-2 rounded-md hover:bg-muted transition-colors cursor-pointer">
-                  <input
-                    type="checkbox"
-                    name="availableResourcesCheckboxes" 
-                    value={item.label}
+                <div key={item.id} className="flex items-start space-x-3 p-2 rounded-md hover:bg-muted transition-colors">
+                  <Checkbox
+                    id={`res-${item.id}`}
                     checked={(formData.availableResourcesCheckboxes || []).includes(item.label)}
-                    onChange={() => handleCheckboxChange('availableResourcesCheckboxes', item.label)}
-                    className="form-checkbox h-5 w-5 text-primary rounded border-input focus:ring-primary mt-0.5"
+                    onCheckedChange={() => handleCheckboxChange('availableResourcesCheckboxes', item.label)}
                   />
-                  <span className="text-sm text-foreground/90">{item.label}</span>
-                </label>
+                  <Label htmlFor={`res-${item.id}`} className="text-sm text-foreground/90 cursor-pointer">{item.label}</Label>
+                </div>
               ))}
             </div>
           </div>
           {/* Campo Recursos Adicionales (texto) */}
           <div>
-            <label htmlFor="recursos" className="block text-sm font-medium text-foreground mb-1">
+            <Label htmlFor="recursos" className="block text-sm font-medium text-foreground mb-1">
                Recursos Adicionales (texto libre):
-            </label>
-            <textarea
+            </Label>
+            <Textarea
               name="recursos"
               id="recursos"
               rows={2}
               value={formData.recursos}
               onChange={handleInputChange}
-              className="mt-1 block w-full px-3 py-2 border border-input bg-background rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
-              placeholder="Ej: Plataforma LMS específica, software de simulación X, acceso a taller de electrónica. Describe otros recursos importantes."
+              placeholder="Ej: Plataforma LMS específica, software X. Describe otros recursos."
             />
           </div>
 
 
           {/* Contexto y Necesidades */}
            <div className="space-y-3">
-            <label className="block text-lg font-semibold text-foreground">9. Contexto y Necesidades Particulares:</label>
+            <Label className="block text-lg font-semibold text-foreground">9. Contexto y Necesidades Particulares:</Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 max-h-60 overflow-y-auto p-2 border border-input rounded-md">
               {contextNeedsOptions.map(item => (
-                <label key={item.id} className="flex items-start space-x-3 p-2 rounded-md hover:bg-muted transition-colors cursor-pointer">
-                  <input
-                    type="checkbox"
-                    name="contextAndNeeds"
-                    value={item.label}
+                <div key={item.id} className="flex items-start space-x-3 p-2 rounded-md hover:bg-muted transition-colors">
+                  <Checkbox
+                    id={`need-${item.id}`}
                     checked={(formData.contextAndNeeds || []).includes(item.label)}
-                    onChange={() => handleCheckboxChange('contextAndNeeds', item.label)}
-                    className="form-checkbox h-5 w-5 text-primary rounded border-input focus:ring-primary mt-0.5"
+                    onCheckedChange={() => handleCheckboxChange('contextAndNeeds', item.label)}
                   />
-                  <span className="text-sm text-foreground/90">{item.label}</span>
-                </label>
+                  <Label htmlFor={`need-${item.id}`} className="text-sm text-foreground/90 cursor-pointer">{item.label}</Label>
+                </div>
               ))}
             </div>
-             <p className="text-xs text-muted-foreground mt-1">¿Alguna particularidad de tu contexto escolar o estudiantes a considerar?</p>
+             <p className="text-xs text-muted-foreground mt-1">¿Alguna particularidad de tu contexto escolar o estudiantes?</p>
           </div>
           
           {/* Campo Descripción Actividad */}
           <div>
-            <label htmlFor="actividad" className="block text-lg font-semibold text-foreground mb-1">
+            <Label htmlFor="actividad" className="block text-lg font-semibold text-foreground mb-1">
               10. Descripción Detallada de la Actividad (cómo te la imaginas):
-            </label>
-            <textarea
+            </Label>
+            <Textarea
               name="actividad"
               id="actividad"
               rows={4}
               value={formData.actividad}
               onChange={handleInputChange}
-              className="mt-1 block w-full px-4 py-3 border border-input bg-background rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
-              placeholder="Describe los pasos, fases, roles del estudiante y docente, etc. Sé lo más específico posible."
+              placeholder="Describe los pasos, fases, roles, etc. Sé específico."
             />
           </div>
 
 
            {/* Campo Evaluación */}
           <div>
-            <label htmlFor="evaluacion" className="block text-lg font-semibold text-foreground mb-1">
+            <Label htmlFor="evaluacion" className="block text-lg font-semibold text-foreground mb-1">
               11. Método de Evaluación:
-            </label>
-            <textarea
+            </Label>
+            <Textarea
               name="evaluacion"
               id="evaluacion"
               rows={3}
               value={formData.evaluacion}
               onChange={handleInputChange}
-              className="mt-1 block w-full px-4 py-3 border border-input bg-background rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
-              placeholder="¿Cómo planeas evaluar el aprendizaje? Ej: Rúbrica para el proyecto, quiz, observación directa, portafolio, coevaluación."
+              placeholder="¿Cómo planeas evaluar? Ej: Rúbrica, quiz, observación."
             />
           </div>
 
           {/* Campo Interdisciplinariedad */}
            <div>
-            <label htmlFor="interdisciplinarity" className="block text-lg font-semibold text-foreground mb-1">
+            <Label htmlFor="interdisciplinarity" className="block text-lg font-semibold text-foreground mb-1">
               12. Interdisciplinariedad (Opcional):
-            </label>
-            <input
+            </Label>
+            <Input
               type="text"
               name="interdisciplinarity"
               id="interdisciplinarity"
-              value={formData.interdisciplinarity}
+              value={formData.interdisciplinarity || ""}
               onChange={handleInputChange}
-              className="mt-1 block w-full px-4 py-3 border border-input bg-background rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
-              placeholder="Ej: Matemáticas (cálculo de costos), Artes (diseño visual de la app), Ciencias Sociales (impacto social)."
+              placeholder="Ej: Matemáticas (cálculo de costos), Artes (diseño)."
             />
           </div>
 
 
           {/* Campo Detalles Adicionales */}
           <div>
-            <label htmlFor="detallesAdicionales" className="block text-lg font-semibold text-foreground mb-1">
+            <Label htmlFor="detallesAdicionales" className="block text-lg font-semibold text-foreground mb-1">
               13. Detalles Adicionales o Tono Deseado para la IA:
-            </label>
-            <textarea
+            </Label>
+            <Textarea
               name="detallesAdicionales"
               id="detallesAdicionales"
               rows={2}
               value={formData.detallesAdicionales}
               onChange={handleInputChange}
-              className="mt-1 block w-full px-4 py-3 border border-input bg-background rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
-              placeholder="Ej: Tono formal y académico, creativo y lúdico, enfocado en la colaboración, incluir ejemplos específicos para grado X."
+              placeholder="Ej: Tono formal, creativo, incluir ejemplos para grado X."
             />
           </div>
 
 
           {/* Botón de Envío */}
           <div className="pt-6">
-            <button
+            <Button
               type="submit"
               disabled={cargando}
-              className="w-full flex justify-center py-3 px-6 border border-transparent rounded-md shadow-sm text-lg font-medium text-primary-foreground bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed"
+              className="w-full text-lg"
             >
               {cargando ? (
                 <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-accent-foreground"></div>
               ) : (
                 'Generar Propuesta de Actividad con IA'
               )}
-            </button>
+            </Button>
           </div>
 
           {/* Mensaje de Error */}
@@ -601,7 +580,7 @@ export default function HomePage() {
             <h2 className="text-2xl font-semibold text-foreground mb-4">Propuesta Generada:</h2>
             <div 
               className="whitespace-pre-wrap text-sm text-foreground/90 p-4 bg-background border border-input rounded-md overflow-x-auto"
-              dangerouslySetInnerHTML={{ __html: resultadoTexto }} // Asumiendo que la respuesta de Gemini puede tener HTML simple/Markdown
+              dangerouslySetInnerHTML={{ __html: resultadoTexto }}
             />
           </section>
         )}
@@ -614,5 +593,3 @@ export default function HomePage() {
     </div>
   );
 }
-
-    

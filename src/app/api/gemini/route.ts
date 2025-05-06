@@ -3,39 +3,52 @@ import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/ge
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
-// Asegúrate de que tu API Key de Gemini esté en tus variables de entorno
-// NO la pongas directamente en el código.
-const GEMINI_API_KEY = process.env.GOOGLE_GEMINI_API_KEY; // Debes añadir esta variable a tu .env.local
+const GEMINI_API_KEY = process.env.GOOGLE_GEMINI_API_KEY;
+
+// Log para depurar qué API Key se está leyendo en el servidor
+console.log("API ROUTE - Intentando leer GOOGLE_GEMINI_API_KEY:", GEMINI_API_KEY ? "Clave Encontrada (longitud: " + GEMINI_API_KEY.length + ")" : "Clave NO Encontrada o Vacía");
 
 if (!GEMINI_API_KEY) {
-  console.error("ERROR en API Route: GOOGLE_GEMINI_API_KEY no está definida.");
-  // En un escenario real, podrías no querer loguear esto tan verbosamente en producción
+  console.error("ERROR CRÍTICO en API Route: GOOGLE_GEMINI_API_KEY no está definida en las variables de entorno del servidor.");
 }
 
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY || ""); // El string vacío es por si no está definida, pero la validación anterior debería capturarlo
+// Inicializa genAI solo si la clave está presente
+let genAI: GoogleGenerativeAI | null = null;
+if (GEMINI_API_KEY) {
+  try {
+    genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+  } catch (e) {
+    console.error("Error al inicializar GoogleGenerativeAI con la API Key:", e);
+    genAI = null; // Asegura que genAI es null si la inicialización falla
+  }
+}
+
 
 export async function POST(request: NextRequest) {
   if (!GEMINI_API_KEY) {
-    return NextResponse.json({ error: "API Key no configurada en el servidor." }, { status: 500 });
+    return NextResponse.json({ error: "Configuración del servidor incompleta: API Key de Gemini no encontrada." }, { status: 500 });
+  }
+  if (!genAI) {
+    return NextResponse.json({ error: "Error del servidor: No se pudo inicializar el cliente de Gemini. Verifica la API Key." }, { status: 500 });
   }
 
   try {
     const body = await request.json();
-    const userPrompt = body.prompt; // El prompt que enviaremos desde el frontend
+    const userPrompt = body.prompt;
 
     if (!userPrompt) {
       return NextResponse.json({ error: "El prompt es requerido." }, { status: 400 });
     }
 
     const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash-latest", // O el modelo que prefieras/tengas acceso
+      model: "gemini-1.5-flash-latest", // O el modelo que prefieras
     });
 
     const generationConfig = {
-      temperature: 0.7, // Ajusta la creatividad
+      temperature: 0.7,
       topK: 0,
       topP: 0.95,
-      maxOutputTokens: 8192, // Ajusta según necesidad
+      maxOutputTokens: 8192,
     };
 
     const safetySettings = [
@@ -45,7 +58,7 @@ export async function POST(request: NextRequest) {
       { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
     ];
 
-    console.log("API Route: Recibido prompt para Gemini:", userPrompt);
+    console.log("API Route: Recibido prompt para Gemini:", userPrompt.substring(0, 100) + "..."); // Loguea solo una parte del prompt
 
     const result = await model.generateContent({
       contents: [{ role: "user", parts: [{ text: userPrompt }] }],
@@ -54,16 +67,22 @@ export async function POST(request: NextRequest) {
     });
     
     const responseText = result.response.text();
-    console.log("API Route: Respuesta de Gemini:", responseText);
+    // console.log("API Route: Respuesta de Gemini:", responseText); // Descomenta si necesitas depurar la respuesta completa
 
     return NextResponse.json({ generatedText: responseText });
 
   } catch (error) {
-    console.error("Error en la API Route de Gemini:", error);
-    // Considera si quieres enviar detalles del error al cliente
+    console.error("Error en la API Route de Gemini durante la generación:", error);
+    let errorMessage = "Error desconocido al procesar la solicitud con Gemini.";
     if (error instanceof Error) {
-        return NextResponse.json({ error: `Error al procesar la solicitud con Gemini: ${error.message}` }, { status: 500 });
+      // Verifica si el error contiene información específica de la API de Google
+      // Using type assertion for 'details' as it's not a standard property of Error
+      if (error.message.includes("API_KEY_INVALID") || (error as any).details?.some((d:any) => d.reason === "API_KEY_INVALID")) {
+        errorMessage = "API key no válida. Por favor, verifica tu API Key.";
+      } else {
+        errorMessage = `Error al procesar la solicitud: ${error.message}`;
+      }
     }
-    return NextResponse.json({ error: "Error desconocido al procesar la solicitud con Gemini." }, { status: 500 });
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
