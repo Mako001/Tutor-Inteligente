@@ -4,8 +4,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-
-    "dev": "next dev -p 9003",
+    "dev": "next dev --no-turbopack -p 9003",
     "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
     "genkit:watch": "genkit start -- tsx --watch src/ai/dev.ts",
     "build": "next build",
@@ -44,7 +43,7 @@
     "date-fns": "^3.6.0",
     "docx": "^8.5.0",
     "file-saver": "^2.0.5",
-    "firebase": "^10.12.4",
+    "firebase": "^11.6.1",
     "genkit": "^1.0.4",
     "html-to-pdfmake": "^2.5.1",
     "html2pdf.js": "^0.10.2",
