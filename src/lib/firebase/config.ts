@@ -39,14 +39,14 @@ export function validateFirebaseConfig() {
     }
 
     // Check if Project ID is still the placeholder value and warn, but don't throw
-    if (firebaseConfig.projectId === "YOUR_PROJECT_ID") {
-        const warningMsg = 'Firebase Project ID is set to the placeholder "YOUR_PROJECT_ID". Please update it in your .env.local file with your actual Firebase project ID for Firebase services to function correctly.';
+    if (firebaseConfig.projectId === "YOUR_PROJECT_ID_HERE") { // Match the placeholder in .env.local
+        const warningMsg = 'Firebase Project ID is set to the placeholder "YOUR_PROJECT_ID_HERE". Please update it in your .env.local file with your actual Firebase project ID for Firebase services to function correctly.';
         console.warn(warningMsg); // Changed from error and throw to warn
     }
 
     // Basic validation for projectId format (optional but helpful)
     // Also check it's not the placeholder before validating format
-    if (firebaseConfig.projectId && firebaseConfig.projectId !== "YOUR_PROJECT_ID" && !/^[a-z0-9-]+$/.test(firebaseConfig.projectId)) {
+    if (firebaseConfig.projectId && firebaseConfig.projectId !== "YOUR_PROJECT_ID_HERE" && !/^[a-z0-9-]+$/.test(firebaseConfig.projectId)) {
         console.warn(`Firebase projectId "${firebaseConfig.projectId}" might be invalid. It should typically contain only lowercase letters, numbers, and hyphens.`);
     }
 }
