@@ -18,6 +18,13 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  experimental: {
+    allowedDevOrigins: [
+      "http://9003-idx-studio-1745692312226.cluster-pgviq6mvsncnqxx6kr7pbz65v6.cloudworkstations.dev",
+      // It's good practice to also allow localhost if you might access it directly
+      "http://localhost:9003",
+    ],
+  },
 };
 
 export default nextConfig;
