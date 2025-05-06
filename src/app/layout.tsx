@@ -19,7 +19,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className={inter.variable}> {/* O `${GeistSans.variable} ${GeistMono.variable}` */}
+    <html lang="es" className={inter.variable}>{/* O `${GeistSans.variable} ${GeistMono.variable}` */}
       <body className="antialiased bg-gray-100 text-gray-900"> {/* Estilos base del body */}
         {children}
       </body>
