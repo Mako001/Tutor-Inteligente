@@ -40,8 +40,15 @@ export function validateFirebaseConfig() {
         // throw new Error(`Missing Firebase config keys: ${missingKeys.join(', ')}`);
     }
 
+    // Check if Project ID is still the placeholder value
+    if (firebaseConfig.projectId === "YOUR_PROJECT_ID") {
+        console.error('Firebase Project ID is set to the placeholder "YOUR_PROJECT_ID". Please update it in your .env.local file.');
+        // Consider throwing an error here as well if a valid Project ID is critical
+        // throw new Error('Firebase Project ID is not configured. Please set NEXT_PUBLIC_FIREBASE_PROJECT_ID in .env.local');
+    }
+
     // Basic validation for projectId format (optional but helpful)
-    if (firebaseConfig.projectId && !/^[a-z0-9-]+$/.test(firebaseConfig.projectId)) {
+    if (firebaseConfig.projectId && firebaseConfig.projectId !== "YOUR_PROJECT_ID" && !/^[a-z0-9-]+$/.test(firebaseConfig.projectId)) {
         console.warn(`Firebase projectId "${firebaseConfig.projectId}" might be invalid. It should typically contain only lowercase letters, numbers, and hyphens.`);
     }
 }

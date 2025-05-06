@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react"; // Removed useRef
 import {
   Card,
   CardContent,
@@ -21,7 +21,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { generateActivityProposal } from "@/ai/flows/generate-activity-proposal";
+// Removed unused Genkit import: import { generateActivityProposal } from "@/ai/flows/generate-activity-proposal";
 import { useToast } from "@/hooks/use-toast";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -242,7 +242,8 @@ export default function Home() {
   const [proposal, setProposal] = useState<string | null>(null);
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const resultadoRef = useRef<HTMLDivElement>(null);
+  const [proposalHtml, setProposalHtml] = useState<string | null>(null); // State to hold the proposal
+
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -282,13 +283,14 @@ export default function Home() {
             **Interdisciplinariedad:** ${formValues.interdisciplinarity || 'No especificada'}
 
             **Instrucciones Detalladas:**
-            [Aquí iría la descripción paso a paso generada por la IA...]
+            <p>Aquí iría la descripción paso a paso generada por la IA...</p>
+            <ol><li>Paso 1</li><li>Paso 2</li></ol>
 
             **Materiales Específicos:**
-            [Lista de materiales detallada...]
+            <ul><li>Material A</li><li>Material B</li></ul>
 
             **Evaluación:**
-            [Criterios e instrumentos de evaluación alineados...]
+            <p>Criterios e instrumentos de evaluación alineados...</p>
             --- Fin Respuesta Simulada ---`);
         }, 1500); // Simula 1.5 segundos de espera
     });
@@ -297,10 +299,7 @@ export default function Home() {
   // --- Función onSubmit del formulario ---
   async function onSubmit(values: FormData) {
     setIsLoading(true);
-    setProposal(null);
-    if (resultadoRef.current) {
-      resultadoRef.current.innerHTML = '<p>Generando propuesta con IA...</p><div class="spinner"></div>';
-    }
+    setProposalHtml(null); // Reset proposal state
 
     try {
        const promptCompleto = `Genera una propuesta de actividad didáctica detallada para docentes de Tecnología e Informática en bachillerato, siguiendo los lineamientos del MEN Colombia y la Guía 30.
@@ -332,10 +331,7 @@ export default function Home() {
       // const respuestaGemini = aiResponse.activityProposal;
       const respuestaGemini = await llamarGeminiAPI(promptCompleto); // Usando simulación por ahora
 
-      setProposal(respuestaGemini);
-      if (resultadoRef.current) {
-         resultadoRef.current.innerText = respuestaGemini;
-      }
+      setProposalHtml(respuestaGemini); // Update state with the response
 
       toast({
         title: "Propuesta generada!",
@@ -361,9 +357,7 @@ export default function Home() {
 
     } catch (error: any) {
       console.error("Error generating proposal:", error);
-      if (resultadoRef.current) {
-         resultadoRef.current.innerHTML = '<p style="color: red;">Error al generar la propuesta. Revisa la consola para más detalles.</p>';
-      }
+      setProposalHtml('<p style="color: red;">Error al generar la propuesta. Revisa la consola para más detalles.</p>'); // Update state with error message
       toast({
         variant: "destructive",
         title: "Error",
@@ -371,7 +365,6 @@ export default function Home() {
           error?.message ||
           "Hubo un error al generar la propuesta. Por favor, intenta de nuevo.",
       });
-      setProposal(null); // Asegúrate de limpiar la propuesta en caso de error
     } finally {
       setIsLoading(false);
     }
@@ -688,9 +681,18 @@ export default function Home() {
         </CardContent>
           {/* NUEVO: Contenedor para mostrar el resultado de la IA */}
           <CardFooter className="p-6 pt-0">
-              <div id="resultadoIA" ref={resultadoRef} className="resultado-container w-full" aria-live="polite">
-                  {/* Initial message or loading state can be handled here if needed, currently handled in onSubmit */}
-                  {!isLoading && !proposal && <p className="text-muted-foreground">La propuesta generada aparecerá aquí.</p>}
+              <div id="resultadoIA" className="resultado-container w-full" aria-live="polite">
+                  {isLoading ? (
+                       <>
+                          <p>Generando propuesta con IA...</p>
+                          <div className="spinner"></div>
+                       </>
+                  ) : proposalHtml ? (
+                      // Render the HTML string safely
+                      <div dangerouslySetInnerHTML={{ __html: proposalHtml }} />
+                  ) : (
+                      <p className="text-muted-foreground">La propuesta generada aparecerá aquí.</p>
+                  )}
               </div>
           </CardFooter>
 
