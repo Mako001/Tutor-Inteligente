@@ -71,33 +71,49 @@ export default function HomePage() {
     });
   };
 
-  // --- LLAMADA A LA API ROUTE DE GEMINI ---
+  // --- LLAMADA REAL A TU API ROUTE DE GEMINI ---
   const llamarGeminiAPI = async (prompt: string): Promise<string> => {
-    console.log("Enviando a API Route (/api/gemini):", prompt);
-    setCargando(true);
-    setError('');
+    console.log("Enviando prompt al backend:", prompt);
+    setError(''); // Limpiar errores anteriores
+
     try {
-      const response = await fetch('/api/gemini', {
+      const response = await fetch('/api/gemini', { // Llama a tu API Route
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({ prompt: prompt }), // Envía el prompt en el cuerpo
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `Error del servidor: ${response.status}`);
+        // Intenta leer el error del cuerpo de la respuesta si es posible
+        let errorBody;
+        try {
+          errorBody = await response.json();
+        } catch (e) {
+          // El cuerpo no era JSON o no había cuerpo
+        }
+        const errorMessage = errorBody?.error || `Error del servidor: ${response.status} ${response.statusText}`;
+        console.error("Error desde la API Route de Gemini:", errorMessage);
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
-      return data.generatedText;
-    } catch (apiError: any) {
-      console.error("Error llamando a la API Route de Gemini:", apiError);
-      setError(apiError.message || "Error al comunicar con la IA.");
-      throw apiError; // Re-lanzar para que handleGenerarPropuesta lo maneje
-    } finally {
-      setCargando(false);
+      if (data.error) {
+          console.error("Error devuelto por la API de Gemini (via backend):", data.error);
+          throw new Error(data.error);
+      }
+      
+      console.log("Respuesta del backend (Gemini):", data.generatedText);
+      return data.generatedText; // Devuelve solo el texto generado
+
+    } catch (fetchError) {
+      console.error("Error al hacer fetch a /api/gemini:", fetchError);
+      // Asegúrate de que el error se propague para que el bloque catch en handleGenerarPropuesta lo maneje
+      if (fetchError instanceof Error) {
+          throw new Error(`No se pudo conectar con el asistente de IA: ${fetchError.message}`);
+      }
+      throw new Error("No se pudo conectar con el asistente de IA: error desconocido.");
     }
   };
 
@@ -187,10 +203,13 @@ export default function HomePage() {
       setResultadoTexto(respuesta);
       await guardarPropuestaEnFirebase(respuesta, formData);
 
-    } catch (apiError: any) {
-      // El error ya se maneja en llamarGeminiAPI y se establece en el estado 'error'
-      // Aquí podrías añadir lógica adicional si es necesario, pero llamarGeminiAPI ya actualiza el estado de error.
-      console.error("Error en handleGenerarPropuesta después de llamar a la API:", apiError);
+    } catch (apiErrorOrFetchError) {
+        console.error("Error en el flujo de generación:", apiErrorOrFetchError);
+        if (apiErrorOrFetchError instanceof Error) {
+           setError(`Hubo un error: ${apiErrorOrFetchError.message}`);
+        } else {
+           setError("Hubo un error desconocido al generar la propuesta.");
+        }
     } finally {
       setCargando(false);
     }
@@ -290,7 +309,7 @@ export default function HomePage() {
         <p className="text-xl text-foreground/80 mt-2">Asistente IA para el Diseño de Actividades Educativas en Tecnología e Informática</p>
       </header>
 
-      <main className="w-full max-w-4xl bg-card p-8 rounded-xl shadow-2xl">
+      <main className="w-full max-w-4xl bg-card p-8 rounded-xl shadow-2xl" suppressHydrationWarning={true}>
       <p className="text-muted-foreground mb-6 text-center">
           ¡Hola, colega docente de Informática de bachillerato! Estoy aquí para ayudarte a diseñar actividades de aprendizaje significativas y contextualizadas para tus estudiantes.
           Para comenzar, necesito que reflexionemos juntos sobre algunos aspectos clave. Responder a las siguientes preguntas me permitirá generar una propuesta de actividad ajustada a tus necesidades y a los lineamientos del MEN.
@@ -454,7 +473,7 @@ export default function HomePage() {
           </div>
           {/* Campo Recursos Adicionales (texto) */}
           <div>
-            <label htmlFor="recursos" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="recursos" className="block text-sm font-medium text-foreground mb-1">
                Recursos Adicionales (texto libre):
             </label>
             <textarea
@@ -463,7 +482,7 @@ export default function HomePage() {
               rows={2}
               value={formData.recursos}
               onChange={handleInputChange}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              className="mt-1 block w-full px-3 py-2 border border-input bg-background rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
               placeholder="Ej: Plataforma LMS específica, software de simulación X, acceso a taller de electrónica. Describe otros recursos importantes."
             />
           </div>
@@ -580,9 +599,10 @@ export default function HomePage() {
         {resultadoTexto && !cargando && (
           <section className="mt-10 p-6 border border-input rounded-lg bg-muted/20">
             <h2 className="text-2xl font-semibold text-foreground mb-4">Propuesta Generada:</h2>
-            <pre className="whitespace-pre-wrap text-sm text-foreground/90 p-4 bg-background border border-input rounded-md overflow-x-auto">
-              {resultadoTexto}
-            </pre>
+            <div 
+              className="whitespace-pre-wrap text-sm text-foreground/90 p-4 bg-background border border-input rounded-md overflow-x-auto"
+              dangerouslySetInnerHTML={{ __html: resultadoTexto }} // Asumiendo que la respuesta de Gemini puede tener HTML simple/Markdown
+            />
           </section>
         )}
       </main>
@@ -594,3 +614,5 @@ export default function HomePage() {
     </div>
   );
 }
+
+    
