@@ -17,7 +17,7 @@ export const firebaseConfig = {
 
 /**
  * Validates that all required Firebase configuration variables are set.
- * Throws an error if any required variable is missing.
+ * Throws an error if any required variable is missing. Warns if the placeholder Project ID is used.
  */
 export function validateFirebaseConfig() {
     const requiredKeys: (keyof typeof firebaseConfig)[] = [
@@ -32,22 +32,20 @@ export function validateFirebaseConfig() {
     const missingKeys = requiredKeys.filter(key => !firebaseConfig[key]);
 
     if (missingKeys.length > 0) {
-        console.error('Missing Firebase configuration variables in environment:', missingKeys.join(', '));
-        console.error('Please ensure all NEXT_PUBLIC_FIREBASE_* variables are set in your .env.local file.');
-        // Depending on the context, you might throw an error or handle it differently.
-        // For server-side usage, throwing might be appropriate.
-        // For client-side, you might want to show a message to the user or disable Firebase features.
-        // throw new Error(`Missing Firebase config keys: ${missingKeys.join(', ')}`);
+        const errorMsg = `Missing Firebase configuration variables in environment: ${missingKeys.join(', ')}. Please ensure all NEXT_PUBLIC_FIREBASE_* variables are set in your .env.local file.`;
+        console.error(errorMsg);
+        // Throw an error to prevent the application from proceeding with incomplete config
+        throw new Error(errorMsg); // Keep throwing for missing keys
     }
 
-    // Check if Project ID is still the placeholder value
+    // Check if Project ID is still the placeholder value and warn, but don't throw
     if (firebaseConfig.projectId === "YOUR_PROJECT_ID") {
-        console.error('Firebase Project ID is set to the placeholder "YOUR_PROJECT_ID". Please update it in your .env.local file.');
-        // Consider throwing an error here as well if a valid Project ID is critical
-        // throw new Error('Firebase Project ID is not configured. Please set NEXT_PUBLIC_FIREBASE_PROJECT_ID in .env.local');
+        const warningMsg = 'Firebase Project ID is set to the placeholder "YOUR_PROJECT_ID". Please update it in your .env.local file with your actual Firebase project ID for Firebase services to function correctly.';
+        console.warn(warningMsg); // Changed from error and throw to warn
     }
 
     // Basic validation for projectId format (optional but helpful)
+    // Also check it's not the placeholder before validating format
     if (firebaseConfig.projectId && firebaseConfig.projectId !== "YOUR_PROJECT_ID" && !/^[a-z0-9-]+$/.test(firebaseConfig.projectId)) {
         console.warn(`Firebase projectId "${firebaseConfig.projectId}" might be invalid. It should typically contain only lowercase letters, numbers, and hyphens.`);
     }

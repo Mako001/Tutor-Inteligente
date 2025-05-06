@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react"; // Removed useRef
+import { useState, useEffect, useRef } from "react"; // Added useRef
 import {
   Card,
   CardContent,
@@ -21,7 +21,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-// Removed unused Genkit import: import { generateActivityProposal } from "@/ai/flows/generate-activity-proposal";
 import { useToast } from "@/hooks/use-toast";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -29,7 +28,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Toaster } from "@/components/ui/toaster"; // Import Toaster
+import { Toaster } from "@/components/ui/toaster";
 
 // Firebase Firestore imports
 import { firestore } from '@/lib/firebase/client'; // Correct import path
@@ -243,6 +242,7 @@ export default function Home() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [proposalHtml, setProposalHtml] = useState<string | null>(null); // State to hold the proposal
+  const proposalRef = useRef<HTMLDivElement>(null); // Ref for the proposal container
 
 
   const form = useForm<FormData>({
@@ -298,8 +298,8 @@ export default function Home() {
 
   // --- Función onSubmit del formulario ---
   async function onSubmit(values: FormData) {
-    setIsLoading(true);
-    setProposalHtml(null); // Reset proposal state
+    setProposalHtml(null); // Reset proposal state FIRST
+    setIsLoading(true); // Then set loading
 
     try {
        const promptCompleto = `Genera una propuesta de actividad didáctica detallada para docentes de Tecnología e Informática en bachillerato, siguiendo los lineamientos del MEN Colombia y la Guía 30.
@@ -327,8 +327,7 @@ export default function Home() {
 
         Asegúrate de que la propuesta NO sea genérica, esté contextualizada a Colombia y sea práctica para implementación en aula.`;
 
-      // const aiResponse = await generateActivityProposal(values); // Llamada al Genkit flow real
-      // const respuestaGemini = aiResponse.activityProposal;
+
       const respuestaGemini = await llamarGeminiAPI(promptCompleto); // Usando simulación por ahora
 
       setProposalHtml(respuestaGemini); // Update state with the response
@@ -689,7 +688,7 @@ export default function Home() {
                        </>
                   ) : proposalHtml ? (
                       // Render the HTML string safely
-                      <div dangerouslySetInnerHTML={{ __html: proposalHtml }} />
+                      <div dangerouslySetInnerHTML={{ __html: proposalHtml }} ref={proposalRef} />
                   ) : (
                       <p className="text-muted-foreground">La propuesta generada aparecerá aquí.</p>
                   )}
@@ -701,3 +700,4 @@ export default function Home() {
     </div>
   );
 }
+
