@@ -23,27 +23,6 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { generateActivityProposal } from "@/ai/flows/generate-activity-proposal";
 import { useToast } from "@/hooks/use-toast";
-// Remove unused imports for download functionality
-// import {
-//   AlertDialog,
-//   AlertDialogAction,
-//   AlertDialogCancel,
-//   AlertDialogContent,
-//   AlertDialogDescription,
-//   AlertDialogFooter,
-//   AlertDialogHeader,
-//   AlertDialogTitle,
-//   AlertDialogTrigger,
-// } from "@/components/ui/alert-dialog";
-// import {
-//   Select,
-//   SelectContent,
-//   SelectItem,
-//   SelectTrigger,
-//   SelectValue,
-// } from "@/components/ui/select";
-// import { saveAs } from 'file-saver';
-// import * as docx from 'docx'; // Removed - DOCX generation logic deleted
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -52,9 +31,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Toaster } from "@/components/ui/toaster"; // Import Toaster
 
-// Firebase Firestore imports - Assuming you might use them later
+// Firebase Firestore imports
 import { firestore } from '@/lib/firebase/client'; // Correct import path
-import { collection, addDoc, getDocs } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 
 const initialGreeting =
@@ -90,6 +69,8 @@ const formSchema = z.object({
   }),
   interdisciplinarity: z.string().optional(),
 });
+
+type FormData = z.infer<typeof formSchema>;
 
 const gradeOptions = [
   { label: "6º", value: "6º" },
@@ -225,16 +206,45 @@ const contextAndNeedsOptions = [
     { label: "Desarrollar habilidades de comunicación", value: "Desarrollar habilidades de comunicación" },
 ];
 
+// --- Función para guardar la propuesta en Firebase ---
+async function guardarPropuestaEnFirebase(propuestaTexto: string, datosFormulario: FormData) {
+    try {
+        // Obtén una referencia a la colección 'propuestas'
+        const propuestasCollectionRef = collection(firestore, "propuestas");
+
+        // Añade un nuevo documento a la colección
+        const docRef = await addDoc(propuestasCollectionRef, {
+            textoGenerado: propuestaTexto,
+            grado: datosFormulario.grade.join(", "), // Guardar como string
+            tiempoDisponible: datosFormulario.timeAvailable,
+            temaCentral: datosFormulario.centralTheme,
+            metodologiaPreferida: datosFormulario.methodologyPreference.join(", "), // Guardar como string
+            competencias: datosFormulario.competenciesToDevelop.join(", "), // Guardar como string
+            evidencias: datosFormulario.learningEvidences.join(", "), // Guardar como string
+            componentes: datosFormulario.curricularComponents.join(", "), // Guardar como string
+            recursos: datosFormulario.availableResources.join(", "), // Guardar como string
+            contexto: datosFormulario.contextAndNeeds.join(", "), // Guardar como string
+            interdisciplinaridad: datosFormulario.interdisciplinarity || '',
+            timestamp: serverTimestamp() // Usa la función importada para la marca de tiempo
+        });
+
+        console.log("Propuesta guardada en Firebase con ID: ", docRef.id);
+        return true; // Indica éxito
+
+    } catch (error) {
+        console.error("Error al guardar en Firebase: ", error);
+        return false; // Indica fallo
+    }
+}
+
 
 export default function Home() {
   const [proposal, setProposal] = useState<string | null>(null);
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const resultadoRef = useRef<HTMLDivElement>(null); // Renamed from proposalRef
-  // const [fileType, setFileType] = useState<'html' | 'pdf' | 'docx'>('html'); // Removed fileType state
-  // const [isEditing, setIsEditing] = useState(false); // Removed isEditing state
+  const resultadoRef = useRef<HTMLDivElement>(null);
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       grade: [],
@@ -253,73 +263,101 @@ export default function Home() {
   // --- Simulación de llamada a Gemini (Puedes reemplazar con tu lógica real) ---
   async function llamarGeminiAPI(promptCompleto: string): Promise<string> {
     console.log("Enviando a Gemini (simulado):", promptCompleto);
-    // Aquí iría tu fetch real a la API de Gemini
-    // Ejemplo: const response = await fetch('/api/gemini', { method: 'POST', body: JSON.stringify({ prompt: promptCompleto }) });
-    // const data = await response.json();
-    // return data.text; // O como sea que Gemini te devuelva el texto
-
     // Simulación con demora:
     return new Promise(resolve => {
         setTimeout(() => {
-            // Accede a los valores del formulario usando form.getValues() dentro de la simulación si es necesario
-            const formValues = form.getValues();
+            const formValues = form.getValues(); // Obtener valores dentro de la simulación
             resolve(`--- Respuesta Simulada de Gemini ---
             **Actividad Didáctica Generada**
 
             **Tema:** ${formValues.centralTheme}
-            **Nivel:** ${formValues.grade.join(', ')}
-            **Objetivo:** Que los estudiantes desarrollen competencias en ${formValues.competenciesToDevelop.join(', ')}.
+            **Grado(s):** ${formValues.grade.join(', ')}
+            **Tiempo Disponible:** ${formValues.timeAvailable}
+            **Metodología Preferida:** ${formValues.methodologyPreference.join(', ')}
+            **Competencias a Desarrollar:** ${formValues.competenciesToDevelop.join(', ')}
+            **Evidencias de Aprendizaje:** ${formValues.learningEvidences.join(', ')}
+            **Componentes Curriculares:** ${formValues.curricularComponents.join(', ')}
+            **Recursos Disponibles:** ${formValues.availableResources.join(', ')}
+            **Contexto y Necesidades:** ${formValues.contextAndNeeds.join(', ')}
+            **Interdisciplinariedad:** ${formValues.interdisciplinarity || 'No especificada'}
 
-            **Instrucciones:**
-            1. Presentación del tema (${formValues.timeAvailable}).
-            2. Actividad principal: [Detalle de la actividad basada en la descripción, usando los recursos: ${formValues.availableResources.join(', ')} y considerando ${formValues.contextAndNeeds.join(', ')}].
-            3. Cierre y evaluación con base en ${formValues.learningEvidences.join(', ')}.
+            **Instrucciones Detalladas:**
+            [Aquí iría la descripción paso a paso generada por la IA...]
 
-            **Recursos:** ${formValues.availableResources.join(', ')}
-            **Evaluación:** Evidencias: ${formValues.learningEvidences.join(', ')}
+            **Materiales Específicos:**
+            [Lista de materiales detallada...]
+
+            **Evaluación:**
+            [Criterios e instrumentos de evaluación alineados...]
             --- Fin Respuesta Simulada ---`);
         }, 1500); // Simula 1.5 segundos de espera
     });
   }
 
-
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  // --- Función onSubmit del formulario ---
+  async function onSubmit(values: FormData) {
     setIsLoading(true);
-    setProposal(null); // Clear previous proposal
+    setProposal(null);
     if (resultadoRef.current) {
-      resultadoRef.current.innerHTML = '<p>Generando propuesta con IA...</p><div class="spinner"></div>'; // Show loading in the result div
+      resultadoRef.current.innerHTML = '<p>Generando propuesta con IA...</p><div class="spinner"></div>';
     }
 
     try {
-      const promptCompleto = `Genera una propuesta de actividad didáctica detallada para docentes.
-        Tema: ${values.centralTheme}
+       const promptCompleto = `Genera una propuesta de actividad didáctica detallada para docentes de Tecnología e Informática en bachillerato, siguiendo los lineamientos del MEN Colombia y la Guía 30.
         Grado(s): ${values.grade.join(", ")}
         Tiempo Disponible: ${values.timeAvailable}
+        Tema Central o Problema: ${values.centralTheme}
         Metodología Preferida: ${values.methodologyPreference.join(", ")}
-        Competencias a Desarrollar: ${values.competenciesToDevelop.join(", ")}
-        Evidencias de Aprendizaje: ${values.learningEvidences.join(", ")}
-        Componentes Curriculares: ${values.curricularComponents.join(", ")}
+        Competencias a Desarrollar (citar textualmente o adaptar de Orientaciones MEN): ${values.competenciesToDevelop.join("; ")}
+        Evidencias de Aprendizaje (citar textualmente o adaptar de Orientaciones MEN): ${values.learningEvidences.join("; ")}
+        Componentes Curriculares a abordar (justificar brevemente): ${values.curricularComponents.join(", ")}
         Recursos Disponibles: ${values.availableResources.join(", ")}
-        Contexto y Necesidades: ${values.contextAndNeeds.join(", ")}
-        Interdisciplinariedad: ${values.interdisciplinarity || 'No especificada'}
+        Contexto y Necesidades Particulares: ${values.contextAndNeeds.join(", ")}
+        Interdisciplinariedad (si aplica): ${values.interdisciplinarity || 'No especificada'}
 
-        Estructura la respuesta claramente con secciones como Título, Objetivo, Descripción paso a paso, Materiales, Tiempo por sección, Evaluación.`;
+        Estructura la respuesta de forma clara y organizada incluyendo:
+        *   Título de la Actividad
+        *   Objetivo(s) de Aprendizaje (alineados con las competencias)
+        *   Descripción Completa (pasos detallados, fases, roles de estudiantes y docente)
+        *   Preguntas Orientadoras para los estudiantes
+        *   Recursos Necesarios (detallados)
+        *   Producto(s) Esperado(s) (tangibles o intangibles)
+        *   Criterios e Instrumentos de Evaluación (rúbricas, listas de chequeo, etc., alineados con competencias y evidencias)
+        *   Posibles Adaptaciones (para diferentes ritmos, necesidades, o recursos limitados)
+        *   Justificación de los Componentes Curriculares seleccionados.
 
-      // Replace this with your actual AI call if needed, or use the simulated one
-      // const aiResponse = await generateActivityProposal({ ... }); // Using the imported Genkit flow
-      const respuestaGemini = await llamarGeminiAPI(promptCompleto); // Using the simulated function for now
+        Asegúrate de que la propuesta NO sea genérica, esté contextualizada a Colombia y sea práctica para implementación en aula.`;
 
-      setProposal(respuestaGemini); // Store the AI response
+      // const aiResponse = await generateActivityProposal(values); // Llamada al Genkit flow real
+      // const respuestaGemini = aiResponse.activityProposal;
+      const respuestaGemini = await llamarGeminiAPI(promptCompleto); // Usando simulación por ahora
+
+      setProposal(respuestaGemini);
       if (resultadoRef.current) {
-         resultadoRef.current.innerText = respuestaGemini; // Display the response in the result div
-         // Or use innerHTML if you trust the source and it contains HTML/Markdown:
-         // resultadoRef.current.innerHTML = marked.parse(respuestaGemini); // Requires 'marked' library
+         resultadoRef.current.innerText = respuestaGemini;
       }
 
       toast({
         title: "Propuesta generada!",
         description: "La propuesta de actividad ha sido generada exitosamente.",
       });
+
+      // --- Guardar en Firebase DESPUÉS de generar ---
+      const guardadoExitoso = await guardarPropuestaEnFirebase(respuestaGemini, values);
+      if (guardadoExitoso) {
+          toast({
+              title: "Guardado Exitoso",
+              description: "La propuesta también se ha guardado en la base de datos.",
+              variant: "default", // Opcional: puedes usar 'success' si tienes esa variante
+          });
+      } else {
+          toast({
+              variant: "destructive",
+              title: "Error al Guardar",
+              description: "No se pudo guardar la propuesta en la base de datos.",
+          });
+      }
+
 
     } catch (error: any) {
       console.error("Error generating proposal:", error);
@@ -333,13 +371,11 @@ export default function Home() {
           error?.message ||
           "Hubo un error al generar la propuesta. Por favor, intenta de nuevo.",
       });
-      setProposal(null);
+      setProposal(null); // Asegúrate de limpiar la propuesta en caso de error
     } finally {
       setIsLoading(false);
     }
   }
-
-  // Removed downloadProposal function as download functionality is removed
 
   return (
     <div className="flex justify-center items-start min-h-screen py-12 bg-secondary">
@@ -398,7 +434,7 @@ export default function Home() {
                       />
                     </FormControl>
                     <FormDescription>
-                      ¿De cuánto tiempo dispones para implementar esta actividad?
+                      ¿De cuánto tiempo dispones para implementar esta actividad? (Sé específico)
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -419,7 +455,7 @@ export default function Home() {
                       />
                     </FormControl>
                     <FormDescription>
-                      ¿Cuál es el tema central, habilidad específica o problema a resolver que deseas abordar?
+                      ¿Cuál es el tema central, habilidad específica o problema a resolver que deseas abordar? Describe detalladamente si es un problema.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -485,7 +521,7 @@ export default function Home() {
                       </div>
                     </ScrollArea>
                     <FormDescription>
-                      Elige las competencias clave del área de Tecnología e Informática (y S.XXI) que la actividad buscará fortalecer.
+                      Elige las competencias clave del área de Tecnología e Informática (y S.XXI) que la actividad buscará fortalecer. (Sé lo más específico posible, cita textualmente de las Orientaciones si es posible).
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -518,7 +554,7 @@ export default function Home() {
                       </div>
                     </ScrollArea>
                     <FormDescription>
-                      ¿Qué productos, desempeños o acciones concretas te permitirán verificar el desarrollo de las competencias seleccionadas?
+                      ¿Qué productos, desempeños o acciones concretas te permitirán verificar el desarrollo de las competencias seleccionadas? (Sé lo más específico posible, cita o adapta de las Orientaciones).
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -584,7 +620,7 @@ export default function Home() {
                       </div>
                     </ScrollArea>
                     <FormDescription>
-                      Marca los recursos tecnológicos y materiales con los que cuentas para esta actividad.
+                      Marca los recursos tecnológicos y materiales con los que cuentas para esta actividad. (Sé muy específico).
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -650,8 +686,6 @@ export default function Home() {
             </form>
           </Form>
         </CardContent>
-          {/* Footer removed as download/edit functionality is gone */}
-          {/* {proposal && ( ... CardFooter removed ... )} */}
           {/* NUEVO: Contenedor para mostrar el resultado de la IA */}
           <CardFooter className="p-6 pt-0">
               <div id="resultadoIA" ref={resultadoRef} className="resultado-container w-full" aria-live="polite">
