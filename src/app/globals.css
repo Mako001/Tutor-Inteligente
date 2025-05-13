@@ -84,90 +84,85 @@
   }
 }
 
-/* Styles for Parsed Lesson Plan */
-.plan-de-clase-container {
+/* Styles for ReactMarkdown rendered content */
+.propuesta-contenido {
   @apply mt-6 mb-8 p-4 md:p-6 bg-card shadow-lg rounded-lg border border-border;
+  /* Add styles for specific markdown elements if needed, e.g.: */
 }
 
-.plan-de-clase-container h1 {
+.propuesta-contenido h1 { /* Corresponds to # Main Title */
   @apply text-3xl md:text-4xl font-bold mb-6 text-center text-accent;
 }
 
-.info-general {
-  @apply mb-6 p-4 border border-border rounded-lg bg-muted/30 shadow-sm grid grid-cols-1 md:grid-cols-2 gap-4;
-}
-.info-general p {
-  @apply text-sm;
-}
-.info-general strong { 
-  @apply font-semibold text-primary;
+.propuesta-contenido h2 { /* Corresponds to ## Section Titles */
+  @apply text-xl md:text-2xl font-semibold mt-6 mb-3 text-primary border-l-4 border-accent pl-3;
 }
 
-.descripcion-seccion,
-.competencias-seccion,
-.evidencias-seccion,
-.recursos-seccion,
-.componentes-seccion,
-.evaluacion-seccion {
-  @apply mb-6;
+.propuesta-contenido h3 { /* Corresponds to ### Subsection Titles or ****Fase X: Title**** */
+  @apply text-lg md:text-xl font-semibold mt-4 mb-2 text-accent-foreground bg-accent p-3 rounded-md;
 }
 
-.descripcion-seccion > h2,
-.competencias-seccion > h2,
-.evidencias-seccion > h2,
-.recursos-seccion > h2,
-.componentes-seccion > h2,
-.evaluacion-seccion > h2 {
-  @apply text-xl md:text-2xl font-semibold mb-3 text-primary border-l-4 border-accent pl-3;
+.propuesta-contenido h4 { /* Corresponds to #### Smaller headings */
+    @apply text-md font-semibold mt-3 mb-1 text-primary;
 }
 
-.descripcion-seccion > p,
-.competencias-seccion > div,
-.evidencias-seccion > div,
-.recursos-seccion > div,
-.componentes-seccion > div,
-.evaluacion-seccion > div {
-  @apply whitespace-pre-wrap bg-muted/20 p-3 rounded-md text-sm leading-relaxed;
+.propuesta-contenido p {
+  @apply mb-4 text-base leading-relaxed;
 }
 
-.fases-container {
-  @apply space-y-6 mt-6;
+.propuesta-contenido strong { /* For **bolded text** */
+  @apply font-semibold;
 }
 
-.fases-container > h2 { /* Styling for the "Fases de la Actividad:" title if it's directly under fases-container */
-    @apply text-xl md:text-2xl font-semibold mb-3 text-primary border-l-4 border-accent pl-3;
+.propuesta-contenido ul, .propuesta-contenido ol {
+  @apply list-inside mb-4 pl-5 space-y-1;
+}
+.propuesta-contenido ul {
+  @apply list-disc;
+}
+.propuesta-contenido ol {
+  @apply list-decimal;
 }
 
-.fase-card {
-  @apply border border-border rounded-lg shadow-md bg-card hover:shadow-xl transition-shadow duration-200 ease-in-out overflow-hidden;
+.propuesta-contenido li {
+  @apply mb-1;
 }
 
-.fase-card > h3 {
-  @apply text-lg md:text-xl font-semibold text-accent-foreground bg-accent p-3; /* removed rounded-t-md to let parent handle rounding */
+.propuesta-contenido blockquote {
+  @apply border-l-4 border-muted-foreground pl-4 italic my-4 text-muted-foreground;
 }
 
-.fase-card > div:not(h3) { /* Content area of the phase card */
-    @apply p-3 space-y-2;
+.propuesta-contenido pre {
+  @apply bg-muted/50 p-4 rounded-md overflow-x-auto text-sm my-4;
 }
 
-.fase-card p {
-   @apply text-sm leading-relaxed;
+.propuesta-contenido code {
+  @apply bg-muted/50 px-1 py-0.5 rounded text-sm font-mono;
 }
 
-.fase-card strong {
-  @apply font-medium text-foreground/90;
+.propuesta-contenido pre code {
+  @apply bg-transparent p-0; /* Reset for code blocks within pre */
 }
 
-.fase-card ul {
-  @apply list-disc list-inside pl-4 space-y-1 text-sm;
+.propuesta-contenido table {
+  @apply w-full my-4 border-collapse border border-border;
+}
+.propuesta-contenido th, .propuesta-contenido td {
+  @apply border border-border px-3 py-2 text-left;
+}
+.propuesta-contenido th {
+  @apply bg-muted/50 font-semibold;
 }
 
-/* Styling for the <pre> tag when plan is not parsed, specific to #resultadoIA */
-#resultadoIA > pre {
- @apply whitespace-pre-wrap text-sm text-foreground/90 p-4 bg-background border border-input rounded-md overflow-x-auto max-h-[600px];
+.propuesta-contenido-error {
+  @apply mt-6 mb-8 p-4 md:p-6 bg-destructive/10 text-destructive shadow-lg rounded-lg border border-destructive/50;
+}
+.propuesta-contenido-error h2 {
+   @apply text-xl md:text-2xl font-semibold mb-3 text-destructive;
 }
 
-/* Styling for the placeholder text when no result is yet available */
-#resultadoIA > p.text-muted-foreground {
+
+/* Styling for the placeholder text when no result is yet available in #resultadoIA */
+#resultadoIA > div > p.text-muted-foreground {
   @apply text-center py-10;
 }

@@ -1,8 +1,8 @@
 // src/app/page.tsx
-'use client'; 
+'use client';
 
 import { useState, FormEvent, useEffect, useRef } from 'react';
-import { firestore } from '@/lib/firebase/client'; 
+import { firestore } from '@/lib/firebase/client';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 
 
 // Interfaz para los datos del formulario
@@ -28,49 +31,23 @@ interface FormData {
   learningEvidences: string[];
   curricularComponents: string[];
   availableResourcesCheckboxes: string[];
-  recursos: string; 
+  recursos: string;
   contextAndNeeds: string[];
-  actividad: string; 
-  evaluacion: string; 
+  actividad: string;
+  evaluacion: string;
   interdisciplinarity?: string;
-  detallesAdicionales: string; 
+  detallesAdicionales: string;
 }
-
-// Interfaz para el plan de clase parseado
-interface PlanDeClase {
-  tituloPrincipal?: string;
-  grade?: string;
-  timeAvailable?: string;
-  centralTheme?: string;
-  methodologyPreference?: string;
-  descripcionCompleta?: string; 
-  fases: Array<{
-    numero: number;
-    tituloFase: string;
-    duracionEstimada?: string;
-    actividad?: string;
-    roles?: string;
-    preguntasOrientadoras?: string[] | string; 
-  }>;
-  competenciesToDevelop?: string; 
-  learningEvidences?: string; 
-  curricularComponents?: string; 
-  availableResources?: string; 
-  contextAndNeeds?: string; 
-  interdisciplinarity?: string; 
-  evaluacion?: string; 
-}
-
 
 // Opciones para los campos de selección múltiple y selectores
 const gradeOptions = [
   "6º", "7º", "8º", "9º", "10º", "11º",
-  "Básica Primaria (1º-5º)", 
+  "Básica Primaria (1º-5º)",
   "Básica Secundaria (6º-9º)",
   "Media Académica (10º-11º)",
   "Media Técnica (10º-11º)",
-  "Ciclos Lectivos Especiales Integrados (CLEI)", 
-  "Educación para Adultos", 
+  "Ciclos Lectivos Especiales Integrados (CLEI)",
+  "Educación para Adultos",
   "Todos los grados de bachillerato (6º-11º)",
   "Otro (especificar en tema o detalles)"
 ];
@@ -82,7 +59,7 @@ const tiempoOptions = [
   { id: "t4", label: "Proyecto mediano (9-15 horas clase, ej. 3-4 semanas)" },
   { id: "t5", label: "Proyecto largo o trimestral (+16 horas clase)" },
   { id: "t6", label: "Flexible / A definir según avance" },
-  { id: "t7", label: "Micro-aprendizaje (menos de 1 hora)" }, 
+  { id: "t7", label: "Micro-aprendizaje (menos de 1 hora)" },
 ];
 
 const methodologyOptions = [
@@ -93,15 +70,15 @@ const methodologyOptions = [
   { id: "meth_design", label: "Pensamiento de Diseño (Design Thinking)" },
   { id: "meth_colab", label: "Aprendizaje Colaborativo / Cooperativo" },
   { id: "meth_steam", label: "Aprendizaje STEAM (Ciencia, Tecnología, Ingeniería, Artes y Matemáticas)" },
-  { id: "meth_indag", label: "Aprendizaje por Indagación" }, 
-  { id: "meth_exp", label: "Aprendizaje Experiencial" }, 
-  { id: "meth_estcas", label: "Estudio de Casos" }, 
-  { id: "meth_sim", label: "Simulaciones y Modelado" }, 
+  { id: "meth_indag", label: "Aprendizaje por Indagación" },
+  { id: "meth_exp", label: "Aprendizaje Experiencial" },
+  { id: "meth_estcas", label: "Estudio de Casos" },
+  { id: "meth_sim", label: "Simulaciones y Modelado" },
   { id: "meth_sugg", label: "Abierto a sugerencias de la IA" },
   { id: "meth_other", label: "Otro (especificar en detalles)" },
 ];
 
-const competenciesOptions = [
+const competenciesToDevelopOptions = [
   { id: "comp_pens_crit", label: "Desarrollo del pensamiento crítico y reflexivo frente a la tecnología y sus implicaciones." },
   { id: "comp_sol_prob", label: "Capacidad para identificar, formular y resolver problemas utilizando tecnología de manera creativa e innovadora." },
   { id: "comp_uso_tic", label: "Uso ético, seguro, legal y responsable de las Tecnologías de la Información y la Comunicación (TIC)." },
@@ -113,10 +90,10 @@ const competenciesOptions = [
   { id: "comp_modelado", label: "Capacidad para modelar y simular fenómenos o sistemas utilizando herramientas tecnológicas." },
   { id: "comp_prog_basic", label: "Introducción al pensamiento computacional y principios básicos de programación/codificación." },
   { id: "comp_seg_dig", label: "Conocimiento y aplicación de medidas de seguridad digital y protección de la privacidad." },
-  { id: "comp_tec_espec", label: "Manejo técnico de herramientas y software específico del área." }, 
-  { id: "comp_gestion_proy", label: "Habilidades para la gestión de proyectos tecnológicos básicos." }, 
-  { id: "comp_adapt", label: "Adaptabilidad y aprendizaje continuo en entornos tecnológicos cambiantes." }, 
-  { id: "comp_interdisc", label: "Capacidad para integrar conocimientos de tecnología con otras áreas del saber." }, 
+  { id: "comp_tec_espec", label: "Manejo técnico de herramientas y software específico del área." },
+  { id: "comp_gestion_proy", label: "Habilidades para la gestión de proyectos tecnológicos básicos." },
+  { id: "comp_adapt", label: "Adaptabilidad y aprendizaje continuo en entornos tecnológicos cambiantes." },
+  { id: "comp_interdisc", label: "Capacidad para integrar conocimientos de tecnología con otras áreas del saber." },
 ];
 
 const learningEvidencesOptions = [
@@ -130,11 +107,11 @@ const learningEvidencesOptions = [
   { id: "ev_uso_herram", label: "Uso efectivo de herramientas de software específicas para la creación de contenido o análisis de datos, demostrando fluidez." },
   { id: "ev_portafolio", label: "Construcción de un portafolio digital con los trabajos y reflexiones del periodo, evidenciando progreso." },
   { id: "ev_autoeval", label: "Autoevaluación y coevaluación del proceso de aprendizaje y los productos generados, usando criterios definidos." },
-  { id: "ev_map_concept", label: "Elaboración de mapas conceptuales o diagramas de flujo para representar procesos o sistemas tecnológicos." }, 
-  { id: "ev_informe_tec", label: "Redacción de un informe técnico o manual de usuario para un artefacto o proceso." }, 
-  { id: "ev_diseno_interfaz", label: "Diseño de interfaces de usuario (mockups, wireframes) para una aplicación o sitio web." }, 
-  { id: "ev_defensa_proy", label: "Defensa oral de un proyecto tecnológico, argumentando decisiones de diseño y funcionalidad." }, 
-  { id: "ev_resol_retos", label: "Resolución de retos de programación o lógica computacional en plataformas interactivas." }, 
+  { id: "ev_map_concept", label: "Elaboración de mapas conceptuales o diagramas de flujo para representar procesos o sistemas tecnológicos." },
+  { id: "ev_informe_tec", label: "Redacción de un informe técnico o manual de usuario para un artefacto o proceso." },
+  { id: "ev_diseno_interfaz", label: "Diseño de interfaces de usuario (mockups, wireframes) para una aplicación o sitio web." },
+  { id: "ev_defensa_proy", label: "Defensa oral de un proyecto tecnológico, argumentando decisiones de diseño y funcionalidad." },
+  { id: "ev_resol_retos", label: "Resolución de retos de programación o lógica computacional en plataformas interactivas." },
 ];
 
 const curricularComponentsOptions = [
@@ -143,9 +120,9 @@ const curricularComponentsOptions = [
   { id: "cc_sol_prob_tec", label: "Solución de Problemas con Tecnología" },
   { id: "cc_tec_soc", label: "Tecnología y Sociedad" },
   { id: "cc_pens_comp", label: "Pensamiento Computacional (transversal)" },
-  { id: "cc_info_com", label: "Información y Comunicación (Manejo de datos, medios digitales)" }, 
-  { id: "cc_etica_leg", label: "Aspectos Éticos y Legales de la Tecnología (Propiedad intelectual, privacidad)" }, 
-  { id: "cc_dis_creac", label: "Diseño y Creación Tecnológica (Prototipado, innovación)" }, 
+  { id: "cc_info_com", label: "Información y Comunicación (Manejo de datos, medios digitales)" },
+  { id: "cc_etica_leg", label: "Aspectos Éticos y Legales de la Tecnología (Propiedad intelectual, privacidad)" },
+  { id: "cc_dis_creac", label: "Diseño y Creación Tecnológica (Prototipado, innovación)" },
 ];
 
 const resourcesOptions = [
@@ -157,10 +134,10 @@ const resourcesOptions = [
   { id: "res_plataf_colab", label: "Plataformas colaborativas en línea (Google Workspace, Microsoft Teams, Moodle, etc.)." },
   { id: "res_mat_prototipado", label: "Materiales para prototipado (cartón, material reciclable, kits básicos de electrónica/robótica si aplica)." },
   { id: "res_biblio_web", label: "Acceso a bibliotecas digitales y recursos web confiables." },
-  { id: "res_sensores_act", label: "Kits de sensores y actuadores (Arduino, Micro:bit, etc.)." }, 
-  { id: "res_impresora3d", label: "Impresora 3D y filamento." }, 
-  { id: "res_herram_man", label: "Herramientas manuales básicas (para desensamble o construcción)." }, 
-  { id: "res_lab_fis", label: "Laboratorio de física o electrónica (si se requiere)." }, 
+  { id: "res_sensores_act", label: "Kits de sensores y actuadores (Arduino, Micro:bit, etc.)." },
+  { id: "res_impresora3d", label: "Impresora 3D y filamento." },
+  { id: "res_herram_man", label: "Herramientas manuales básicas (para desensamble o construcción)." },
+  { id: "res_lab_fis", label: "Laboratorio de física o electrónica (si se requiere)." },
 ];
 
 const contextNeedsOptions = [
@@ -172,10 +149,10 @@ const contextNeedsOptions = [
   { id: "need_motiv", label: "Contexto con baja motivación estudiantil hacia el área de tecnología o temas específicos." },
   { id: "need_recursos_especificos", label: "Disponibilidad (o falta crítica) de software, hardware o plataformas específicas." },
   { id: "need_seguridad", label: "Necesidad de reforzar prácticas de seguridad digital, privacidad y ciudadanía digital." },
-  { id: "need_context_rural", label: "Contexto rural con desafíos de acceso a tecnología o recursos." }, 
-  { id: "need_interes_local", label: "Intereses o problemáticas locales que se pueden abordar con tecnología." }, 
-  { id: "need_multigrado", label: "Aula multigrado o con estudiantes de diferentes edades/niveles de desarrollo." }, 
-  { id: "need_foco_practico", label: "Preferencia por actividades muy prácticas y aplicadas (menos teóricas)." }, 
+  { id: "need_context_rural", label: "Contexto rural con desafíos de acceso a tecnología o recursos." },
+  { id: "need_interes_local", label: "Intereses o problemáticas locales que se pueden abordar con tecnología." },
+  { id: "need_multigrado", label: "Aula multigrado o con estudiantes de diferentes edades/niveles de desarrollo." },
+  { id: "need_foco_practico", label: "Preferencia por actividades muy prácticas y aplicadas (menos teóricas)." },
 ];
 
 export default function HomePage() {
@@ -199,110 +176,17 @@ export default function HomePage() {
   const [cargando, setCargando] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const [currentYear, setCurrentYear] = useState<number | null>(null);
-  const [planParseado, setPlanParseado] = useState<PlanDeClase | null>(null);
 
   useEffect(() => {
     setCurrentYear(new Date().getFullYear());
   }, []);
-
-  useEffect(() => {
-    if (resultadoTexto) { 
-      const parsearPlanDeClase = (texto: string): PlanDeClase | null => {
-        try {
-          const plan: Partial<PlanDeClase> = { fases: [] }; 
-  
-          const tituloPrincipalMatch = texto.match(/## Propuesta de Actividad de Aprendizaje: "([^"]+)"/i) || texto.match(/\*\*Título de la Actividad:\*\*\s*(.*)/i);
-          if (tituloPrincipalMatch) plan.tituloPrincipal = tituloPrincipalMatch[1].trim();
-  
-          const gradoMatch = texto.match(/\*\*Grado\(s\):\*\*\s*(.*)/i) || texto.match(/\*\*Grado:\*\*\s*(.*)/i);
-          if (gradoMatch) plan.grade = gradoMatch[1].trim();
-  
-          const tiempoMatch = texto.match(/\*\*Tiempo Disponible Estimado:\*\*\s*(.*)/i) || texto.match(/\*\*Tiempo Disponible:\*\*\s*(.*)/i) || texto.match(/\*\*Tiempo:\*\*\s*(.*)/i);
-          if (tiempoMatch) plan.timeAvailable = tiempoMatch[1].trim();
-  
-          const temaCentralMatch = texto.match(/\*\*Tema Central:\*\*\s*(.*)/i);
-          if (temaCentralMatch) plan.centralTheme = temaCentralMatch[1].trim();
-  
-          const metodologiaMatch = texto.match(/\*\*Metodología Propuesta:\*\*\s*(.*)/i) || texto.match(/\*\*Metodología Preferida:\*\*\s*(.*)/i) || texto.match(/\*\*Metodología:\*\*\s*(.*)/i);
-          if (metodologiaMatch) plan.methodologyPreference = metodologiaMatch[1].trim();
-  
-          const descMatch = texto.match(/\*\*1\. Descripción Completa(?: de la Actividad)?:\*\*\s*([\s\S]*?)(?=\*\*Fase|\*\*2\. Objetivos|\*\*Objetivos de Aprendizaje|\n\n\*\*|$)/i);
-          if (descMatch) plan.descripcionCompleta = descMatch[1].trim();
-          
-          const fasesRegex = /\*\*Fase\s*(\d+):(?:<[^>]*>)?\s*([^(\r\n]+?)(?:\s*\(([^)]+)\))?\s*(?:<\/[^>]*>)?\*\*\s*([\s\S]*?)(?=\*\*Fase\s*\d+:|\n\n\s*\*\*5\. Producto\(s\) Esperado\(s\)|\n\n\s*\*\*Objetivos|\n\n\s*\*\*Recursos|\n\n\s*\*\*Producto\(s\) Esperado\(s\)|\n\n\s*\*\*Evaluación|\n\n\s*\*\*Adaptaciones|\n\n\s*\*\*Justificación|\Z)/gi;
-          let faseMatch;
-          while ((faseMatch = fasesRegex.exec(texto)) !== null) {
-            const numeroFase = parseInt(faseMatch[1], 10);
-            const tituloFase = faseMatch[2].replace(/<\/?strong>/g, '').trim(); 
-            const duracionEstimada = faseMatch[3] ? faseMatch[3].trim() : undefined;
-            let contenidoFase = faseMatch[4].trim();
-  
-            const actividadMatch = contenidoFase.match(/(?:\*|\-)\s*\*\*(?:Actividad Principal|Actividad|Actividades):\*\*\s*([\s\S]*?)(?=\n\s*(?:\*|\-)\s*\*\*|\n\n|$)/i);
-            const rolesMatch = contenidoFase.match(/(?:\*|\-)\s*\*\*(?:Roles del Docente y Estudiantes|Roles):\*\*\s*([\s\S]*?)(?=\n\s*(?:\*|\-)\s*\*\*|\n\n|$)/i);
-            const preguntasMatch = contenidoFase.match(/(?:\*|\-)\s*\*\*(?:Preguntas Orientadoras):\*\*\s*([\s\S]*?)(?=\n\s*(?:\*|\-)\s*\*\*|\n\n|$)/i);
-            
-            let preguntasArray: string[] | string | undefined = undefined;
-            if (preguntasMatch && preguntasMatch[1]) {
-              const preguntasTexto = preguntasMatch[1].trim();
-              if (preguntasTexto.includes('\n')) {
-                preguntasArray = preguntasTexto.split(/\n\s*(?:\*|\-)\s*/).map(p => p.trim()).filter(p => p);
-              } else {
-                preguntasArray = preguntasTexto; // Guardar como string simple si no hay saltos de línea
-              }
-            }
-
-            plan.fases!.push({
-              numero: numeroFase,
-              tituloFase: tituloFase,
-              duracionEstimada: duracionEstimada,
-              actividad: actividadMatch ? actividadMatch[1].trim() : undefined,
-              roles: rolesMatch ? rolesMatch[1].trim() : undefined,
-              preguntasOrientadoras: preguntasArray,
-            });
-          }
-
-          if (!plan.tituloPrincipal) {
-            const tituloAltMatch = texto.match(/^\s*#\s*([^\r\n]+)/m);
-            if (tituloAltMatch) plan.tituloPrincipal = tituloAltMatch[1].trim();
-            else plan.tituloPrincipal = "Propuesta de Actividad"; 
-          }
-          
-          // Extraer otras secciones si es necesario
-          const competenciasMatch = texto.match(/\*\*3\. Competencias a Desarrollar \(MEN - TI\):\*\*\s*([\s\S]*?)(?=\n\n\*\*4\. Fases|\n\n\*\*Fases de la Actividad|$)/i);
-          if (competenciasMatch) plan.competenciesToDevelop = competenciasMatch[1].trim();
-
-          const evidenciasMatch = texto.match(/\*\*Evidencias de Aprendizaje \(MEN - TI\):\*\*\s*([\s\S]*?)(?=\n\n\*\*Criterios de Evaluación|$)/i);
-           if (evidenciasMatch) plan.learningEvidences = evidenciasMatch[1].trim();
-          
-          const componentesMatch = texto.match(/\*\*9\. Justificación de los Componentes Curriculares:\*\*\s*([\s\S]*?)(?=\n\n\*\*10\. Integración Interdisciplinar|$)/i);
-          if (componentesMatch) plan.curricularComponents = componentesMatch[1].trim();
-
-          const recursosMatch = texto.match(/\*\*7\. Recursos Necesarios \(Generales\):\*\*\s*([\s\S]*?)(?=\n\n\*\*8\. Posibles Adaptaciones|$)/i);
-          if (recursosMatch) plan.availableResources = recursosMatch[1].trim();
-
-          const evaluacionMatch = texto.match(/\*\*6\. Evaluación:\*\*\s*([\s\S]*?)(?=\n\n\*\*7\. Recursos Necesarios|\n\n\*\*Recursos Necesarios \(Generales\)|$)/i);
-          if (evaluacionMatch) plan.evaluacion = evaluacionMatch[1].trim();
-
-
-          return plan as PlanDeClase; 
-        } catch (error) {
-          console.error("Error parseando el plan de clase:", error);
-          return null;
-        }
-      };
-  
-      const plan = parsearPlanDeClase(resultadoTexto);
-      setPlanParseado(plan);
-      console.log("Plan Parseado:", plan); 
-    }
-  }, [resultadoTexto]);
 
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
-  
+
   const handleSelectChange = (name: keyof FormData, value: string) => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
@@ -318,43 +202,43 @@ export default function HomePage() {
     });
   };
 
-const llamarGeminiAPI = async (prompt: string): Promise<string> => {
-  console.log("Frontend: Enviando prompt al backend (/api/gemini):", prompt.substring(0,100) + "...");
-  setError(''); 
+  const llamarGeminiAPI = async (prompt: string): Promise<string> => {
+    console.log("Frontend: Enviando prompt al backend (/api/gemini):", prompt.substring(0, 100) + "...");
+    setError('');
 
-  try {
-    const response = await fetch('/api/gemini', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ prompt: prompt }),
-    });
+    try {
+      const response = await fetch('/api/gemini', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt: prompt }),
+      });
 
-    const data = await response.json(); 
+      const data = await response.json();
 
-    if (!response.ok) {
-      const errorMessage = data?.error || `Error del servidor: ${response.status} ${response.statusText}`;
-      console.error("Frontend: Error desde la API Route de Gemini:", errorMessage);
-      throw new Error(errorMessage);
-    }
-    
-    if (data.error) { 
+      if (!response.ok) {
+        const errorMessage = data?.error || `Error del servidor: ${response.status} ${response.statusText}`;
+        console.error("Frontend: Error desde la API Route de Gemini:", errorMessage);
+        throw new Error(errorMessage);
+      }
+
+      if (data.error) {
         console.error("Frontend: Error en el cuerpo de la respuesta de la API de Gemini (via backend):", data.error);
         throw new Error(data.error);
-    }
-    
-    console.log("Frontend: Respuesta del backend (Gemini):", data.generatedText ? data.generatedText.substring(0,100) + "..." : "Sin texto generado");
-    return data.generatedText || ""; 
+      }
 
-  } catch (fetchError) {
-    console.error("Frontend: Error al hacer fetch a /api/gemini:", fetchError);
-    if (fetchError instanceof Error) {
+      console.log("Frontend: Respuesta del backend (Gemini):", data.generatedText ? data.generatedText.substring(0, 100) + "..." : "Sin texto generado");
+      return data.generatedText || "";
+
+    } catch (fetchError) {
+      console.error("Frontend: Error al hacer fetch a /api/gemini:", fetchError);
+      if (fetchError instanceof Error) {
         throw new Error(`No se pudo conectar con el asistente de IA: ${fetchError.message}`);
+      }
+      throw new Error("No se pudo conectar con el asistente de IA: error desconocido.");
     }
-    throw new Error("No se pudo conectar con el asistente de IA: error desconocido.");
-  }
-};
+  };
 
   const guardarPropuestaEnFirebase = async (propuesta: string, datos: FormData) => {
     if (!firestore) {
@@ -364,7 +248,7 @@ const llamarGeminiAPI = async (prompt: string): Promise<string> => {
     }
     try {
       const dataToSave = {
-        ...datos, 
+        ...datos,
         competenciesToDevelop: datos.competenciesToDevelop.join(', '),
         learningEvidences: datos.learningEvidences.join(', '),
         curricularComponents: datos.curricularComponents.join(', '),
@@ -375,18 +259,17 @@ const llamarGeminiAPI = async (prompt: string): Promise<string> => {
       };
       await addDoc(collection(firestore, "propuestas"), dataToSave);
       console.log("Propuesta guardada en Firebase");
-    } catch (e: any) { 
+    } catch (e: any) {
       console.error("Error al guardar en Firebase: ", e);
       setError(`Error al guardar la propuesta en la base de datos: ${e.message}`);
     }
   };
 
   const handleGenerarPropuesta = async (e: FormEvent) => {
-    e.preventDefault(); 
+    e.preventDefault();
     setCargando(true);
     setResultadoTexto('');
     setError('');
-    setPlanParseado(null);
 
 
     if (!formData.centralTheme || !formData.competenciesToDevelop.length) {
@@ -458,7 +341,7 @@ const llamarGeminiAPI = async (prompt: string): Promise<string> => {
     *   **Roles:** ...
     *   **Preguntas Orientadoras:** ...
     *   **Recursos Específicos para esta Fase:** ...
-    
+
     (Continuar con más fases según sea necesario)
 
     **5. Producto(s) Esperado(s):**
@@ -498,17 +381,17 @@ const llamarGeminiAPI = async (prompt: string): Promise<string> => {
       await guardarPropuestaEnFirebase(respuesta, formData);
 
     } catch (apiErrorOrFetchError) {
-        console.error("Error en el flujo de generación:", apiErrorOrFetchError);
-        if (apiErrorOrFetchError instanceof Error) {
-           setError(`Hubo un error: ${apiErrorOrFetchError.message}`);
-        } else {
-           setError("Hubo un error desconocido al generar la propuesta.");
-        }
+      console.error("Error en el flujo de generación:", apiErrorOrFetchError);
+      if (apiErrorOrFetchError instanceof Error) {
+        setError(`Hubo un error: ${apiErrorOrFetchError.message}`);
+      } else {
+        setError("Hubo un error desconocido al generar la propuesta.");
+      }
     } finally {
       setCargando(false);
     }
   };
-  
+
   return (
     <div className="container mx-auto p-4 md:p-8 min-h-screen flex flex-col items-center bg-secondary" suppressHydrationWarning={true}>
       <header className="text-center mb-10 py-6">
@@ -517,7 +400,7 @@ const llamarGeminiAPI = async (prompt: string): Promise<string> => {
       </header>
 
       <main className="w-full max-w-4xl bg-card p-8 rounded-xl shadow-2xl" suppressHydrationWarning={true}>
-      <p className="text-muted-foreground mb-6 text-center">
+        <p className="text-muted-foreground mb-6 text-center">
           ¡Hola, colega docente de Informática! Completa la siguiente información para generar una propuesta de actividad ajustada a tus necesidades y a los lineamientos del MEN.
         </p>
         <form onSubmit={handleGenerarPropuesta} className="space-y-8">
@@ -534,24 +417,24 @@ const llamarGeminiAPI = async (prompt: string): Promise<string> => {
               </SelectContent>
             </Select>
           </div>
-          
-           <div className="space-y-3">
+
+          <div className="space-y-3">
             <Label htmlFor="timeAvailable" className="block text-lg font-semibold text-foreground mb-1">
               2. Tiempo Disponible:
             </Label>
             <Select name="timeAvailable" value={formData.timeAvailable} onValueChange={(value) => handleSelectChange('timeAvailable', value)}>
-                <SelectTrigger id="timeAvailable" className="mt-1 w-full">
-                    <SelectValue placeholder="Selecciona el tiempo" />
-                </SelectTrigger>
-                <SelectContent>
-                    {tiempoOptions.map(t => <SelectItem key={t.id} value={t.label}>{t.label}</SelectItem>)}
-                </SelectContent>
+              <SelectTrigger id="timeAvailable" className="mt-1 w-full">
+                <SelectValue placeholder="Selecciona el tiempo" />
+              </SelectTrigger>
+              <SelectContent>
+                {tiempoOptions.map(t => <SelectItem key={t.id} value={t.label}>{t.label}</SelectItem>)}
+              </SelectContent>
             </Select>
             <Input
               type="text"
               name="timeAvailable_otro"
               value={formData.timeAvailable.startsWith("Flexible") || tiempoOptions.find(opt => opt.label === formData.timeAvailable) ? "" : formData.timeAvailable}
-              onChange={(e) => setFormData(prev => ({...prev, timeAvailable: e.target.value}))}
+              onChange={(e) => setFormData(prev => ({ ...prev, timeAvailable: e.target.value }))}
               className="mt-2"
               placeholder="Si es flexible o necesitas detallar, especifica aquí"
             />
@@ -578,19 +461,19 @@ const llamarGeminiAPI = async (prompt: string): Promise<string> => {
               4. Metodología Preferida:
             </Label>
             <Select name="methodologyPreference" value={formData.methodologyPreference} onValueChange={(value) => handleSelectChange('methodologyPreference', value)}>
-                <SelectTrigger id="methodologyPreference" className="mt-1 w-full">
-                    <SelectValue placeholder="Selecciona la metodología" />
-                </SelectTrigger>
-                <SelectContent>
-                    {methodologyOptions.map(m => <SelectItem key={m.id} value={m.label}>{m.label}</SelectItem>)}
-                </SelectContent>
+              <SelectTrigger id="methodologyPreference" className="mt-1 w-full">
+                <SelectValue placeholder="Selecciona la metodología" />
+              </SelectTrigger>
+              <SelectContent>
+                {methodologyOptions.map(m => <SelectItem key={m.id} value={m.label}>{m.label}</SelectItem>)}
+              </SelectContent>
             </Select>
           </div>
 
           <div className="space-y-3">
             <Label className="block text-lg font-semibold text-foreground">5. Competencias a Desarrollar:</Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 max-h-60 overflow-y-auto p-2 border border-input rounded-md">
-              {competenciesOptions.map(comp => (
+              {competenciesToDevelopOptions.map(comp => (
                 <div key={comp.id} className="flex items-start space-x-3 p-2 rounded-md hover:bg-muted transition-colors">
                   <Checkbox
                     id={`comp-${comp.id}`}
@@ -601,7 +484,7 @@ const llamarGeminiAPI = async (prompt: string): Promise<string> => {
                 </div>
               ))}
             </div>
-             <p className="text-xs text-muted-foreground mt-1">Selecciona las competencias clave (MEN / Guía 30).</p>
+            <p className="text-xs text-muted-foreground mt-1">Selecciona las competencias clave (MEN / Guía 30).</p>
           </div>
 
           <div className="space-y-3">
@@ -621,12 +504,12 @@ const llamarGeminiAPI = async (prompt: string): Promise<string> => {
             <p className="text-xs text-muted-foreground mt-1">¿Qué acciones o productos permitirán verificar el aprendizaje?</p>
           </div>
 
-           <div className="space-y-3">
+          <div className="space-y-3">
             <Label className="block text-lg font-semibold text-foreground">7. Componentes Curriculares:</Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 max-h-60 overflow-y-auto p-2 border border-input rounded-md">
               {curricularComponentsOptions.map(item => (
                 <div key={item.id} className="flex items-start space-x-3 p-2 rounded-md hover:bg-muted transition-colors">
-                   <Checkbox
+                  <Checkbox
                     id={`cc-${item.id}`}
                     checked={(formData.curricularComponents || []).includes(item.label)}
                     onCheckedChange={() => handleCheckboxChange('curricularComponents', item.label)}
@@ -635,12 +518,12 @@ const llamarGeminiAPI = async (prompt: string): Promise<string> => {
                 </div>
               ))}
             </div>
-             <p className="text-xs text-muted-foreground mt-1">¿Cuáles componentes del área se abordarán?</p>
+            <p className="text-xs text-muted-foreground mt-1">¿Cuáles componentes del área se abordarán?</p>
           </div>
-          
+
           <div className="space-y-3">
             <Label className="block text-lg font-semibold text-foreground">8. Recursos Disponibles (selección principal):</Label>
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 max-h-60 overflow-y-auto p-2 border border-input rounded-md">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 max-h-60 overflow-y-auto p-2 border border-input rounded-md">
               {resourcesOptions.map(item => (
                 <div key={item.id} className="flex items-start space-x-3 p-2 rounded-md hover:bg-muted transition-colors">
                   <Checkbox
@@ -655,7 +538,7 @@ const llamarGeminiAPI = async (prompt: string): Promise<string> => {
           </div>
           <div>
             <Label htmlFor="recursos" className="block text-sm font-medium text-foreground mb-1">
-               Recursos Adicionales (texto libre):
+              Recursos Adicionales (texto libre):
             </Label>
             <Textarea
               name="recursos"
@@ -668,7 +551,7 @@ const llamarGeminiAPI = async (prompt: string): Promise<string> => {
             />
           </div>
 
-           <div className="space-y-3">
+          <div className="space-y-3">
             <Label className="block text-lg font-semibold text-foreground">9. Contexto y Necesidades Particulares:</Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 max-h-60 overflow-y-auto p-2 border border-input rounded-md">
               {contextNeedsOptions.map(item => (
@@ -682,9 +565,9 @@ const llamarGeminiAPI = async (prompt: string): Promise<string> => {
                 </div>
               ))}
             </div>
-             <p className="text-xs text-muted-foreground mt-1">¿Alguna particularidad de tu contexto escolar o estudiantes?</p>
+            <p className="text-xs text-muted-foreground mt-1">¿Alguna particularidad de tu contexto escolar o estudiantes?</p>
           </div>
-          
+
           <div>
             <Label htmlFor="actividad" className="block text-lg font-semibold text-foreground mb-1">
               10. Ideas Iniciales sobre la Actividad (opcional):
@@ -700,7 +583,7 @@ const llamarGeminiAPI = async (prompt: string): Promise<string> => {
             />
           </div>
 
-           <div>
+          <div>
             <Label htmlFor="evaluacion" className="block text-lg font-semibold text-foreground mb-1">
               11. Ideas Iniciales sobre la Evaluación (opcional):
             </Label>
@@ -715,7 +598,7 @@ const llamarGeminiAPI = async (prompt: string): Promise<string> => {
             />
           </div>
 
-           <div>
+          <div>
             <Label htmlFor="interdisciplinarity" className="block text-lg font-semibold text-foreground mb-1">
               12. Interdisciplinariedad (Opcional):
             </Label>
@@ -759,113 +642,38 @@ const llamarGeminiAPI = async (prompt: string): Promise<string> => {
             </Button>
           </div>
 
-          {error && <p className="text-sm text-destructive mt-4 text-center">{error}</p>}
+          {/* Form-level error display, distinct from result section error */}
+          {error && !cargando && <p className="text-sm text-destructive mt-4 text-center">{error}</p>}
         </form>
 
         {/* Sección de Resultado */}
-        {!cargando && (
-          <section id="resultadoIA" aria-live="polite" className="mt-10 p-6 border border-input rounded-lg bg-background shadow-lg">
-            <h2 className="text-3xl font-semibold text-primary mb-6 pb-2 border-b border-border">Propuesta Generada:</h2>
-            {planParseado ? (
-              <div className="plan-de-clase-container text-foreground space-y-6">
-                {planParseado.tituloPrincipal && (
-                  <h1 className="text-4xl font-bold mb-6 text-center text-accent">{planParseado.tituloPrincipal}</h1>
-                )}
-
-                <div className="info-general grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 p-4 border border-border rounded-lg bg-muted/30 shadow-sm">
-                  {planParseado.grade && <p><strong>Grado:</strong> {planParseado.grade}</p>}
-                  {planParseado.timeAvailable && <p><strong>Tiempo Disponible:</strong> {planParseado.timeAvailable}</p>}
-                  {planParseado.centralTheme && <p className="md:col-span-2"><strong>Tema Central:</strong> {planParseado.centralTheme}</p>}
-                  {planParseado.methodologyPreference && <p className="md:col-span-2"><strong>Metodología Propuesta:</strong> {planParseado.methodologyPreference}</p>}
-                </div>
-
-                {planParseado.descripcionCompleta && (
-                  <div className="descripcion-seccion mb-6">
-                    <h2 className="text-2xl font-semibold mb-3 text-primary border-l-4 border-accent pl-2">1. Descripción Completa de la Actividad</h2>
-                    <p className="whitespace-pre-wrap bg-muted/20 p-3 rounded-md">{planParseado.descripcionCompleta}</p>
-                  </div>
-                )}
-                
-                {planParseado.competenciesToDevelop && (
-                  <div className="competencias-seccion mb-6">
-                    <h2 className="text-2xl font-semibold mb-3 text-primary border-l-4 border-accent pl-2">3. Competencias a Desarrollar</h2>
-                    <div className="whitespace-pre-wrap bg-muted/20 p-3 rounded-md">{planParseado.competenciesToDevelop}</div>
-                  </div>
-                )}
-
-
-                {planParseado.fases && planParseado.fases.length > 0 && (
-                  <div className="fases-container space-y-6">
-                    <h2 className="text-2xl font-semibold mb-3 text-primary border-l-4 border-accent pl-2">4. Fases de la Actividad:</h2>
-                    {planParseado.fases.map((fase, index) => (
-                      <div key={index} className="fase-card p-4 border border-border rounded-lg shadow-md bg-card hover:shadow-xl transition-shadow">
-                        <h3 className="text-xl font-semibold mb-3 text-accent-foreground bg-accent p-2 rounded-t-md">
-                          Fase {fase.numero}: {fase.tituloFase}
-                          {fase.duracionEstimada && <span className="text-sm font-normal ml-2">({fase.duracionEstimada})</span>}
-                        </h3>
-                        <div className="p-3 space-y-2">
-                          {fase.actividad && <p className="mb-1"><strong>Actividad:</strong> <span className="whitespace-pre-wrap block mt-1">{fase.actividad}</span></p>}
-                          {fase.roles && <p className="mb-1"><strong>Roles:</strong> <span className="whitespace-pre-wrap block mt-1">{fase.roles}</span></p>}
-                          {fase.preguntasOrientadoras && (
-                            <div className="mt-2">
-                              <strong className="block mb-1">Preguntas Orientadoras:</strong>
-                              {Array.isArray(fase.preguntasOrientadoras) && fase.preguntasOrientadoras.length > 0 ? (
-                                <ul className="list-disc list-inside pl-4 space-y-1 text-sm">
-                                  {fase.preguntasOrientadoras.map((pregunta, pIndex) => (
-                                    <li key={pIndex}>{pregunta}</li>
-                                  ))}
-                                </ul>
-                              ) : typeof fase.preguntasOrientadoras === 'string' ? (
-                                <p className="text-sm whitespace-pre-wrap">{fase.preguntasOrientadoras}</p>
-                              ): null}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                
-                {planParseado.evaluacion && (
-                  <div className="evaluacion-seccion mb-6">
-                    <h2 className="text-2xl font-semibold mb-3 text-primary border-l-4 border-accent pl-2">6. Evaluación</h2>
-                    <div className="whitespace-pre-wrap bg-muted/20 p-3 rounded-md">{planParseado.evaluacion}</div>
-                  </div>
-                )}
-                
-                 {planParseado.learningEvidences && (
-                  <div className="evidencias-seccion mb-6">
-                     <h2 className="text-xl font-semibold mb-2 text-primary">Evidencias de Aprendizaje (MEN - TI):</h2>
-                    <div className="whitespace-pre-wrap bg-muted/20 p-3 rounded-md">{planParseado.learningEvidences}</div>
-                  </div>
-                )}
-
-
-                {planParseado.availableResources && (
-                  <div className="recursos-seccion mb-6">
-                    <h2 className="text-2xl font-semibold mb-3 text-primary border-l-4 border-accent pl-2">7. Recursos Necesarios (Generales)</h2>
-                    <div className="whitespace-pre-wrap bg-muted/20 p-3 rounded-md">{planParseado.availableResources}</div>
-                  </div>
-                )}
-
-                {planParseado.curricularComponents && (
-                  <div className="componentes-seccion mb-6">
-                    <h2 className="text-2xl font-semibold mb-3 text-primary border-l-4 border-accent pl-2">9. Justificación de los Componentes Curriculares</h2>
-                    <div className="whitespace-pre-wrap bg-muted/20 p-3 rounded-md">{planParseado.curricularComponents}</div>
-                  </div>
-                )}
-
-
-              </div>
-            ) : resultadoTexto ? ( 
-              <pre className="whitespace-pre-wrap text-sm text-foreground/90 p-4 bg-background border border-input rounded-md overflow-x-auto">
+        <section id="resultadoIA" aria-live="polite" className="mt-10">
+          {cargando && (
+            <div className="flex justify-center items-center p-6 text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary mr-3"></div>
+              <p className="text-muted-foreground">Generando propuesta...</p>
+            </div>
+          )}
+          {error && !cargando && (
+            <div className="propuesta-contenido-error p-6 border border-destructive/50 rounded-lg bg-destructive/10 text-destructive">
+              <h2 className="text-xl font-semibold text-destructive mb-3">Error al Generar Propuesta</h2>
+              <p>{error}</p>
+            </div>
+          )}
+          {resultadoTexto && !cargando && !error && (
+            <div className="propuesta-contenido">
+              <h2 className="text-3xl font-semibold text-primary mb-6 pb-2 border-b border-border">Propuesta Generada:</h2>
+              <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
                 {resultadoTexto}
-              </pre>
-            ) : ( 
-              <p className="text-center text-muted-foreground">La propuesta generada aparecerá aquí.</p>
-            )}
-          </section>
-        )}
+              </ReactMarkdown>
+            </div>
+          )}
+          {!resultadoTexto && !cargando && !error && (
+            <div className="text-center text-muted-foreground py-10">
+              <p>La propuesta generada aparecerá aquí después de completar el formulario.</p>
+            </div>
+          )}
+        </section>
       </main>
 
       <footer className="text-center mt-16 py-6 text-sm text-muted-foreground" suppressHydrationWarning={true}>
