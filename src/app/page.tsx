@@ -36,12 +36,42 @@ interface FormData {
   detallesAdicionales: string; 
 }
 
+// Interfaz para el plan de clase parseado
+interface PlanDeClase {
+  tituloPrincipal?: string;
+  grade?: string;
+  timeAvailable?: string;
+  centralTheme?: string;
+  methodologyPreference?: string;
+  descripcionCompleta?: string; // Renombrado desde metodologia
+  fases: Array<{
+    numero: number;
+    tituloFase: string;
+    duracionEstimada?: string;
+    actividad?: string;
+    roles?: string;
+    preguntasOrientadoras?: string[] | string; // Puede ser array o string si no se parsea bien
+  }>;
+  // Otros campos generales que puedas extraer
+  competenciesToDevelop?: string; // Asumiendo que se extrae como string
+  learningEvidences?: string; // Asumiendo que se extrae como string
+  curricularComponents?: string; // Asumiendo que se extrae como string
+  availableResources?: string; // Asumiendo que se extrae como string
+  contextAndNeeds?: string; // Asumiendo que se extrae como string
+  interdisciplinarity?: string; // Asumiendo que se extrae como string
+  evaluacion?: string; // Asumiendo que se extrae como string
+}
+
+
 // Opciones para los campos de selección múltiple y selectores
 const gradeOptions = [
   "6º", "7º", "8º", "9º", "10º", "11º",
+  "Básica Primaria (1º-5º)", // Añadido
   "Básica Secundaria (6º-9º)",
   "Media Académica (10º-11º)",
   "Media Técnica (10º-11º)",
+  "Ciclos Lectivos Especiales Integrados (CLEI)", // Añadido
+  "Educación para Adultos", // Añadido
   "Todos los grados de bachillerato (6º-11º)",
   "Otro (especificar en tema o detalles)"
 ];
@@ -53,6 +83,7 @@ const tiempoOptions = [
   { id: "t4", label: "Proyecto mediano (9-15 horas clase, ej. 3-4 semanas)" },
   { id: "t5", label: "Proyecto largo o trimestral (+16 horas clase)" },
   { id: "t6", label: "Flexible / A definir según avance" },
+  { id: "t7", label: "Micro-aprendizaje (menos de 1 hora)" }, // Añadido
 ];
 
 const methodologyOptions = [
@@ -63,6 +94,10 @@ const methodologyOptions = [
   { id: "meth_design", label: "Pensamiento de Diseño (Design Thinking)" },
   { id: "meth_colab", label: "Aprendizaje Colaborativo / Cooperativo" },
   { id: "meth_steam", label: "Aprendizaje STEAM (Ciencia, Tecnología, Ingeniería, Artes y Matemáticas)" },
+  { id: "meth_indag", label: "Aprendizaje por Indagación" }, // Añadido
+  { id: "meth_exp", label: "Aprendizaje Experiencial" }, // Añadido
+  { id: "meth_estcas", label: "Estudio de Casos" }, // Añadido
+  { id: "meth_sim", label: "Simulaciones y Modelado" }, // Añadido
   { id: "meth_sugg", label: "Abierto a sugerencias de la IA" },
   { id: "meth_other", label: "Otro (especificar en detalles)" },
 ];
@@ -79,19 +114,28 @@ const competenciesOptions = [
   { id: "comp_modelado", label: "Capacidad para modelar y simular fenómenos o sistemas utilizando herramientas tecnológicas." },
   { id: "comp_prog_basic", label: "Introducción al pensamiento computacional y principios básicos de programación/codificación." },
   { id: "comp_seg_dig", label: "Conocimiento y aplicación de medidas de seguridad digital y protección de la privacidad." },
+  { id: "comp_tec_espec", label: "Manejo técnico de herramientas y software específico del área." }, // Añadido
+  { id: "comp_gestion_proy", label: "Habilidades para la gestión de proyectos tecnológicos básicos." }, // Añadido
+  { id: "comp_adapt", label: "Adaptabilidad y aprendizaje continuo en entornos tecnológicos cambiantes." }, // Añadido
+  { id: "comp_interdisc", label: "Capacidad para integrar conocimientos de tecnología con otras áreas del saber." }, // Añadido
 ];
 
 const learningEvidencesOptions = [
   { id: "ev_proy_dig", label: "Creación de un proyecto digital (presentación, video, podcast, blog, sitio web básico) que demuestre comprensión del tema." },
   { id: "ev_sol_tec", label: "Diseño y/o prototipado de una solución tecnológica a un problema planteado." },
   { id: "ev_analisis_crit", label: "Análisis crítico y debate argumentado sobre el impacto de una tecnología específica." },
-  { id: "ev_colab_linea", label: "Participación activa y constructiva en actividades colaborativas en línea." },
-  { id: "ev_pres_info", label: "Presentación oral o escrita de información investigada, utilizando herramientas TIC." },
-  { id: "ev_prog_simple", label: "Desarrollo de un algoritmo o programa sencillo para resolver una tarea específica." },
-  { id: "ev_diag_tec", label: "Diagnóstico de problemas en artefactos o sistemas tecnológicos simples y propuesta de soluciones." },
-  { id: "ev_uso_herram", label: "Uso efectivo de herramientas de software específicas para la creación de contenido o análisis de datos." },
-  { id: "ev_portafolio", label: "Construcción de un portafolio digital con los trabajos y reflexiones del periodo." },
-  { id: "ev_autoeval", label: "Autoevaluación y coevaluación del proceso de aprendizaje y los productos generados." },
+  { id: "ev_colab_linea", label: "Participación activa y constructiva en actividades colaborativas en línea utilizando herramientas digitales." },
+  { id: "ev_pres_info", label: "Presentación oral o escrita de información investigada, utilizando herramientas TIC y citando fuentes." },
+  { id: "ev_prog_simple", label: "Desarrollo de un algoritmo o programa sencillo para resolver una tarea específica, documentando el proceso." },
+  { id: "ev_diag_tec", label: "Diagnóstico de problemas en artefactos o sistemas tecnológicos simples y propuesta de soluciones viables." },
+  { id: "ev_uso_herram", label: "Uso efectivo de herramientas de software específicas para la creación de contenido o análisis de datos, demostrando fluidez." },
+  { id: "ev_portafolio", label: "Construcción de un portafolio digital con los trabajos y reflexiones del periodo, evidenciando progreso." },
+  { id: "ev_autoeval", label: "Autoevaluación y coevaluación del proceso de aprendizaje y los productos generados, usando criterios definidos." },
+  { id: "ev_map_concept", label: "Elaboración de mapas conceptuales o diagramas de flujo para representar procesos o sistemas tecnológicos." }, // Añadido
+  { id: "ev_informe_tec", label: "Redacción de un informe técnico o manual de usuario para un artefacto o proceso." }, // Añadido
+  { id: "ev_diseno_interfaz", label: "Diseño de interfaces de usuario (mockups, wireframes) para una aplicación o sitio web." }, // Añadido
+  { id: "ev_defensa_proy", label: "Defensa oral de un proyecto tecnológico, argumentando decisiones de diseño y funcionalidad." }, // Añadido
+  { id: "ev_resol_retos", label: "Resolución de retos de programación o lógica computacional en plataformas interactivas." }, // Añadido
 ];
 
 const curricularComponentsOptions = [
@@ -100,6 +144,9 @@ const curricularComponentsOptions = [
   { id: "cc_sol_prob_tec", label: "Solución de Problemas con Tecnología" },
   { id: "cc_tec_soc", label: "Tecnología y Sociedad" },
   { id: "cc_pens_comp", label: "Pensamiento Computacional (transversal)" },
+  { id: "cc_info_com", label: "Información y Comunicación (Manejo de datos, medios digitales)" }, // Añadido
+  { id: "cc_etica_leg", label: "Aspectos Éticos y Legales de la Tecnología (Propiedad intelectual, privacidad)" }, // Añadido
+  { id: "cc_dis_creac", label: "Diseño y Creación Tecnológica (Prototipado, innovación)" }, // Añadido
 ];
 
 const resourcesOptions = [
@@ -111,17 +158,25 @@ const resourcesOptions = [
   { id: "res_plataf_colab", label: "Plataformas colaborativas en línea (Google Workspace, Microsoft Teams, Moodle, etc.)." },
   { id: "res_mat_prototipado", label: "Materiales para prototipado (cartón, material reciclable, kits básicos de electrónica/robótica si aplica)." },
   { id: "res_biblio_web", label: "Acceso a bibliotecas digitales y recursos web confiables." },
+  { id: "res_sensores_act", label: "Kits de sensores y actuadores (Arduino, Micro:bit, etc.)." }, // Añadido
+  { id: "res_impresora3d", label: "Impresora 3D y filamento." }, // Añadido
+  { id: "res_herram_man", label: "Herramientas manuales básicas (para desensamble o construcción)." }, // Añadido
+  { id: "res_lab_fis", label: "Laboratorio de física o electrónica (si se requiere)." }, // Añadido
 ];
 
 const contextNeedsOptions = [
-  { id: "need_conect_limit", label: "Conectividad a internet limitada o intermitente." },
-  { id: "need_pocos_equipos", label: "Número limitado de computadores por estudiante." },
-  { id: "need_diversidad_habil", label: "Estudiantes con diversos niveles de alfabetización y competencia digital." },
-  { id: "need_inclusion", label: "Necesidad de adaptaciones para estudiantes con necesidades educativas especiales." },
-  { id: "need_foco_colab", label: "Énfasis en el desarrollo de habilidades de trabajo colaborativo." },
-  { id: "need_motiv", label: "Contexto con baja motivación estudiantil hacia el área." },
-  { id: "need_recursos_especificos", label: "Disponibilidad (o falta) de software o hardware específico." },
-  { id: "need_seguridad", label: "Necesidad de reforzar prácticas de seguridad y privacidad en línea." },
+  { id: "need_conect_limit", label: "Conectividad a internet limitada o intermitente en el aula/institución." },
+  { id: "need_pocos_equipos", label: "Número limitado de computadores o dispositivos por estudiante (requiere trabajo en equipo)." },
+  { id: "need_diversidad_habil", label: "Estudiantes con diversos niveles de alfabetización y competencia digital previa." },
+  { id: "need_inclusion", label: "Necesidad de adaptaciones específicas para estudiantes con necesidades educativas especiales (NEE)." },
+  { id: "need_foco_colab", label: "Énfasis en el desarrollo de habilidades de trabajo colaborativo y comunicación." },
+  { id: "need_motiv", label: "Contexto con baja motivación estudiantil hacia el área de tecnología o temas específicos." },
+  { id: "need_recursos_especificos", label: "Disponibilidad (o falta crítica) de software, hardware o plataformas específicas." },
+  { id: "need_seguridad", label: "Necesidad de reforzar prácticas de seguridad digital, privacidad y ciudadanía digital." },
+  { id: "need_context_rural", label: "Contexto rural con desafíos de acceso a tecnología o recursos." }, // Añadido
+  { id: "need_interes_local", label: "Intereses o problemáticas locales que se pueden abordar con tecnología." }, // Añadido
+  { id: "need_multigrado", label: "Aula multigrado o con estudiantes de diferentes edades/niveles de desarrollo." }, // Añadido
+  { id: "need_foco_practico", label: "Preferencia por actividades muy prácticas y aplicadas (menos teóricas)." }, // Añadido
 ];
 
 export default function HomePage() {
@@ -145,10 +200,87 @@ export default function HomePage() {
   const [cargando, setCargando] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const [currentYear, setCurrentYear] = useState<number | null>(null);
+  const [planParseado, setPlanParseado] = useState<PlanDeClase | null>(null);
 
   useEffect(() => {
     setCurrentYear(new Date().getFullYear());
   }, []);
+
+  useEffect(() => {
+    if (resultadoTexto) { // resultadoTexto es el texto crudo de la IA
+      const parsearPlanDeClase = (texto: string): PlanDeClase | null => {
+        try {
+          const plan: Partial<PlanDeClase> = { fases: [] }; // Usamos Partial para ir construyendo
+  
+          // Expresiones regulares para extraer datos (ejemplos, necesitarás ajustarlas)
+          const tituloPrincipalMatch = texto.match(/## Propuesta de Actividad de Aprendizaje: "([^"]+)"/i) || texto.match(/\*\*Título de la Actividad:\*\*\s*(.*)/i);
+          if (tituloPrincipalMatch) plan.tituloPrincipal = tituloPrincipalMatch[1].trim();
+  
+          const gradoMatch = texto.match(/\*\*Grado\(s\):\*\*\s*(.*)/i) || texto.match(/\*\*Grado:\*\*\s*(.*)/i);
+          if (gradoMatch) plan.grade = gradoMatch[1].trim();
+  
+          const tiempoMatch = texto.match(/\*\*Tiempo Disponible:\*\*\s*(.*)/i) || texto.match(/\*\*Tiempo:\*\*\s*(.*)/i);
+          if (tiempoMatch) plan.timeAvailable = tiempoMatch[1].trim();
+  
+          const temaCentralMatch = texto.match(/\*\*Tema Central:\*\*\s*(.*)/i);
+          if (temaCentralMatch) plan.temaCentral = temaCentralMatch[1].trim();
+  
+          const metodologiaMatch = texto.match(/\*\*Metodología Preferida:\*\*\s*(.*)/i) || texto.match(/\*\*Metodología:\*\*\s*(.*)/i);
+          if (metodologiaMatch) plan.methodologyPreference = metodologiaMatch[1].trim();
+  
+          // Descripción Completa (ejemplo, puede ser más complejo)
+          const descMatch = texto.match(/\*\*Descripción Completa(?: de la Actividad)?:\*\*\s*([\s\S]*?)(?=\*\*Fase|\*\*Objetivo|\*\*Recursos|\n\n\*\*|$)/i);
+          if (descMatch) plan.descripcionCompleta = descMatch[1].trim();
+          
+          // Parseo de Fases (esto es lo más complicado)
+          // Regex mejorada para capturar opcionalmente la duración y manejar diferentes delimitadores
+          const fasesRegex = /\*\*Fase\s*(\d+):(?:<[^>]*>)?\s*([^(\r\n]+?)(?:\s*\(([^)]+)\))?\s*(?:<\/[^>]*>)?\*\*\s*([\s\S]*?)(?=\*\*Fase\s*\d+:|\n\n\s*\*\*Objetivos|\n\n\s*\*\*Recursos|\n\n\s*\*\*Producto\(s\) Esperado\(s\)|\n\n\s*\*\*Evaluación|\n\n\s*\*\*Adaptaciones|\n\n\s*\*\*Justificación|\Z)/gi;
+          let faseMatch;
+          while ((faseMatch = fasesRegex.exec(texto)) !== null) {
+            const numeroFase = parseInt(faseMatch[1], 10);
+            const tituloFase = faseMatch[2].replace(/<\/?strong>/g, '').trim(); // Limpiar etiquetas strong si existen
+            const duracionEstimada = faseMatch[3] ? faseMatch[3].trim() : undefined;
+            let contenidoFase = faseMatch[4].trim();
+  
+            const actividadMatch = contenidoFase.match(/(?:\*|\-)\s*\*\*(?:Actividad Principal|Actividad|Actividades):\*\*\s*([\s\S]*?)(?=\n\s*(?:\*|\-)\s*\*\*|\n\n|$)/i);
+            const rolesMatch = contenidoFase.match(/(?:\*|\-)\s*\*\*(?:Roles del Docente y Estudiantes|Roles):\*\*\s*([\s\S]*?)(?=\n\s*(?:\*|\-)\s*\*\*|\n\n|$)/i);
+            const preguntasMatch = contenidoFase.match(/(?:\*|\-)\s*\*\*(?:Preguntas Orientadoras):\*\*\s*([\s\S]*?)(?=\n\s*(?:\*|\-)\s*\*\*|\n\n|$)/i);
+            
+            let preguntasArray: string[] | undefined = undefined;
+            if (preguntasMatch && preguntasMatch[1]) {
+              preguntasArray = preguntasMatch[1].trim().split(/\n\s*(?:\*|\-)\s*/).map(p => p.trim()).filter(p => p);
+            }
+
+            plan.fases!.push({
+              numero: numeroFase,
+              tituloFase: tituloFase,
+              duracionEstimada: duracionEstimada,
+              actividad: actividadMatch ? actividadMatch[1].trim() : undefined,
+              roles: rolesMatch ? rolesMatch[1].trim() : undefined,
+              preguntasOrientadoras: preguntasArray,
+            });
+          }
+          // Limpieza final y conversión a PlanDeClase
+          // Validar que plan.tituloPrincipal no sea undefined antes de castear
+          if (!plan.tituloPrincipal) {
+            // Intento alternativo de extraer título si el primero falla
+            const tituloAltMatch = texto.match(/^\s*#\s*([^\r\n]+)/m);
+            if (tituloAltMatch) plan.tituloPrincipal = tituloAltMatch[1].trim();
+            else plan.tituloPrincipal = "Propuesta de Actividad"; // Fallback
+          }
+
+          return plan as PlanDeClase; 
+        } catch (error) {
+          console.error("Error parseando el plan de clase:", error);
+          return null;
+        }
+      };
+  
+      const plan = parsearPlanDeClase(resultadoTexto);
+      setPlanParseado(plan);
+      console.log("Plan Parseado:", plan); // Para depuración
+    }
+  }, [resultadoTexto]);
 
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -174,7 +306,7 @@ export default function HomePage() {
 // --- LLAMADA REAL A TU API ROUTE DE GEMINI ---
 const llamarGeminiAPI = async (prompt: string): Promise<string> => {
   console.log("Frontend: Enviando prompt al backend (/api/gemini):", prompt.substring(0,100) + "...");
-  setError(''); // Si tienes una función setError para la UI, límpiala aquí
+  setError(''); 
 
   try {
     const response = await fetch('/api/gemini', {
@@ -185,7 +317,7 @@ const llamarGeminiAPI = async (prompt: string): Promise<string> => {
       body: JSON.stringify({ prompt: prompt }),
     });
 
-    const data = await response.json(); // Intenta parsear JSON siempre
+    const data = await response.json(); 
 
     if (!response.ok) {
       const errorMessage = data?.error || `Error del servidor: ${response.status} ${response.statusText}`;
@@ -193,14 +325,13 @@ const llamarGeminiAPI = async (prompt: string): Promise<string> => {
       throw new Error(errorMessage);
     }
     
-    // Si llegamos aquí y response.ok es true, data debería tener generatedText
-    if (data.error) { // Por si la API devuelve 200 OK pero con un error en el cuerpo
+    if (data.error) { 
         console.error("Frontend: Error en el cuerpo de la respuesta de la API de Gemini (via backend):", data.error);
         throw new Error(data.error);
     }
     
     console.log("Frontend: Respuesta del backend (Gemini):", data.generatedText ? data.generatedText.substring(0,100) + "..." : "Sin texto generado");
-    return data.generatedText || ""; // Devuelve el texto generado o un string vacío si no existe
+    return data.generatedText || ""; 
 
   } catch (fetchError) {
     console.error("Frontend: Error al hacer fetch a /api/gemini:", fetchError);
@@ -221,18 +352,20 @@ const llamarGeminiAPI = async (prompt: string): Promise<string> => {
     }
     try {
       const dataToSave = {
-        ...datos,
+        ...datos, // Esto guarda todos los campos del formulario
+        // Convierte arrays a strings si es necesario para Firebase, o guarda como arrays
         competenciesToDevelop: datos.competenciesToDevelop.join(', '),
         learningEvidences: datos.learningEvidences.join(', '),
         curricularComponents: datos.curricularComponents.join(', '),
         availableResourcesCheckboxes: datos.availableResourcesCheckboxes.join(', '),
         contextAndNeeds: datos.contextAndNeeds.join(', '),
+        // Fin de la conversión de arrays
         textoGenerado: propuesta,
         timestamp: serverTimestamp(),
       };
       await addDoc(collection(firestore, "propuestas"), dataToSave);
       console.log("Propuesta guardada en Firebase");
-    } catch (e: any) {
+    } catch (e: any) { // Especificar 'any' o un tipo de error más específico
       console.error("Error al guardar en Firebase: ", e);
       setError(`Error al guardar la propuesta en la base de datos: ${e.message}`);
     }
@@ -244,6 +377,8 @@ const llamarGeminiAPI = async (prompt: string): Promise<string> => {
     setCargando(true);
     setResultadoTexto('');
     setError('');
+    setPlanParseado(null);
+
 
     if (!formData.centralTheme || !formData.competenciesToDevelop.length) {
       setError("Por favor, completa al menos el Tema Central y selecciona Competencias a Desarrollar.");
@@ -251,42 +386,111 @@ const llamarGeminiAPI = async (prompt: string): Promise<string> => {
       return;
     }
 
-    const promptCompleto = `Rol: Asistente experto en diseño de actividades de aprendizaje en Tecnología e Informática, con amplio conocimiento de las Orientaciones Curriculares para el Área de Tecnología e Informática en la Educación Básica y Media del Ministerio de Educación Nacional de Colombia (MEN) y la Guía 30.
+    // Construcción del prompt detallado
+    const promptCompleto = `Rol: Eres un Asistente experto en diseño de actividades de aprendizaje en Tecnología e Informática para bachillerato en Colombia, con profundo conocimiento de las Orientaciones Curriculares del MEN y la Guía 30.
 
-    Información proporcionada por el docente para la actividad:
-    1.  Grado(s) Específico(s): ${formData.grade}
-    2.  Tiempo Disponible: ${formData.timeAvailable}
-    3.  Tema Central: ${formData.centralTheme}
-    4.  Metodología Preferida: ${formData.methodologyPreference}
-    5.  Competencias a Desarrollar: ${formData.competenciesToDevelop.join('; ')}.
-    6.  Evidencias de Aprendizaje: ${formData.learningEvidences.join('; ')}.
-    7.  Componentes Curriculares (Justificar la selección): ${formData.curricularComponents.join('; ')}
-    8.  Recursos Disponibles (Seleccionados): ${formData.availableResourcesCheckboxes.join('; ')}. Recursos Adicionales (Texto): ${formData.recursos}.
-    9.  Contexto y Necesidades: ${formData.contextAndNeeds.join('; ')}
-    10. Interdisciplinariedad (Opcional): ${formData.interdisciplinarity || 'No aplica'}
-    11. Descripción detallada de la actividad (cómo se la imagina el docente): ${formData.actividad}
-    12. Método de Evaluación: ${formData.evaluacion}
-    13. Detalles Adicionales o Tono deseado para la IA: ${formData.detallesAdicionales}
+    Tarea: Genera una propuesta de actividad de aprendizaje DETALLADA, PRÁCTICA y ALTAMENTE CONTEXTUALIZADA a Colombia. La propuesta debe ser fácil de seguir, con secciones claras y listas para ser implementada en un aula. Asegúrate de que la respuesta NO sea genérica y se adhiera estrictamente a los lineamientos del MEN. Formatea la respuesta usando Markdown ligero (negritas, listas).
 
-    Tarea:
-    Generar una propuesta DETALLADA de actividad de aprendizaje. Incluir:
-    *   Descripción completa (pasos, fases, roles).
-    *   Preguntas orientadoras.
-    *   Recursos necesarios (detallados).
-    *   Producto(s) esperado(s).
-    *   Criterios e instrumentos de evaluación (alineados con competencias y evidencias).
-    *   Adaptaciones (considerando contexto y recursos).
-    *   Justificación de componentes curriculares.
+    Información Proporcionada por el Docente:
+    1.  **Grado(s) Específico(s):** ${formData.grade}
+    2.  **Tiempo Disponible:** ${formData.timeAvailable} (Detalla la distribución si es relevante)
+    3.  **Tema Central / Problema a Resolver:** ${formData.centralTheme}
+    4.  **Metodología Preferida:** ${formData.methodologyPreference} (Si es "Abierto a sugerencias", propón la más adecuada justificando brevemente)
+    5.  **Competencias a Desarrollar (MEN - TI):** (Citar textualmente o adaptar fielmente de las Orientaciones Curriculares, páginas 56-57 para 10º-11º, o equivalentes)
+        ${formData.competenciesToDevelop.map(c => `- ${c}`).join('\n        ')}
+    6.  **Evidencias de Aprendizaje (MEN - TI):** (Citar textualmente o adaptar fielmente de las Orientaciones, alineadas a las competencias)
+        ${formData.learningEvidences.map(e => `- ${e}`).join('\n        ')}
+    7.  **Componentes Curriculares (Justificar selección):**
+        ${formData.curricularComponents.map(c => `- ${c}`).join('\n        ')}
+        (Justificación breve de por qué estos componentes son los principales)
+    8.  **Recursos Disponibles:**
+        Seleccionados: ${formData.availableResourcesCheckboxes.map(r => `- ${r}`).join('\n        ')}
+        Adicionales (texto): ${formData.recursos || 'Ninguno especificado'}
+    9.  **Contexto y Necesidades Particulares:**
+        ${formData.contextAndNeeds.map(n => `- ${n}`).join('\n        ')}
+        ${formData.detallesAdicionales.includes("contexto") ? `Detalles adicionales sobre el contexto: ${formData.detallesAdicionales}` : ''}
+    10. **Interdisciplinariedad (Opcional):** ${formData.interdisciplinarity || 'No se especificó integración.'}
+    11. **Ideas Iniciales del Docente sobre la Actividad:** ${formData.actividad || 'El docente no proveyó una descripción inicial detallada.'}
+    12. **Ideas Iniciales del Docente sobre la Evaluación:** ${formData.evaluacion || 'El docente no proveyó un método de evaluación inicial detallado.'}
+    13. **Detalles Adicionales o Tono Deseado para la IA:** ${formData.detallesAdicionales || 'Tono profesional, claro y práctico.'}
 
-    Formato de Salida:
-    Claro, organizado, fácil de seguir, con secciones separadas.
+    Formato de Salida Obligatorio (Secciones Claras):
+    ## Propuesta de Actividad de Aprendizaje: "[Título Creativo y Descriptivo de la Actividad]"
 
-    Restricciones:
-    *   NO genérica.
-    *   Contextualizada a Colombia.
-    *   Adherirse a lineamientos MEN y Guía 30.
-    *   Específica y práctica para aula.
+    **Grado(s):** [Grado(s) especificado(s)]
+    **Tiempo Disponible Estimado:** [Tiempo total y distribución si aplica]
+    **Tema Central:** [Tema central]
+    **Metodología Propuesta:** [Metodología, con breve justificación si fue sugerida por la IA]
+
+    **1. Descripción Completa de la Actividad:**
+    (Presentación general de la actividad, su propósito y flujo principal)
+
+    **2. Objetivos de Aprendizaje:**
+    (Alineados con las competencias seleccionadas. Claros y medibles)
+    *   Objetivo 1...
+    *   Objetivo 2...
+
+    **3. Competencias a Desarrollar (MEN - TI):**
+    (Listar las competencias citadas por el docente)
+    *   [Competencia 1]
+    *   [Competencia 2]
+
+    **4. Fases de la Actividad:**
+
+    **Fase 1: [Nombre de la Fase 1] ([Duración Estimada])**
+    *   **Actividad:** [Descripción detallada de las acciones de los estudiantes y el docente]
+    *   **Roles:** (Si aplica, roles específicos del docente y estudiantes)
+    *   **Preguntas Orientadoras:**
+        *   [Pregunta 1 para guiar la reflexión/trabajo]
+        *   [Pregunta 2...]
+    *   **Recursos Específicos para esta Fase:** [Listado]
+
+    **Fase 2: [Nombre de la Fase 2] ([Duración Estimada])**
+    *   **Actividad:** ...
+    *   **Roles:** ...
+    *   **Preguntas Orientadoras:** ...
+    *   **Recursos Específicos para esta Fase:** ...
+    
+    (Continuar con más fases según sea necesario para el tiempo disponible y la complejidad)
+
+    **5. Producto(s) Esperado(s):**
+    (Qué deben entregar o demostrar los estudiantes al final)
+    *   [Producto 1]
+    *   [Producto 2]
+
+    **6. Evaluación:**
+    *   **Evidencias de Aprendizaje (MEN - TI):**
+        (Listar las evidencias citadas por el docente, conectadas a los productos y actividades)
+        *   [Evidencia 1] relacionada con [Producto X]
+        *   [Evidencia 2] observada durante [Actividad Y]
+    *   **Criterios de Evaluación:** (Para cada producto/evidencia principal)
+        *   Criterio A: ...
+        *   Criterio B: ...
+    *   **Instrumentos de Evaluación Sugeridos:**
+        *   [Ej: Rúbrica para el proyecto final (adjuntar borrador de rúbrica si es posible)]
+        *   [Ej: Lista de chequeo para la participación en debates]
+        *   [Ej: Portafolio digital]
+
+    **7. Recursos Necesarios (Generales):**
+    (Consolidado de recursos basado en lo disponible y lo que la actividad requiere)
+    *   [Recurso 1]
+    *   [Recurso 2]
+
+    **8. Posibles Adaptaciones:**
+    (Considerando el contexto y necesidades)
+    *   Para estudiantes con menor competencia digital: ...
+    *   Si hay limitaciones de conectividad: ...
+    *   Para ritmos de aprendizaje variados: ...
+
+    **9. Justificación de los Componentes Curriculares:**
+    (Explicación breve de cómo la actividad aborda los componentes seleccionados)
+    *   **[Componente 1]:** Se aborda a través de...
+    *   **[Componente 2]:** Se manifiesta en...
+
+    **10. Integración Interdisciplinar (Si aplica):**
+    *   **[Área del conocimiento]:** Se integra mediante [actividad/tema específico].
     `;
+
 
     try {
       const respuesta = await llamarGeminiAPI(promptCompleto);
@@ -369,6 +573,7 @@ const llamarGeminiAPI = async (prompt: string): Promise<string> => {
               value={formData.centralTheme}
               onChange={handleInputChange}
               required
+              className="mt-1 block w-full px-3 py-2 border border-input bg-background rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
               placeholder="Ej: Introducción a la Programación con Python"
             />
           </div>
@@ -469,6 +674,7 @@ const llamarGeminiAPI = async (prompt: string): Promise<string> => {
               rows={2}
               value={formData.recursos}
               onChange={handleInputChange}
+              className="mt-1 block w-full px-3 py-2 border border-input bg-background rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
               placeholder="Ej: Plataforma LMS específica, software X. Describe otros recursos."
             />
           </div>
@@ -503,6 +709,7 @@ const llamarGeminiAPI = async (prompt: string): Promise<string> => {
               rows={4}
               value={formData.actividad}
               onChange={handleInputChange}
+              className="mt-1 block w-full px-3 py-2 border border-input bg-background rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
               placeholder="Describe los pasos, fases, roles, etc. Sé específico."
             />
           </div>
@@ -519,6 +726,7 @@ const llamarGeminiAPI = async (prompt: string): Promise<string> => {
               rows={3}
               value={formData.evaluacion}
               onChange={handleInputChange}
+              className="mt-1 block w-full px-3 py-2 border border-input bg-background rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
               placeholder="¿Cómo planeas evaluar? Ej: Rúbrica, quiz, observación."
             />
           </div>
@@ -534,6 +742,7 @@ const llamarGeminiAPI = async (prompt: string): Promise<string> => {
               id="interdisciplinarity"
               value={formData.interdisciplinarity || ""}
               onChange={handleInputChange}
+              className="mt-1 block w-full px-3 py-2 border border-input bg-background rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
               placeholder="Ej: Matemáticas (cálculo de costos), Artes (diseño)."
             />
           </div>
@@ -550,6 +759,7 @@ const llamarGeminiAPI = async (prompt: string): Promise<string> => {
               rows={2}
               value={formData.detallesAdicionales}
               onChange={handleInputChange}
+              className="mt-1 block w-full px-3 py-2 border border-input bg-background rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
               placeholder="Ej: Tono formal, creativo, incluir ejemplos para grado X."
             />
           </div>
@@ -560,7 +770,7 @@ const llamarGeminiAPI = async (prompt: string): Promise<string> => {
             <Button
               type="submit"
               disabled={cargando}
-              className="w-full text-lg"
+              className="w-full text-lg py-3 px-4 border border-transparent rounded-md shadow-sm font-medium text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:bg-muted disabled:text-muted-foreground"
             >
               {cargando ? (
                 <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-accent-foreground"></div>
@@ -575,13 +785,14 @@ const llamarGeminiAPI = async (prompt: string): Promise<string> => {
         </form>
 
         {/* Sección de Resultado */}
-        {resultadoTexto && !cargando && (
-          <section className="mt-10 p-6 border border-input rounded-lg bg-muted/20">
+         {resultadoTexto && !cargando && (
+          <section id="resultadoIA" aria-live="polite" className="mt-10 p-6 border border-input rounded-lg bg-muted/20">
             <h2 className="text-2xl font-semibold text-foreground mb-4">Propuesta Generada:</h2>
-            <div 
+            <pre 
               className="whitespace-pre-wrap text-sm text-foreground/90 p-4 bg-background border border-input rounded-md overflow-x-auto"
-              dangerouslySetInnerHTML={{ __html: resultadoTexto }}
-            />
+            >
+              {resultadoTexto}
+            </pre>
           </section>
         )}
       </main>
@@ -593,3 +804,4 @@ const llamarGeminiAPI = async (prompt: string): Promise<string> => {
     </div>
   );
 }
+
