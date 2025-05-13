@@ -65,7 +65,7 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-secondary text-foreground;
     /* antialiased class in layout.tsx handles font smoothing */
   }
 }
@@ -82,4 +82,92 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+/* Styles for Parsed Lesson Plan */
+.plan-de-clase-container {
+  @apply mt-6 mb-8 p-4 md:p-6 bg-card shadow-lg rounded-lg border border-border;
+}
+
+.plan-de-clase-container h1 {
+  @apply text-3xl md:text-4xl font-bold mb-6 text-center text-accent;
+}
+
+.info-general {
+  @apply mb-6 p-4 border border-border rounded-lg bg-muted/30 shadow-sm grid grid-cols-1 md:grid-cols-2 gap-4;
+}
+.info-general p {
+  @apply text-sm;
+}
+.info-general strong { 
+  @apply font-semibold text-primary;
+}
+
+.descripcion-seccion,
+.competencias-seccion,
+.evidencias-seccion,
+.recursos-seccion,
+.componentes-seccion,
+.evaluacion-seccion {
+  @apply mb-6;
+}
+
+.descripcion-seccion > h2,
+.competencias-seccion > h2,
+.evidencias-seccion > h2,
+.recursos-seccion > h2,
+.componentes-seccion > h2,
+.evaluacion-seccion > h2 {
+  @apply text-xl md:text-2xl font-semibold mb-3 text-primary border-l-4 border-accent pl-3;
+}
+
+.descripcion-seccion > p,
+.competencias-seccion > div,
+.evidencias-seccion > div,
+.recursos-seccion > div,
+.componentes-seccion > div,
+.evaluacion-seccion > div {
+  @apply whitespace-pre-wrap bg-muted/20 p-3 rounded-md text-sm leading-relaxed;
+}
+
+.fases-container {
+  @apply space-y-6 mt-6;
+}
+
+.fases-container > h2 { /* Styling for the "Fases de la Actividad:" title if it's directly under fases-container */
+    @apply text-xl md:text-2xl font-semibold mb-3 text-primary border-l-4 border-accent pl-3;
+}
+
+.fase-card {
+  @apply border border-border rounded-lg shadow-md bg-card hover:shadow-xl transition-shadow duration-200 ease-in-out overflow-hidden;
+}
+
+.fase-card > h3 {
+  @apply text-lg md:text-xl font-semibold text-accent-foreground bg-accent p-3; /* removed rounded-t-md to let parent handle rounding */
+}
+
+.fase-card > div:not(h3) { /* Content area of the phase card */
+    @apply p-3 space-y-2;
+}
+
+.fase-card p {
+   @apply text-sm leading-relaxed;
+}
+
+.fase-card strong {
+  @apply font-medium text-foreground/90;
+}
+
+.fase-card ul {
+  @apply list-disc list-inside pl-4 space-y-1 text-sm;
+}
+
+/* Styling for the <pre> tag when plan is not parsed, specific to #resultadoIA */
+#resultadoIA > pre {
+ @apply whitespace-pre-wrap text-sm text-foreground/90 p-4 bg-background border border-input rounded-md overflow-x-auto max-h-[600px];
+}
+
+/* Styling for the placeholder text when no result is yet available */
+#resultadoIA > p.text-muted-foreground {
+  @apply text-center py-10;
 }
