@@ -103,7 +103,7 @@
 }
 
 .propuesta-contenido h4 { /* Corresponds to #### Smaller headings */
-    @apply text-md font-semibold mt-3 mb-1 text-primary;
+    @apply text-base font-semibold mt-3 mb-1 text-primary;
 }
 
 .propuesta-contenido p {
@@ -165,4 +165,17 @@
 /* Styling for the placeholder text when no result is yet available in #resultadoIA */
 #resultadoIA > div > p.text-muted-foreground {
   @apply text-center py-10;
+}
+
+/* CSS Transition styles */
+button {
+  @apply transition-colors duration-300 ease-in-out;
+}
+
+button:active {
+    @apply scale-95; /* Adjusted from scale-98 to scale-95 for a more common Tailwind class */
+}
+
+input:focus, textarea:focus, select:focus {
+  @apply border-primary ring-2 ring-primary/50 shadow-md outline-none;
 }
