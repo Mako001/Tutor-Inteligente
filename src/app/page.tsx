@@ -203,38 +203,40 @@ export default function HomePage() {
   };
 
   const llamarGeminiAPI = async (prompt: string): Promise<string> => {
-    console.log("Frontend: Enviando prompt al backend (/api/gemini):", prompt.substring(0, 100) + "...");
-    setError('');
-
+    console.log("Frontend: Enviando prompt al backend (/api/gemini):", prompt.substring(0,100) + "...");
+    setError(''); // Limpiar errores anteriores
+  
     try {
-      const response = await fetch('/api/gemini', {
+      const response = await fetch('/api/gemini', { // Llama a tu API Route
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ prompt: prompt }),
+        body: JSON.stringify({ prompt: prompt }), // Envía el prompt en el cuerpo
       });
-
-      const data = await response.json();
-
+  
+      const data = await response.json(); // Intenta parsear JSON siempre
+  
       if (!response.ok) {
         const errorMessage = data?.error || `Error del servidor: ${response.status} ${response.statusText}`;
         console.error("Frontend: Error desde la API Route de Gemini:", errorMessage);
         throw new Error(errorMessage);
       }
-
-      if (data.error) {
-        console.error("Frontend: Error en el cuerpo de la respuesta de la API de Gemini (via backend):", data.error);
-        throw new Error(data.error);
+      
+      // Si llegamos aquí y response.ok es true, data debería tener generatedText
+      if (data.error) { // Por si la API devuelve 200 OK pero con un error en el cuerpo
+          console.error("Frontend: Error en el cuerpo de la respuesta de la API de Gemini (via backend):", data.error);
+          throw new Error(data.error);
       }
-
-      console.log("Frontend: Respuesta del backend (Gemini):", data.generatedText ? data.generatedText.substring(0, 100) + "..." : "Sin texto generado");
-      return data.generatedText || "";
-
+      
+      console.log("Frontend: Respuesta del backend (Gemini):", data.generatedText ? data.generatedText.substring(0,100) + "..." : "Sin texto generado");
+      return data.generatedText || ""; // Devuelve el texto generado o un string vacío si no existe
+  
     } catch (fetchError) {
       console.error("Frontend: Error al hacer fetch a /api/gemini:", fetchError);
+      // Asegúrate de que el error se propague para que el bloque catch en handleGenerarPropuesta lo maneje
       if (fetchError instanceof Error) {
-        throw new Error(`No se pudo conectar con el asistente de IA: ${fetchError.message}`);
+          throw new Error(`No se pudo conectar con el asistente de IA: ${fetchError.message}`);
       }
       throw new Error("No se pudo conectar con el asistente de IA: error desconocido.");
     }
@@ -249,6 +251,8 @@ export default function HomePage() {
     try {
       const dataToSave = {
         ...datos,
+        // Convert arrays to comma-separated strings for Firebase, if desired
+        // Or store them as arrays directly if your Firestore setup handles it well
         competenciesToDevelop: datos.competenciesToDevelop.join(', '),
         learningEvidences: datos.learningEvidences.join(', '),
         curricularComponents: datos.curricularComponents.join(', '),
@@ -632,7 +636,7 @@ export default function HomePage() {
             <Button
               type="submit"
               disabled={cargando}
-              className="w-full text-lg py-3 px-4 border border-transparent rounded-md shadow-sm font-medium text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:bg-muted disabled:text-muted-foreground transition-colors duration-300 ease-in-out transform active:scale-98"
+              className="w-full text-lg py-3 px-4 border border-transparent rounded-md shadow-sm font-medium text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:bg-muted disabled:text-muted-foreground transition-colors duration-300 ease-in-out transform active:scale-95"
             >
               {cargando ? (
                 <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-accent-foreground"></div>
@@ -655,14 +659,14 @@ export default function HomePage() {
             </div>
           )}
           {error && !cargando && (
-            <div className="propuesta-contenido-error p-6 border border-destructive/50 rounded-lg bg-destructive/10 text-destructive">
+            <div className="propuesta-generada-estilizada-error p-6 border border-destructive/50 rounded-lg bg-destructive/10 text-destructive">
               <h2 className="text-xl font-semibold text-destructive mb-3">Error al Generar Propuesta</h2>
               <p>{error}</p>
             </div>
           )}
           {resultadoTexto && !cargando && !error && (
-            <div className="propuesta-contenido">
-              <h2 className="text-3xl font-semibold text-primary mb-6 pb-2 border-b border-border">Propuesta Generada:</h2>
+            <div className="propuesta-generada-estilizada">
+              {/* <h2 className="text-3xl font-semibold text-primary mb-6 pb-2 border-b border-border">Propuesta Generada:</h2> */}
               <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
                 {resultadoTexto}
               </ReactMarkdown>

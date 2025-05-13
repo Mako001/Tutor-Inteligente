@@ -85,79 +85,108 @@
 }
 
 /* Styles for ReactMarkdown rendered content */
-.propuesta-contenido {
-  @apply mt-6 mb-8 p-4 md:p-6 bg-card shadow-lg rounded-lg border border-border;
-  /* Add styles for specific markdown elements if needed, e.g.: */
+.propuesta-generada-estilizada {
+  font-family: sans-serif;
+  padding: 20px;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+  margin-top: 20px;
 }
 
-.propuesta-contenido h1 { /* Corresponds to # Main Title */
+.propuesta-generada-estilizada h1 { /* Corresponds to # Main Title, kept from old styling */
   @apply text-3xl md:text-4xl font-bold mb-6 text-center text-accent;
 }
 
-.propuesta-contenido h2 { /* Corresponds to ## Section Titles */
-  @apply text-xl md:text-2xl font-semibold mt-6 mb-3 text-primary border-l-4 border-accent pl-3;
+/* Títulos de secciones principales (ej. "4. Fases de la Actividad") */
+.propuesta-generada-estilizada h2 { 
+  color: #333;
+  border-bottom: 2px solid #4CAF50; /* Línea verde como en tus fases */
+  padding-bottom: 10px;
+  margin-top: 30px;
+  margin-bottom: 20px;
+  font-size: 1.8em; 
 }
 
-.propuesta-contenido h3 { /* Corresponds to ### Subsection Titles or ****Fase X: Title**** */
-  @apply text-lg md:text-xl font-semibold mt-4 mb-2 text-accent-foreground bg-accent p-3 rounded-md;
+/* Títulos de Fases (ej. "Fase 1: Empatizar...") */
+.propuesta-generada-estilizada h3 {
+  background-color: #4CAF50; 
+  color: white;
+  padding: 10px 15px;
+  border-radius: 5px;
+  margin-top: 25px;
+  margin-bottom: 15px;
+  font-size: 1.4em; 
 }
 
-.propuesta-contenido h4 { /* Corresponds to #### Smaller headings */
-    @apply text-base font-semibold mt-3 mb-1 text-primary;
+/* Para las sub-secciones dentro de una fase como "Actividad:", "Roles:" */
+.propuesta-generada-estilizada h4 {
+  color: #555;
+  margin-top: 15px;
+  margin-bottom: 5px;
+  font-size: 1.1em;
 }
 
-.propuesta-contenido p {
-  @apply mb-4 text-base leading-relaxed;
+.propuesta-generada-estilizada p {
+  line-height: 1.7;
+  margin-bottom: 10px;
+  color: #444;
 }
 
-.propuesta-contenido strong { /* For **bolded text** */
-  @apply font-semibold;
+/* O si "Actividad:" es solo un <strong> */
+.propuesta-generada-estilizada p strong {
+   display: block; 
+   margin-bottom: 5px;
+   color: #333;
+   font-weight: 600; 
 }
 
-.propuesta-contenido ul, .propuesta-contenido ol {
-  @apply list-inside mb-4 pl-5 space-y-1;
+
+.propuesta-generada-estilizada ul {
+  list-style-type: disc; 
+  margin-left: 25px;
+  padding-left: 0;
+  margin-bottom: 15px;
 }
-.propuesta-contenido ul {
-  @apply list-disc;
-}
-.propuesta-contenido ol {
-  @apply list-decimal;
+.propuesta-generada-estilizada ol { /* Kept basic styling for ordered lists */
+  @apply list-inside list-decimal mb-4 pl-5 space-y-1;
 }
 
-.propuesta-contenido li {
-  @apply mb-1;
+.propuesta-generada-estilizada li {
+  margin-bottom: 8px;
+  color: #555;
 }
 
-.propuesta-contenido blockquote {
+.propuesta-generada-estilizada blockquote {
   @apply border-l-4 border-muted-foreground pl-4 italic my-4 text-muted-foreground;
 }
 
-.propuesta-contenido pre {
+.propuesta-generada-estilizada pre {
   @apply bg-muted/50 p-4 rounded-md overflow-x-auto text-sm my-4;
 }
 
-.propuesta-contenido code {
+.propuesta-generada-estilizada code {
   @apply bg-muted/50 px-1 py-0.5 rounded text-sm font-mono;
 }
 
-.propuesta-contenido pre code {
+.propuesta-generada-estilizada pre code {
   @apply bg-transparent p-0; /* Reset for code blocks within pre */
 }
 
-.propuesta-contenido table {
+.propuesta-generada-estilizada table {
   @apply w-full my-4 border-collapse border border-border;
 }
-.propuesta-contenido th, .propuesta-contenido td {
+.propuesta-generada-estilizada th, .propuesta-generada-estilizada td {
   @apply border border-border px-3 py-2 text-left;
 }
-.propuesta-contenido th {
+.propuesta-generada-estilizada th {
   @apply bg-muted/50 font-semibold;
 }
 
-.propuesta-contenido-error {
+.propuesta-generada-estilizada-error {
   @apply mt-6 mb-8 p-4 md:p-6 bg-destructive/10 text-destructive shadow-lg rounded-lg border border-destructive/50;
 }
-.propuesta-contenido-error h2 {
+.propuesta-generada-estilizada-error h2 {
    @apply text-xl md:text-2xl font-semibold mb-3 text-destructive;
 }
 
