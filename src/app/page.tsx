@@ -24,6 +24,7 @@ import { generateActivityProposal, type GenerateActivityProposalInput } from '@/
 
 // Interfaz para los datos del formulario
 interface FormData {
+  subject: string;
   grade: string;
   timeAvailable: string;
   centralTheme: string;
@@ -41,6 +42,19 @@ interface FormData {
 }
 
 // Opciones para los campos de selección múltiple y selectores
+const subjectOptions = [
+  "Tecnología e Informática",
+  "Matemáticas",
+  "Ciencias Naturales (Biología, Química, Física)",
+  "Ciencias Sociales (Historia, Geografía, Cívica)",
+  "Lenguaje y Comunicación (Español, Literatura)",
+  "Inglés (Lengua Extranjera)",
+  "Artes (Música, Plásticas)",
+  "Educación Física",
+  "Ética y Valores",
+  "Filosofía"
+];
+
 const gradeOptions = [
   "6º", "7º", "8º", "9º", "10º", "11º",
   "Básica Primaria (1º-5º)",
@@ -158,6 +172,7 @@ const contextNeedsOptions = [
 
 export default function HomePage() {
   const [formData, setFormData] = useState<FormData>({
+    subject: 'Tecnología e Informática',
     grade: '6º',
     timeAvailable: '',
     centralTheme: '',
@@ -263,6 +278,7 @@ export default function HomePage() {
 
 
     const flowInput: GenerateActivityProposalInput = {
+      subject: formData.subject,
       grade: formData.grade,
       timeAvailable: formData.timeAvailable || "Flexible / A definir según avance",
       centralTheme: themeWithDetails,
@@ -297,17 +313,31 @@ export default function HomePage() {
     <div className="container mx-auto p-4 md:p-8 min-h-screen flex flex-col items-center bg-secondary" suppressHydrationWarning={true}>
       <header className="text-center mb-10 py-6">
         <h1 className="text-5xl font-bold text-primary">AprendeTech Colombia</h1>
-        <p className="text-xl text-foreground/80 mt-2">Asistente IA para el Diseño de Actividades Educativas en Tecnología e Informática</p>
+        <p className="text-xl text-foreground/80 mt-2">Asistente IA para el Diseño de Actividades Educativas</p>
       </header>
 
       <main className="w-full max-w-4xl bg-card p-8 rounded-xl shadow-2xl" suppressHydrationWarning={true}>
         <p className="text-muted-foreground mb-6 text-center">
-          ¡Hola, colega docente de Informática! Completa la siguiente información para generar una propuesta de actividad ajustada a tus necesidades y a los lineamientos del MEN.
+          ¡Hola, colega docente! Completa la siguiente información para generar una propuesta de actividad ajustada a tus necesidades y a los lineamientos del MEN.
         </p>
         <form onSubmit={handleGenerarPropuesta} className="space-y-8">
           <div>
+            <Label htmlFor="subject" className="block text-lg font-semibold text-foreground mb-1">
+              1. Materia o Área de Conocimiento:
+            </Label>
+            <Select name="subject" value={formData.subject} onValueChange={(value) => handleSelectChange('subject', value)}>
+              <SelectTrigger id="subject" className="mt-1 w-full">
+                <SelectValue placeholder="Selecciona la materia" />
+              </SelectTrigger>
+              <SelectContent>
+                {subjectOptions.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
             <Label htmlFor="grade" className="block text-lg font-semibold text-foreground mb-1">
-              1. Grado(s) Específico(s):
+              2. Grado(s) Específico(s):
             </Label>
             <Select name="grade" value={formData.grade} onValueChange={(value) => handleSelectChange('grade', value)}>
               <SelectTrigger id="grade" className="mt-1 w-full">
@@ -321,7 +351,7 @@ export default function HomePage() {
 
           <div className="space-y-3">
             <Label htmlFor="timeAvailable" className="block text-lg font-semibold text-foreground mb-1">
-              2. Tiempo Disponible:
+              3. Tiempo Disponible:
             </Label>
             <Select name="timeAvailable" value={formData.timeAvailable} onValueChange={(value) => handleSelectChange('timeAvailable', value)}>
               <SelectTrigger id="timeAvailable" className="mt-1 w-full">
@@ -343,7 +373,7 @@ export default function HomePage() {
 
           <div>
             <Label htmlFor="centralTheme" className="block text-lg font-semibold text-foreground mb-1">
-              3. Tema Central o Problema:
+              4. Tema Central o Problema:
             </Label>
             <Input
               type="text"
@@ -359,7 +389,7 @@ export default function HomePage() {
 
           <div className="space-y-3">
             <Label htmlFor="methodologyPreference" className="block text-lg font-semibold text-foreground mb-1">
-              4. Metodología Preferida:
+              5. Metodología Preferida:
             </Label>
             <Select name="methodologyPreference" value={formData.methodologyPreference} onValueChange={(value) => handleSelectChange('methodologyPreference', value)}>
               <SelectTrigger id="methodologyPreference" className="mt-1 w-full">
@@ -372,7 +402,7 @@ export default function HomePage() {
           </div>
 
           <div className="space-y-3">
-            <Label className="block text-lg font-semibold text-foreground">5. Competencias a Desarrollar:</Label>
+            <Label className="block text-lg font-semibold text-foreground">6. Competencias a Desarrollar:</Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 max-h-60 overflow-y-auto p-2 border border-input rounded-md">
               {competenciesToDevelopOptions.map(comp => (
                 <div key={comp.id} className="flex items-start space-x-3 p-2 rounded-md hover:bg-muted transition-colors">
@@ -389,7 +419,7 @@ export default function HomePage() {
           </div>
 
           <div className="space-y-3">
-            <Label className="block text-lg font-semibold text-foreground">6. Evidencias de Aprendizaje:</Label>
+            <Label className="block text-lg font-semibold text-foreground">7. Evidencias de Aprendizaje:</Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 max-h-60 overflow-y-auto p-2 border border-input rounded-md">
               {learningEvidencesOptions.map(ev => (
                 <div key={ev.id} className="flex items-start space-x-3 p-2 rounded-md hover:bg-muted transition-colors">
@@ -406,7 +436,7 @@ export default function HomePage() {
           </div>
 
           <div className="space-y-3">
-            <Label className="block text-lg font-semibold text-foreground">7. Componentes Curriculares:</Label>
+            <Label className="block text-lg font-semibold text-foreground">8. Componentes Curriculares:</Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 max-h-60 overflow-y-auto p-2 border border-input rounded-md">
               {curricularComponentsOptions.map(item => (
                 <div key={item.id} className="flex items-start space-x-3 p-2 rounded-md hover:bg-muted transition-colors">
@@ -423,7 +453,7 @@ export default function HomePage() {
           </div>
 
           <div className="space-y-3">
-            <Label className="block text-lg font-semibold text-foreground">8. Recursos Disponibles (selección principal):</Label>
+            <Label className="block text-lg font-semibold text-foreground">9. Recursos Disponibles (selección principal):</Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 max-h-60 overflow-y-auto p-2 border border-input rounded-md">
               {resourcesOptions.map(item => (
                 <div key={item.id} className="flex items-start space-x-3 p-2 rounded-md hover:bg-muted transition-colors">
@@ -453,7 +483,7 @@ export default function HomePage() {
           </div>
 
           <div className="space-y-3">
-            <Label className="block text-lg font-semibold text-foreground">9. Contexto y Necesidades Particulares:</Label>
+            <Label className="block text-lg font-semibold text-foreground">10. Contexto y Necesidades Particulares:</Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 max-h-60 overflow-y-auto p-2 border border-input rounded-md">
               {contextNeedsOptions.map(item => (
                 <div key={item.id} className="flex items-start space-x-3 p-2 rounded-md hover:bg-muted transition-colors">
@@ -471,7 +501,7 @@ export default function HomePage() {
 
           <div>
             <Label htmlFor="actividad" className="block text-lg font-semibold text-foreground mb-1">
-              10. Ideas Iniciales sobre la Actividad (opcional):
+              11. Ideas Iniciales sobre la Actividad (opcional):
             </Label>
             <Textarea
               name="actividad"
@@ -486,7 +516,7 @@ export default function HomePage() {
 
           <div>
             <Label htmlFor="evaluacion" className="block text-lg font-semibold text-foreground mb-1">
-              11. Ideas Iniciales sobre la Evaluación (opcional):
+              12. Ideas Iniciales sobre la Evaluación (opcional):
             </Label>
             <Textarea
               name="evaluacion"
@@ -501,7 +531,7 @@ export default function HomePage() {
 
           <div>
             <Label htmlFor="interdisciplinarity" className="block text-lg font-semibold text-foreground mb-1">
-              12. Interdisciplinariedad (Opcional):
+              13. Interdisciplinariedad (Opcional):
             </Label>
             <Input
               type="text"
@@ -516,7 +546,7 @@ export default function HomePage() {
 
           <div>
             <Label htmlFor="detallesAdicionales" className="block text-lg font-semibold text-foreground mb-1">
-              13. Detalles Adicionales o Tono Deseado para la IA (opcional):
+              14. Detalles Adicionales o Tono Deseado para la IA (opcional):
             </Label>
             <Textarea
               name="detallesAdicionales"
@@ -579,7 +609,7 @@ export default function HomePage() {
 
       <footer className="text-center mt-16 py-6 text-sm text-muted-foreground" suppressHydrationWarning={true}>
         <p>© {currentYear || new Date().getFullYear()} AprendeTech Colombia. Todos los derechos reservados.</p>
-        <p>Una herramienta para potenciar la educación en Tecnología e Informática.</p>
+        <p>Una herramienta para potenciar la educación en todas las áreas.</p>
       </footer>
     </div>
   );
