@@ -19,6 +19,7 @@ import {
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
+import { generateActivityProposal, type GenerateActivityProposalInput } from '@/ai/flows/generate-activity-proposal';
 
 
 // Interfaz para los datos del formulario
@@ -202,46 +203,6 @@ export default function HomePage() {
     });
   };
 
-  const llamarGeminiAPI = async (prompt: string): Promise<string> => {
-    console.log("Frontend: Enviando prompt al backend (/api/gemini):", prompt.substring(0,100) + "...");
-    setError(''); // Limpiar errores anteriores
-  
-    try {
-      const response = await fetch('/api/gemini', { // Llama a tu API Route
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ prompt: prompt }), // Envía el prompt en el cuerpo
-      });
-  
-      const data = await response.json(); // Intenta parsear JSON siempre
-  
-      if (!response.ok) {
-        const errorMessage = data?.error || `Error del servidor: ${response.status} ${response.statusText}`;
-        console.error("Frontend: Error desde la API Route de Gemini:", errorMessage);
-        throw new Error(errorMessage);
-      }
-      
-      // Si llegamos aquí y response.ok es true, data debería tener generatedText
-      if (data.error) { // Por si la API devuelve 200 OK pero con un error en el cuerpo
-          console.error("Frontend: Error en el cuerpo de la respuesta de la API de Gemini (via backend):", data.error);
-          throw new Error(data.error);
-      }
-      
-      console.log("Frontend: Respuesta del backend (Gemini):", data.generatedText ? data.generatedText.substring(0,100) + "..." : "Sin texto generado");
-      return data.generatedText || ""; // Devuelve el texto generado o un string vacío si no existe
-  
-    } catch (fetchError) {
-      console.error("Frontend: Error al hacer fetch a /api/gemini:", fetchError);
-      // Asegúrate de que el error se propague para que el bloque catch en handleGenerarPropuesta lo maneje
-      if (fetchError instanceof Error) {
-          throw new Error(`No se pudo conectar con el asistente de IA: ${fetchError.message}`);
-      }
-      throw new Error("No se pudo conectar con el asistente de IA: error desconocido.");
-    }
-  };
-
   const guardarPropuestaEnFirebase = async (propuesta: string, datos: FormData) => {
     if (!firestore) {
       console.error("Firestore no está disponible. No se puede guardar.");
@@ -281,113 +242,49 @@ export default function HomePage() {
       setCargando(false);
       return;
     }
+    
+    // Combine form data into the format expected by the Genkit flow
+    const competenciesString = formData.competenciesToDevelop.join('\n- ');
+    const evidencesString = formData.learningEvidences.join('\n- ');
+    const componentsString = formData.curricularComponents.join('\n- ');
+    const resourcesString = [
+        ...formData.availableResourcesCheckboxes,
+        formData.recursos
+    ].filter(Boolean).join('\n- ');
+    const contextString = formData.contextAndNeeds.join('\n- ');
 
-    const promptCompleto = `Rol: Eres un Asistente experto en diseño de actividades de aprendizaje en Tecnología e Informática para bachillerato en Colombia, con profundo conocimiento de las Orientaciones Curriculares del MEN y la Guía 30.
+    // Append extra details to the central theme to pass them to the prompt
+    const themeWithDetails = [
+      `Tema central: ${formData.centralTheme}`,
+      formData.actividad ? `\n\nIdeas iniciales sobre la actividad: ${formData.actividad}` : '',
+      formData.evaluacion ? `\n\nIdeas iniciales sobre la evaluación: ${formData.evaluacion}` : '',
+      formData.detallesAdicionales ? `\n\nDetalles adicionales o tono deseado: ${formData.detallesAdicionales}` : '',
+    ].join('');
 
-    Tarea: Genera una propuesta de actividad de aprendizaje DETALLADA, PRÁCTICA y ALTAMENTE CONTEXTUALIZADA a Colombia. La propuesta debe ser fácil de seguir, con secciones claras y listas para ser implementada en un aula. Asegúrate de que la respuesta NO sea genérica y se adhiera estrictamente a los lineamientos del MEN. Formatea la respuesta usando Markdown ligero (negritas, listas).
 
-    Información Proporcionada por el Docente:
-    1.  **Grado(s) Específico(s):** ${formData.grade}
-    2.  **Tiempo Disponible:** ${formData.timeAvailable} (Detalla la distribución si es relevante)
-    3.  **Tema Central / Problema a Resolver:** ${formData.centralTheme}
-    4.  **Metodología Preferida:** ${formData.methodologyPreference} (Si es "Abierto a sugerencias", propón la más adecuada justificando brevemente)
-    5.  **Competencias a Desarrollar (MEN - TI):** (Citar textualmente o adaptar fielmente de las Orientaciones Curriculares, páginas 56-57 para 10º-11º, o equivalentes)
-        ${formData.competenciesToDevelop.map(c => `- ${c}`).join('\n        ')}
-    6.  **Evidencias de Aprendizaje (MEN - TI):** (Citar textualmente o adaptar fielmente de las Orientaciones, alineadas a las competencias)
-        ${formData.learningEvidences.map(e => `- ${e}`).join('\n        ')}
-    7.  **Componentes Curriculares (Justificar selección):**
-        ${formData.curricularComponents.map(c => `- ${c}`).join('\n        ')}
-        (Justificación breve de por qué estos componentes son los principales)
-    8.  **Recursos Disponibles:**
-        Seleccionados: ${formData.availableResourcesCheckboxes.map(r => `- ${r}`).join('\n        ')}
-        Adicionales (texto): ${formData.recursos || 'Ninguno especificado'}
-    9.  **Contexto y Necesidades Particulares:**
-        ${formData.contextAndNeeds.map(n => `- ${n}`).join('\n        ')}
-        ${formData.detallesAdicionales.includes("contexto") ? `Detalles adicionales sobre el contexto: ${formData.detallesAdicionales}` : ''}
-    10. **Interdisciplinariedad (Opcional):** ${formData.interdisciplinarity || 'No se especificó integración.'}
-    11. **Ideas Iniciales del Docente sobre la Actividad:** ${formData.actividad || 'El docente no proveyó una descripción inicial detallada.'}
-    12. **Ideas Iniciales del Docente sobre la Evaluación:** ${formData.evaluacion || 'El docente no proveyó un método de evaluación inicial detallado.'}
-    13. **Detalles Adicionales o Tono Deseado para la IA:** ${formData.detallesAdicionales || 'Tono profesional, claro y práctico.'}
+    const flowInput: GenerateActivityProposalInput = {
+      grade: formData.grade,
+      timeAvailable: formData.timeAvailable || "Flexible / A definir según avance",
+      centralTheme: themeWithDetails,
+      methodologyPreference: formData.methodologyPreference,
+      competenciesToDevelop: competenciesString,
+      learningEvidences: evidencesString,
+      curricularComponents: componentsString,
+      availableResources: resourcesString,
+      contextAndNeeds: contextString,
+      interdisciplinarity: formData.interdisciplinarity || 'No se especificó integración.',
+    };
 
-    Formato de Salida Obligatorio (Secciones Claras con Markdown):
-    ## Propuesta de Actividad de Aprendizaje: "[Título Creativo y Descriptivo de la Actividad]"
-
-    **Grado(s):** [Grado(s) especificado(s)]
-    **Tiempo Disponible Estimado:** [Tiempo total y distribución si aplica]
-    **Tema Central:** [Tema central]
-    **Metodología Propuesta:** [Metodología, con breve justificación si fue sugerida por la IA]
-
-    **1. Descripción Completa de la Actividad:**
-    (Presentación general de la actividad, su propósito y flujo principal. Usar párrafos.)
-
-    **2. Objetivos de Aprendizaje:**
-    (Alineados con las competencias seleccionadas. Claros y medibles. Usar lista de viñetas)
-    *   Objetivo 1...
-    *   Objetivo 2...
-
-    **3. Competencias a Desarrollar (MEN - TI):**
-    (Listar las competencias citadas por el docente. Usar lista de viñetas)
-    *   [Competencia 1]
-    *   [Competencia 2]
-
-    **4. Fases de la Actividad:**
-
-    **Fase 1: [Nombre de la Fase 1] ([Duración Estimada si aplica])**
-    *   **Actividad:** [Descripción detallada de las acciones de los estudiantes y el docente. Usar párrafos y/o listas.]
-    *   **Roles:** (Si aplica, roles específicos del docente y estudiantes. Usar párrafos y/o listas.)
-    *   **Preguntas Orientadoras:**
-        *   [Pregunta 1 para guiar la reflexión/trabajo]
-        *   [Pregunta 2...]
-    *   **Recursos Específicos para esta Fase:** [Listado con viñetas]
-
-    **Fase 2: [Nombre de la Fase 2] ([Duración Estimada si aplica])**
-    *   **Actividad:** ...
-    *   **Roles:** ...
-    *   **Preguntas Orientadoras:** ...
-    *   **Recursos Específicos para esta Fase:** ...
-
-    (Continuar con más fases según sea necesario)
-
-    **5. Producto(s) Esperado(s):**
-    (Qué deben entregar o demostrar los estudiantes. Usar lista de viñetas)
-    *   [Producto 1]
-    *   [Producto 2]
-
-    **6. Evaluación:**
-    *   **Evidencias de Aprendizaje (MEN - TI):**
-        (Listar las evidencias citadas. Usar lista de viñetas)
-        *   [Evidencia 1] relacionada con [Producto X]
-    *   **Criterios de Evaluación:** (Para cada producto/evidencia. Usar lista de viñetas o tabla simple)
-        *   Criterio A: ...
-    *   **Instrumentos de Evaluación Sugeridos:**
-        *   [Ej: Rúbrica para proyecto (describir brevemente o indicar que se adjuntaría)]
-        *   [Ej: Lista de chequeo para participación]
-
-    **7. Recursos Necesarios (Generales):**
-    (Consolidado de recursos. Usar lista de viñetas)
-    *   [Recurso 1]
-
-    **8. Posibles Adaptaciones:**
-    (Considerando contexto y necesidades. Usar lista de viñetas)
-    *   Para estudiantes con menor competencia digital: ...
-
-    **9. Justificación de los Componentes Curriculares:**
-    (Explicación breve de cómo se abordan los componentes. Usar lista de viñetas)
-    *   **[Componente 1]:** Se aborda a través de...
-
-    **10. Integración Interdisciplinar (Si aplica):**
-    *   **[Área del conocimiento]:** Se integra mediante [actividad/tema específico].
-    `;
 
     try {
-      const respuesta = await llamarGeminiAPI(promptCompleto);
-      setResultadoTexto(respuesta);
-      await guardarPropuestaEnFirebase(respuesta, formData);
+      const response = await generateActivityProposal(flowInput);
+      setResultadoTexto(response.activityProposal);
+      await guardarPropuestaEnFirebase(response.activityProposal, formData);
 
     } catch (apiErrorOrFetchError) {
-      console.error("Error en el flujo de generación:", apiErrorOrFetchError);
+      console.error("Error en el flujo de generación (Genkit):", apiErrorOrFetchError);
       if (apiErrorOrFetchError instanceof Error) {
-        setError(`Hubo un error: ${apiErrorOrFetchError.message}`);
+        setError(`Hubo un error al generar la propuesta con el asistente de IA: ${apiErrorOrFetchError.message}`);
       } else {
         setError("Hubo un error desconocido al generar la propuesta.");
       }
