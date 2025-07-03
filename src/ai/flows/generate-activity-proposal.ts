@@ -68,21 +68,3 @@ const generateActivityProposalFlow = ai.defineFlow(
     return output!;
   }
 );
-
-
-// AÑADE ESTA FUNCIÓN AL FINAL DEL ARCHIVO
-export async function debugAuth() {
-  'use server';
-  console.log('DEBUGGING AUTH...');
-  const apiKey = process.env.GOOGLE_GEMINI_API_KEY;
-
-  if (apiKey) {
-    console.log('API Key SÍ fue encontrada.');
-    // Solo muestra una parte para no exponerla completa en los logs
-    console.log('API Key empieza con:', apiKey.substring(0, 5));
-    return { status: 'API Key Encontrada', keyStart: apiKey.substring(0, 5) };
-  } else {
-    console.error('ERROR CRÍTICO: La API Key NO fue encontrada en process.env.');
-    return { status: 'API Key NO Encontrada', keyStart: null };
-  }
-}

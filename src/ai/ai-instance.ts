@@ -9,12 +9,9 @@ import {googleAI} from '@genkit-ai/googleai';
 export const ai = genkit({
   plugins: [
     // Configure the Google AI plugin.
-    // When running locally, it's best to use an API key from Google AI Studio.
-    // This key should be in your .env.local file as GOOGLE_GEMINI_API_KEY.
-    // When deployed to a Google Cloud environment (like Firebase),
+    // When running in a Google Cloud environment (like Firebase),
     // Genkit can automatically use the environment's service account for authentication.
     googleAI({
-      apiKey: process.env.GOOGLE_GEMINI_API_KEY,
       location: 'us-central1', // Specifying location is crucial for model availability.
     }),
   ],
