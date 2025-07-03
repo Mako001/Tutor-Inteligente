@@ -23,6 +23,7 @@ import rehypeRaw from 'rehype-raw';
 import { generateActivityProposal, type GenerateActivityProposalInput } from '@/ai/flows/generate-activity-proposal';
 import { cn } from '@/lib/utils';
 import { Check, Loader2 } from 'lucide-react';
+import { curriculumData, CurriculumData } from '@/lib/data/curriculum';
 
 
 // Interfaz para los datos del formulario
@@ -47,18 +48,7 @@ interface FormData {
 type Complexity = 'Básico' | 'Intermedio' | 'Avanzado';
 
 // Opciones para los campos de selección múltiple y selectores
-const subjectOptions = [
-  "Tecnología e Informática",
-  "Matemáticas",
-  "Ciencias Naturales (Biología, Química, Física)",
-  "Ciencias Sociales (Historia, Geografía, Cívica)",
-  "Lenguaje y Comunicación (Español, Literatura)",
-  "Inglés (Lengua Extranjera)",
-  "Artes (Música, Plásticas)",
-  "Educación Física",
-  "Ética y Valores",
-  "Filosofía"
-];
+const subjectOptions = Object.keys(curriculumData);
 
 const gradeOptions = [
   "6º", "7º", "8º", "9º", "10º", "11º",
@@ -96,52 +86,6 @@ const methodologyOptions = [
   { id: "meth_sim", label: "Simulaciones y Modelado" },
   { id: "meth_sugg", label: "Abierto a sugerencias de la IA" },
   { id: "meth_other", label: "Otro (especificar en detalles)" },
-];
-
-const competenciesToDevelopOptions = [
-  { id: "comp_pens_crit", label: "Desarrollo del pensamiento crítico y reflexivo." },
-  { id: "comp_sol_prob", label: "Capacidad para identificar, formular y resolver problemas." },
-  { id: "comp_uso_tic", label: "Uso ético, seguro y responsable de las TIC." },
-  { id: "comp_com_dig", label: "Habilidades para la comunicación y colaboración en entornos digitales." },
-  { id: "comp_info_data", label: "Alfabetización informacional y manejo de datos." },
-  { id: "comp_ciudad_dig", label: "Ejercicio de la ciudadanía digital activa." },
-  { id: "comp_tec_soc", label: "Comprensión de las relaciones entre tecnología, ciencia y sociedad." },
-  { id: "comp_innov", label: "Fomento de la creatividad, la innovación y el emprendimiento." },
-  { id: "comp_modelado", label: "Capacidad para modelar y simular fenómenos o sistemas." },
-  { id: "comp_prog_basic", label: "Introducción al pensamiento computacional y programación." },
-  { id: "comp_seg_dig", label: "Aplicación de medidas de seguridad digital y privacidad." },
-  { id: "comp_gestion_proy", label: "Habilidades para la gestión de proyectos básicos." },
-  { id: "comp_adapt", label: "Adaptabilidad y aprendizaje continuo." },
-  { id: "comp_interdisc", label: "Capacidad para integrar conocimientos con otras áreas." },
-];
-
-const learningEvidencesOptions = [
-  { id: "ev_proy_dig", label: "Creación de un proyecto digital (video, podcast, blog, web)." },
-  { id: "ev_sol_tec", label: "Diseño y/o prototipado de una solución a un problema." },
-  { id: "ev_analisis_crit", label: "Análisis crítico y debate argumentado sobre un tema." },
-  { id: "ev_colab_linea", label: "Participación activa en actividades colaborativas en línea." },
-  { id: "ev_pres_info", label: "Presentación oral/escrita de información investigada." },
-  { id: "ev_prog_simple", label: "Desarrollo de un algoritmo o programa sencillo." },
-  { id: "ev_diag_tec", label: "Diagnóstico de problemas y propuesta de soluciones." },
-  { id: "ev_uso_herram", label: "Uso efectivo de herramientas de software específicas." },
-  { id: "ev_portafolio", label: "Construcción de un portafolio digital con trabajos." },
-  { id: "ev_autoeval", label: "Autoevaluación y coevaluación del proceso de aprendizaje." },
-  { id: "ev_map_concept", label: "Elaboración de mapas conceptuales o diagramas de flujo." },
-  { id: "ev_informe_tec", label: "Redacción de un informe técnico o manual de usuario." },
-  { id: "ev_diseno_interfaz", label: "Diseño de interfaces de usuario (mockups, wireframes)." },
-  { id: "ev_defensa_proy", label: "Defensa oral de un proyecto." },
-  { id: "ev_resol_retos", label: "Resolución de retos de lógica o programación." },
-];
-
-const curricularComponentsOptions = [
-  { id: "cc_nat_tec", label: "Naturaleza y Evolución de la Tecnología" },
-  { id: "cc_aprop_uso", label: "Apropiación y Uso de la Tecnología" },
-  { id: "cc_sol_prob_tec", label: "Solución de Problemas con Tecnología" },
-  { id: "cc_tec_soc", label: "Tecnología y Sociedad" },
-  { id: "cc_pens_comp", label: "Pensamiento Computacional (transversal)" },
-  { id: "cc_info_com", label: "Información y Comunicación (Manejo de datos)" },
-  { id: "cc_etica_leg", label: "Aspectos Éticos y Legales de la Tecnología" },
-  { id: "cc_dis_creac", label: "Diseño y Creación Tecnológica (Prototipado)" },
 ];
 
 const resourcesOptions = [
@@ -193,6 +137,8 @@ export default function CreatePage() {
     interdisciplinarity: '',
     detallesAdicionales: '',
   });
+
+  const [dynamicOptions, setDynamicOptions] = useState<CurriculumData>(curriculumData[formData.subject]);
   const [resultadoTexto, setResultadoTexto] = useState<string>('');
   const [cargando, setCargando] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
@@ -201,6 +147,20 @@ export default function CreatePage() {
   useEffect(() => {
     setCurrentYear(new Date().getFullYear());
   }, []);
+
+  useEffect(() => {
+    const data = curriculumData[formData.subject];
+    if (data) {
+      setDynamicOptions(data);
+      // Reset selections when subject changes to avoid keeping irrelevant options
+      setFormData(prev => ({
+        ...prev,
+        competenciesToDevelop: [],
+        learningEvidences: [],
+        curricularComponents: [],
+      }));
+    }
+  }, [formData.subject]);
 
   const totalSteps =
     complexity === 'Básico' ? 1
@@ -428,15 +388,15 @@ export default function CreatePage() {
                     </div>
                     <div className="space-y-3">
                       <Label className="block text-lg font-semibold text-foreground">6. Competencias a Desarrollar:</Label>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 max-h-60 overflow-y-auto p-2 border rounded-md">{competenciesToDevelopOptions.map(comp => (<div key={comp.id} className="flex items-start space-x-3 p-2 rounded-md hover:bg-muted"><Checkbox id={`comp-${comp.id}`} checked={(formData.competenciesToDevelop || []).includes(comp.label)} onCheckedChange={() => handleCheckboxChange('competenciesToDevelop', comp.label)} /><Label htmlFor={`comp-${comp.id}`} className="text-sm cursor-pointer">{comp.label}</Label></div>))}</div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 max-h-60 overflow-y-auto p-2 border rounded-md">{dynamicOptions?.competencias.map((comp, index) => (<div key={`comp-${index}`} className="flex items-start space-x-3 p-2 rounded-md hover:bg-muted"><Checkbox id={`comp-${index}`} checked={(formData.competenciasToDevelop || []).includes(comp)} onCheckedChange={() => handleCheckboxChange('competenciesToDevelop', comp)} /><Label htmlFor={`comp-${index}`} className="text-sm cursor-pointer">{comp}</Label></div>))}</div>
                     </div>
                     <div className="space-y-3">
                       <Label className="block text-lg font-semibold text-foreground">7. Evidencias de Aprendizaje:</Label>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 max-h-60 overflow-y-auto p-2 border rounded-md">{learningEvidencesOptions.map(ev => (<div key={ev.id} className="flex items-start space-x-3 p-2 rounded-md hover:bg-muted"><Checkbox id={`ev-${ev.id}`} checked={(formData.learningEvidences || []).includes(ev.label)} onCheckedChange={() => handleCheckboxChange('learningEvidences', ev.label)} /><Label htmlFor={`ev-${ev.id}`} className="text-sm cursor-pointer">{ev.label}</Label></div>))}</div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 max-h-60 overflow-y-auto p-2 border rounded-md">{dynamicOptions?.evidenciasAprendizaje.map((ev, index) => (<div key={`ev-${index}`} className="flex items-start space-x-3 p-2 rounded-md hover:bg-muted"><Checkbox id={`ev-${index}`} checked={(formData.learningEvidences || []).includes(ev)} onCheckedChange={() => handleCheckboxChange('learningEvidences', ev)} /><Label htmlFor={`ev-${index}`} className="text-sm cursor-pointer">{ev}</Label></div>))}</div>
                     </div>
                     <div className="space-y-3">
-                      <Label className="block text-lg font-semibold text-foreground">8. Componentes Curriculares (Tecnología):</Label>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 max-h-60 overflow-y-auto p-2 border rounded-md">{curricularComponentsOptions.map(item => (<div key={item.id} className="flex items-start space-x-3 p-2 rounded-md hover:bg-muted"><Checkbox id={`cc-${item.id}`} checked={(formData.curricularComponents || []).includes(item.label)} onCheckedChange={() => handleCheckboxChange('curricularComponents', item.label)} /><Label htmlFor={`cc-${item.id}`} className="text-sm cursor-pointer">{item.label}</Label></div>))}</div>
+                      <Label className="block text-lg font-semibold text-foreground">8. Componentes Curriculares:</Label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 max-h-60 overflow-y-auto p-2 border rounded-md">{dynamicOptions?.componentesCurriculares.map((item, index) => (<div key={`cc-${index}`} className="flex items-start space-x-3 p-2 rounded-md hover:bg-muted"><Checkbox id={`cc-${index}`} checked={(formData.curricularComponents || []).includes(item)} onCheckedChange={() => handleCheckboxChange('curricularComponents', item)} /><Label htmlFor={`cc-${index}`} className="text-sm cursor-pointer">{item}</Label></div>))}</div>
                     </div>
                  </div>
               )}
