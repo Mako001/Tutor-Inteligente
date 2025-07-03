@@ -1,11 +1,7 @@
+// src/ai/flows/generate-activity-proposal.ts
 'use server';
-/**
- * @fileOverview Generates a detailed learning activity proposal tailored to the Colombian educational context based on teacher input.
- *
- * - generateActivityProposal - The single exported function that generates the activity proposal.
- */
 
-import {ai} from '@/ai/ai-instance';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import {
   GenerateActivityProposalInputSchema,
   GenerateActivityProposalOutputSchema,
@@ -13,58 +9,69 @@ import {
   type GenerateActivityProposalOutput,
 } from './schemas';
 
-export async function generateActivityProposal(input: GenerateActivityProposalInput): Promise<GenerateActivityProposalOutput> {
-  return generateActivityProposalFlow(input);
-}
+// 1. Initialize the client of the API with the key.
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY!);
 
-const prompt = ai.definePrompt({
-  name: 'generateActivityProposalPrompt',
-  model: 'google/gemini-1.5-pro-latest',
-  input: {
-    schema: GenerateActivityProposalInputSchema,
-  },
-  output: {
-    schema: GenerateActivityProposalOutputSchema,
-  },
-  prompt: `You are an expert in designing learning activities for the subject of {{{subject}}} in the Colombian education system.
-  You are familiar with the general curriculum guidelines from the Ministerio de Educación Nacional de Colombia (MEN). For the subject of {{{subject}}}, you will apply the relevant standards and competencies.
+// 2. Define the function that will be called from the frontend.
+export async function generateActivityProposal(
+  input: GenerateActivityProposalInput
+): Promise<GenerateActivityProposalOutput> {
+  // Validate the input (good practice)
+  const validatedInput = GenerateActivityProposalInputSchema.parse(input);
 
-  Based on the following information provided by the teacher, generate a detailed and contextualized learning activity proposal:
+  try {
+    // 3. Select the model
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro-latest" });
 
-  Subject: {{{subject}}}
-  Grade(s): {{{grade}}}
-  Time Available: {{{timeAvailable}}}
-  Central Theme: {{{centralTheme}}}
-  Methodology Preference: {{{methodologyPreference}}}
-  Competencies to Develop: {{{competenciesToDevelop}}}
-  Learning Evidences: {{{learningEvidences}}}
-  Curricular Components: {{{curricularComponents}}}
-  Available Resources: {{{availableResources}}}
-  Context and Needs: {{{contextAndNeeds}}}
-  Interdisciplinarity: {{{interdisciplinarity}}}
+    // 4. Build the prompt
+    const prompt = `You are an expert in designing learning activities for the subject of ${validatedInput.subject} in the Colombian education system.
+You are familiar with the general curriculum guidelines from the Ministerio de Educación Nacional de Colombia (MEN). For the subject of ${validatedInput.subject}, you will apply the relevant standards and competencies.
 
-  The activity proposal should include:
-  * A complete description of the activity (steps, phases, roles).
-  * Guiding questions for the students.
-  * Necessary resources.
-  * Expected product(s).
-  * Evaluation criteria and instruments (aligned with the competencies and evidences).
-  * Adaptations (if necessary).
+Based on the following information provided by the teacher, generate a detailed and contextualized learning activity proposal:
 
-  The proposal should be presented in a clear, organized, and easy-to-follow format, with separate sections for each element.
-  The proposal must adhere to Colombian educational standards and curriculum guidelines for the specified subject.
-  The proposal must be highly specific, detailed, and practical, suitable for immediate implementation in a classroom setting.
-`,
-});
+Subject: ${validatedInput.subject}
+Grade(s): ${validatedInput.grade}
+Time Available: ${validatedInput.timeAvailable}
+Central Theme: ${validatedInput.centralTheme}
+Methodology Preference: ${validatedInput.methodologyPreference}
+Competencies to Develop: ${validatedInput.competenciesToDevelop}
+Learning Evidences: ${validatedInput.learningEvidences}
+Curricular Components: ${validatedInput.curricularComponents}
+Available Resources: ${validatedInput.availableResources}
+Context and Needs: ${validatedInput.contextAndNeeds}
+Interdisciplinarity: ${validatedInput.interdisciplinarity}
 
-const generateActivityProposalFlow = ai.defineFlow(
-  {
-    name: 'generateActivityProposalFlow',
-    inputSchema: GenerateActivityProposalInputSchema,
-    outputSchema: GenerateActivityProposalOutputSchema,
-  },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
+The activity proposal should include:
+* A complete description of the activity (steps, phases, roles).
+* Guiding questions for the students.
+* Necessary resources.
+* Expected product(s).
+* Evaluation criteria and instruments (aligned with the competencies and evidences).
+* Adaptations (if necessary).
+
+The proposal should be presented in a clear, organized, and easy-to-follow format, with separate sections for each element.
+The proposal must adhere to Colombian educational standards and curriculum guidelines for the specified subject.
+The proposal must be highly specific, detailed, and practical, suitable for immediate implementation in a classroom setting.
+
+IMPORTANT: Format your entire response as a single, valid JSON object that adheres to the output schema: { "activityProposal": "string" }. Do not include any markdown formatting like \`\`\`json or any other text outside of the JSON object.`;
+
+    // 5. Generate the content
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+
+    // 6. Parse the JSON response
+    const parsedOutput = JSON.parse(text);
+
+    // 7. Validate the output with Zod
+    return GenerateActivityProposalOutputSchema.parse(parsedOutput);
+
+  } catch (error) {
+    console.error("Error al llamar a la API de Gemini:", error);
+    if (error instanceof SyntaxError) {
+      console.error("The model did not return valid JSON. Raw text:", error);
+    }
+    // Lanza un error para que el frontend pueda manejarlo
+    throw new Error("No se pudo generar la propuesta. Revisa la consola para más detalles.");
   }
-);
+}

@@ -4,16 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 9003",
-    "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
-    "genkit:watch": "genkit start -- tsx --watch src/ai/dev.ts",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@genkit-ai/googleai": "^1.14.0",
-    "@genkit-ai/next": "^1.14.0",
     "@google/generative-ai": "^0.15.0",
     "@hookform/resolvers": "^3.3.4",
     "@radix-ui/react-accordion": "^1.2.3",
@@ -44,7 +40,6 @@
     "docx": "^8.5.0",
     "file-saver": "^2.0.5",
     "firebase": "^11.6.0",
-    "genkit": "^1.14.0",
     "html-to-pdfmake": "^2.5.1",
     "html2pdf.js": "^0.10.2",
     "jsdom": "^24.1.1",
@@ -73,7 +68,6 @@
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "autoprefixer": "^10.0.1",
-    "genkit-cli": "^1.14.0",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
     "typescript": "^5"

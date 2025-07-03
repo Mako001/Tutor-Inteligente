@@ -1,11 +1,6 @@
 'use server';
-/**
- * @fileOverview This file defines a Genkit flow for refining an activity proposal based on teacher feedback.
- *
- * - refineActivityProposal - The single exported function that refines the activity proposal.
- */
 
-import {ai} from '@/ai/ai-instance';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import {
   RefineActivityProposalInputSchema,
   RefineActivityProposalOutputSchema,
@@ -13,44 +8,54 @@ import {
   type RefineActivityProposalOutput,
 } from './schemas';
 
+// 1. Initialize the client of the API with the key.
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY!);
+
+// 2. Define the function that will be called from the frontend.
 export async function refineActivityProposal(
   input: RefineActivityProposalInput
 ): Promise<RefineActivityProposalOutput> {
-  return refineActivityProposalFlow(input);
-}
+  // Validate the input (good practice)
+  const validatedInput = RefineActivityProposalInputSchema.parse(input);
 
-const prompt = ai.definePrompt({
-  name: 'refineActivityProposalPrompt',
-  model: 'google/gemini-1.5-pro-latest',
-  input: {
-    schema: RefineActivityProposalInputSchema,
-  },
-  output: {
-    schema: RefineActivityProposalOutputSchema,
-  },
-  prompt: `You are an expert in refining activity proposals for teachers.
+  try {
+    // 3. Select the model
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro-latest" });
 
-  Based on the initial activity proposal and the teacher's feedback, refine the proposal to better meet the teacher's needs.
-  The proposal must be contextualized to Colombia.
-  Do not deviate from the guidelines of the Ministry of Education of Colombia.
+    // 4. Build the prompt
+    const prompt = `You are an expert in refining activity proposals for teachers.
 
-  Initial Activity Proposal:
-  {{{initialProposal}}}
+Based on the initial activity proposal and the teacher's feedback, refine the proposal to better meet the teacher's needs.
+The proposal must be contextualized to Colombia.
+Do not deviate from the guidelines of the Ministry of Education of Colombia.
 
-  TeacherFeedback:
-  {{{teacherFeedback}}}
+Initial Activity Proposal:
+${validatedInput.initialProposal}
 
-  Refined Activity Proposal:`,
-});
+TeacherFeedback:
+${validatedInput.teacherFeedback}
 
-const refineActivityProposalFlow = ai.defineFlow(
-  {
-    name: 'refineActivityProposalFlow',
-    inputSchema: RefineActivityProposalInputSchema,
-    outputSchema: RefineActivityProposalOutputSchema,
-  },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
+Refined Activity Proposal:
+
+IMPORTANT: Format your entire response as a single, valid JSON object that adheres to the output schema: { "refinedProposal": "string" }. Do not include any markdown formatting like \`\`\`json or any other text outside of the JSON object.`;
+
+    // 5. Generate the content
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+
+    // 6. Parse the JSON response
+    const parsedOutput = JSON.parse(text);
+
+    // 7. Validate the output with Zod
+    return RefineActivityProposalOutputSchema.parse(parsedOutput);
+
+  } catch (error) {
+    console.error("Error al llamar a la API de Gemini para refinar:", error);
+    if (error instanceof SyntaxError) {
+      console.error("The model did not return valid JSON for refinement. Raw text:", error);
+    }
+    // Lanza un error para que el frontend pueda manejarlo
+    throw new Error("No se pudo refinar la propuesta. Revisa la consola para más detalles.");
   }
-);
+}
