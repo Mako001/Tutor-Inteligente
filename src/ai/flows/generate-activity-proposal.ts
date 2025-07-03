@@ -19,7 +19,7 @@ export async function generateActivityProposal(input: GenerateActivityProposalIn
 
 const prompt = ai.definePrompt({
   name: 'generateActivityProposalPrompt',
-  model: 'gemini-1.5-flash-latest',
+  model: 'google/gemini-1.5-pro-latest',
   input: {
     schema: GenerateActivityProposalInputSchema,
   },

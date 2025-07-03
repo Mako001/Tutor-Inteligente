@@ -21,7 +21,7 @@ export async function refineActivityProposal(
 
 const prompt = ai.definePrompt({
   name: 'refineActivityProposalPrompt',
-  model: 'gemini-1.5-flash-latest',
+  model: 'google/gemini-1.5-pro-latest',
   input: {
     schema: RefineActivityProposalInputSchema,
   },
@@ -37,7 +37,7 @@ const prompt = ai.definePrompt({
   Initial Activity Proposal:
   {{{initialProposal}}}
 
-  Teacher Feedback:
+  TeacherFeedback:
   {{{teacherFeedback}}}
 
   Refined Activity Proposal:`,
