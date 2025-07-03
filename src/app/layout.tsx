@@ -2,6 +2,7 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
+import { Hub } from '@/components/hub';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
@@ -16,9 +17,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className={inter.variable}><head>
+    <html lang="es" className={inter.variable}>
+      <head>
         {/* You can have comments and line breaks INSIDE head without issues */}
         {/* For example, for additional scripts or metatags */}
-      </head><body className="antialiased bg-secondary text-foreground" suppressHydrationWarning={true}>{children}</body></html>
+      </head>
+      <body className="antialiased bg-secondary text-foreground" suppressHydrationWarning={true}>
+        <Hub />
+        <main>{children}</main>
+      </body>
+    </html>
   );
 }
