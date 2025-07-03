@@ -1,6 +1,6 @@
 // src/ai/flows/schemas.ts
 // This file does NOT have 'use server' and can be safely imported by clients and servers.
-import {z} from 'genkit';
+import {z} from 'zod';
 
 // Schemas for GenerateActivityProposal
 export const GenerateActivityProposalInputSchema = z.object({
