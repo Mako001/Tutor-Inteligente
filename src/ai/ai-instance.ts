@@ -9,11 +9,13 @@ import {googleAI} from '@genkit-ai/googleai';
 export const ai = genkit({
   plugins: [
     // Configure the Google AI plugin.
-    // We do NOT need an apiKey when running in a Google Cloud environment (like Firebase).
-    // The environment authenticates automatically.
-    // We DO need to specify the location to ensure model availability.
+    // When running locally, it's best to use an API key from Google AI Studio.
+    // This key should be in your .env.local file as GOOGLE_GEMINI_API_KEY.
+    // When deployed to a Google Cloud environment (like Firebase),
+    // Genkit can automatically use the environment's service account for authentication.
     googleAI({
-      location: 'us-central1',
+      apiKey: process.env.GOOGLE_GEMINI_API_KEY,
+      location: 'us-central1', // Specifying location is crucial for model availability.
     }),
   ],
   // We're removing the default model and promptDir from here to be more explicit in our prompts.
