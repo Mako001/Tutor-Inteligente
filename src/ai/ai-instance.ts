@@ -5,7 +5,7 @@ import {googleAI} from '@genkit-ai/googleai';
 
 export const ai = genkit({
   plugins: [
-    firebase(), // El plugin clave para el entorno de Firebase
+    firebase, // El plugin clave para el entorno de Firebase
     googleAI({
       location: 'us-central1',
     }),
