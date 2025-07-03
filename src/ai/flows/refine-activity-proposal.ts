@@ -54,10 +54,10 @@ const prompt = ai.definePrompt({
   Do not deviate from the guidelines of the Ministry of Education of Colombia.
 
   Initial Activity Proposal:
-  {{initialProposal}}
+  {{{initialProposal}}}
 
   Teacher Feedback:
-  {{teacherFeedback}}
+  {{{teacherFeedback}}}
 
   Refined Activity Proposal:`,
 });
@@ -70,6 +70,6 @@ const refineActivityProposalFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await prompt(input);
-    return {refinedProposal: output!.refinedProposal!};
+    return output!;
   }
 );
