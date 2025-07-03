@@ -271,12 +271,12 @@ export default function CreatePage() {
     };
 
     try {
-      const response = await generateActivityProposal(flowInput);
-      setResultadoTexto(response.activityProposal);
-      await guardarPropuestaEnFirebase(response.activityProposal, formData);
+      const responseText = await generateActivityProposal(flowInput);
+      setResultadoTexto(responseText);
+      await guardarPropuestaEnFirebase(responseText, formData);
 
     } catch (apiErrorOrFetchError) {
-      console.error("Error en el flujo de generación (Genkit):", apiErrorOrFetchError);
+      console.error("Error en el flujo de generación:", apiErrorOrFetchError);
       if (apiErrorOrFetchError instanceof Error) {
         setError(`Hubo un error al generar la propuesta con el asistente de IA: ${apiErrorOrFetchError.message}`);
       } else {

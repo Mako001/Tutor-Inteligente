@@ -16,9 +16,10 @@ async function runTest() {
     console.log(`Usando Proyecto: ${project}, Ubicación: ${location}`);
 
     const vertexAI = new VertexAI({ project, location });
-    const generativeModel = vertexAI.getGenerativeModel({
-      model: 'gemini-1.5-pro-latest',
-    });
+    // LÍNEA CORRECTA Y ESTABLE
+const generativeModel = vertexAI.getGenerativeModel({
+  model: 'gemini-1.0-pro',
+});
 
     const prompt = "¿Cuál es la capital de Colombia?";
     console.log(`Enviando prompt simple: "${prompt}"`);

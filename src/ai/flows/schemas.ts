@@ -36,11 +36,6 @@ export const GenerateActivityProposalInputSchema = z.object({
 });
 export type GenerateActivityProposalInput = z.infer<typeof GenerateActivityProposalInputSchema>;
 
-export const GenerateActivityProposalOutputSchema = z.object({
-  activityProposal: z.string().describe('A detailed proposal for a learning activity.'),
-});
-export type GenerateActivityProposalOutput = z.infer<typeof GenerateActivityProposalOutputSchema>;
-
 
 // Schemas for RefineActivityProposal
 export const RefineActivityProposalInputSchema = z.object({
@@ -55,13 +50,4 @@ export const RefineActivityProposalInputSchema = z.object({
 });
 export type RefineActivityProposalInput = z.infer<
   typeof RefineActivityProposalInputSchema
->;
-
-export const RefineActivityProposalOutputSchema = z.object({
-  refinedProposal: z
-    .string()
-    .describe('The refined activity proposal based on the teacher feedback.'),
-});
-export type RefineActivityProposalOutput = z.infer<
-  typeof RefineActivityProposalOutputSchema
 >;
