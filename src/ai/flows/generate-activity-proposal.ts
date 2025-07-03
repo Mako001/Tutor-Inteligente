@@ -2,54 +2,17 @@
 /**
  * @fileOverview Generates a detailed learning activity proposal tailored to the Colombian educational context based on teacher input.
  *
- * - generateActivityProposal - A function that generates the activity proposal.
- * - GenerateActivityProposalInput - The input type for the generateActivityProposal function.
- * - GenerateActivityProposalOutput - The return type for the generateActivityProposal function.
+ * - generateActivityProposal - The single exported function that generates the activity proposal.
  */
 
 import {ai} from '@/ai/ai-instance';
 import { googleAI } from '@genkit-ai/googleai';
-import {z} from 'genkit';
-
-const GenerateActivityProposalInputSchema = z.object({
-  subject: z.string().describe('The subject or area of knowledge for the activity (e.g., "Tecnología e Informática", "Matemáticas", "Ciencias Naturales").'),
-  grade: z.string().describe('The specific grade(s) for the activity (e.g., 6th, 7th, or both).'),
-  timeAvailable: z.string().describe('The time available for the activity (e.g., one class, two classes, a week).'),
-  centralTheme: z.string().describe('The central theme or specific problem to be addressed in the activity.'),
-  methodologyPreference: z
-    .string()
-    .describe('The preferred methodology or pedagogical approach for the activity (or "Abierto a sugerencias").'),
-  competenciesToDevelop: z
-    .string()
-    .describe(
-      'The specific competencies that the activity will develop. Be as specific as possible and cite them if possible.'
-    ),
-  learningEvidences: z
-    .string()
-    .describe(
-      'The specific learning evidences (actions, products, performances) that will verify the development of competencies. Be as specific as possible.'
-    ),
-  curricularComponents: z
-    .string()
-    .describe(
-      'The curricular components to be addressed in the activity, with justification.'
-    ),
-  availableResources: z.string().describe('The available resources for the activity (e.g., computers, internet, software).'),
-  contextAndNeeds: z
-    .string()
-    .describe('Any specific needs or particularities of the school context or students that should be considered.'),
-  interdisciplinarity: z
-    .string()
-    .describe('Whether the activity should be integrated with other areas of knowledge, and if so, which ones.'),
-});
-
-export type GenerateActivityProposalInput = z.infer<typeof GenerateActivityProposalInputSchema>;
-
-const GenerateActivityProposalOutputSchema = z.object({
-  activityProposal: z.string().describe('A detailed proposal for a learning activity.'),
-});
-
-export type GenerateActivityProposalOutput = z.infer<typeof GenerateActivityProposalOutputSchema>;
+import {
+  GenerateActivityProposalInputSchema,
+  GenerateActivityProposalOutputSchema,
+  type GenerateActivityProposalInput,
+  type GenerateActivityProposalOutput,
+} from './schemas';
 
 export async function generateActivityProposal(input: GenerateActivityProposalInput): Promise<GenerateActivityProposalOutput> {
   return generateActivityProposalFlow(input);

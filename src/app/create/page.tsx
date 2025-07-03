@@ -20,7 +20,8 @@ import {
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
-import { generateActivityProposal, type GenerateActivityProposalInput } from '@/ai/flows/generate-activity-proposal';
+import { generateActivityProposal } from '@/ai/flows/generate-activity-proposal';
+import { type GenerateActivityProposalInput } from '@/ai/flows/schemas';
 import { cn } from '@/lib/utils';
 import { Check, Loader2 } from 'lucide-react';
 import { curriculumData, CurriculumData } from '@/lib/data/curriculum';
@@ -388,7 +389,7 @@ export default function CreatePage() {
                     </div>
                     <div className="space-y-3">
                       <Label className="block text-lg font-semibold text-foreground">6. Competencias a Desarrollar:</Label>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 max-h-60 overflow-y-auto p-2 border rounded-md">{dynamicOptions?.competencias.map((comp, index) => (<div key={`comp-${index}`} className="flex items-start space-x-3 p-2 rounded-md hover:bg-muted"><Checkbox id={`comp-${index}`} checked={(formData.competenciasToDevelop || []).includes(comp)} onCheckedChange={() => handleCheckboxChange('competenciesToDevelop', comp)} /><Label htmlFor={`comp-${index}`} className="text-sm cursor-pointer">{comp}</Label></div>))}</div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 max-h-60 overflow-y-auto p-2 border rounded-md">{dynamicOptions?.competencias.map((comp, index) => (<div key={`comp-${index}`} className="flex items-start space-x-3 p-2 rounded-md hover:bg-muted"><Checkbox id={`comp-${index}`} checked={(formData.competenciesToDevelop || []).includes(comp)} onCheckedChange={() => handleCheckboxChange('competenciesToDevelop', comp)} /><Label htmlFor={`comp-${index}`} className="text-sm cursor-pointer">{comp}</Label></div>))}</div>
                     </div>
                     <div className="space-y-3">
                       <Label className="block text-lg font-semibold text-foreground">7. Evidencias de Aprendizaje:</Label>
