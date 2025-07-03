@@ -1,6 +1,9 @@
 import {genkit} from 'genkit';
 import {googleAI} from '@genkit-ai/googleai';
 
+// Use the model helper for a more robust reference
+const geminiFlash = googleAI.model('gemini-1.5-flash-latest');
+
 export const ai = genkit({
   promptDir: './prompts',
   plugins: [
@@ -8,5 +11,5 @@ export const ai = genkit({
       apiKey: process.env.GOOGLE_GEMINI_API_KEY, // Using the key from your README
     }),
   ],
-  model: 'googleai/gemini-1.5-flash-latest', // Using a standard and available model
+  model: geminiFlash, // Using a standard and available model reference
 });
