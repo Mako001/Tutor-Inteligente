@@ -6,7 +6,6 @@
  */
 
 import {ai} from '@/ai/ai-instance';
-import { googleAI } from '@genkit-ai/googleai';
 import {
   GenerateActivityProposalInputSchema,
   GenerateActivityProposalOutputSchema,
@@ -20,7 +19,7 @@ export async function generateActivityProposal(input: GenerateActivityProposalIn
 
 const prompt = ai.definePrompt({
   name: 'generateActivityProposalPrompt',
-  model: googleAI.model('gemini-1.5-flash-latest'),
+  model: 'gemini-1.5-flash-latest',
   input: {
     schema: GenerateActivityProposalInputSchema,
   },
