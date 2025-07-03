@@ -1,4 +1,4 @@
-'use server';
+// This file does NOT have 'use server'. It is a configuration file.
 import {genkit} from 'genkit';
 import {googleAI} from '@genkit-ai/googleai';
 
