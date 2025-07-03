@@ -8,6 +8,7 @@
  */
 
 import {ai} from '@/ai/ai-instance';
+import { googleAI } from '@genkit-ai/googleai';
 import {z} from 'genkit';
 
 const RefineActivityProposalInputSchema = z.object({
@@ -41,6 +42,7 @@ export async function refineActivityProposal(
 
 const prompt = ai.definePrompt({
   name: 'refineActivityProposalPrompt',
+  model: googleAI.model('gemini-1.5-flash-latest'),
   input: {
     schema: RefineActivityProposalInputSchema,
   },
