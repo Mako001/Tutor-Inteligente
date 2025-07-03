@@ -20,7 +20,7 @@ import {
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
-import { generateActivityProposal } from '@/ai/flows/generate-activity-proposal';
+import { generateActivityProposal, debugAuth } from '@/ai/flows/generate-activity-proposal';
 import { type GenerateActivityProposalInput } from '@/ai/flows/schemas';
 import { cn } from '@/lib/utils';
 import { Check, Loader2 } from 'lucide-react';
@@ -287,6 +287,12 @@ export default function CreatePage() {
     }
   };
 
+  const handleDebugClick = async () => {
+    const result = await debugAuth();
+    alert(JSON.stringify(result)); // Muestra el resultado en una alerta
+    console.log(result);
+  };
+
   const Stepper = () => (
     <div className="flex justify-center items-center gap-2 md:gap-4 mb-8 flex-wrap">
       {wizardSteps.slice(0, complexity ? totalSteps : undefined).map((step, index) => (
@@ -457,15 +463,8 @@ export default function CreatePage() {
                  {currentStep < totalSteps ? (
                   <Button type="button" onClick={handleNext} disabled={!complexity}>Siguiente</Button>
                  ) : (
-                  <Button type="submit" disabled={cargando || !complexity}>
-                    {cargando ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Generando...
-                      </>
-                    ) : (
-                      'Generar Propuesta con IA'
-                    )}
+                  <Button type="button" onClick={handleDebugClick}>
+                    Probar Autenticación
                   </Button>
                  )}
               </div>
