@@ -1,7 +1,7 @@
 // src/app/activities/create/page.tsx
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useContext } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,9 +19,12 @@ import { Progress } from "@/components/ui/progress";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
-import { Loader2, Sparkles, Lightbulb, FileText, Workflow, ArrowLeft } from 'lucide-react';
+import { Loader2, Sparkles, Lightbulb, FileText, Workflow, ArrowLeft, Save } from 'lucide-react';
 import { generateActivity } from '@/ai/flows/generate-activity';
 import { type GenerateSingleActivityInput } from '@/ai/flows/schemas';
+import { saveActivity } from '@/lib/firebase/actions/activity-actions';
+import { AuthContext } from '@/lib/firebase/auth-provider';
+import { useToast } from '@/hooks/use-toast';
 import { curriculumData } from '@/lib/data/curriculum';
 import { cn } from '@/lib/utils';
 
@@ -56,6 +59,8 @@ const activityDepthOptions = [
 ];
 
 export default function CreateActivityPage() {
+  const { user } = useContext(AuthContext);
+  const { toast } = useToast();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState<GenerateSingleActivityInput>({
     activityDepth: 'Actividad Detallada',
@@ -83,6 +88,27 @@ export default function CreateActivityPage() {
   const handleRadioChange = (value: string) => {
       setFormData(prev => ({...prev, activityDepth: value}));
   };
+  
+  const guardarActividadEnFirebase = async (textoGenerado: string, datos: GenerateSingleActivityInput) => {
+    if (!user) {
+        toast({ variant: "destructive", title: "Error", description: "Debes estar autenticado para guardar." });
+        return;
+    }
+    const dataToSave = {
+        userId: user.uid,
+        learningObjective: datos.learningObjective, // Using learning objective as a title
+        subject: datos.subject,
+        grade: datos.grade,
+        textoGenerado: textoGenerado,
+    };
+    const result = await saveActivity(dataToSave as any);
+    if (result.success) {
+        toast({ title: "¡Actividad Guardada!", description: "Tu actividad se ha guardado en la biblioteca." });
+    } else {
+        setError(`Error al guardar la actividad: ${result.error}`);
+        toast({ variant: "destructive", title: "Error al guardar", description: result.error });
+    }
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -99,6 +125,7 @@ export default function CreateActivityPage() {
     try {
       const responseText = await generateActivity(formData);
       setResultado(responseText);
+      await guardarActividadEnFirebase(responseText, formData);
     } catch (apiError: any) {
       setError(apiError.message || "Ocurrió un error desconocido al generar la actividad.");
     } finally {
@@ -171,7 +198,7 @@ export default function CreateActivityPage() {
                         </RadioGroup>
                     </div>
                      <div>
-                      <Label htmlFor="learningObjective">Objetivo de Aprendizaje de la Actividad</Label>
+                      <Label htmlFor="learningObjective">Objetivo de Aprendizaje de la Actividad *</Label>
                       <Textarea id="learningObjective" name="learningObjective" value={formData.learningObjective} onChange={handleInputChange} required placeholder="Ej: Que los estudiantes puedan nombrar tres inventos clave y su impacto." rows={3}/>
                     </div>
                 </div>
@@ -213,9 +240,9 @@ export default function CreateActivityPage() {
               {step < 3 ? (
                 <Button type="button" onClick={nextStep}>Siguiente</Button>
               ) : (
-                <Button type="submit" className="w-1/2" disabled={cargando}>
+                <Button type="submit" className="w-1/2" disabled={cargando || !user}>
                     {cargando ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                    Generar Actividad
+                    {cargando ? 'Generando...' : 'Generar y Guardar'}
                 </Button>
               )}
             </CardFooter>
@@ -225,7 +252,7 @@ export default function CreateActivityPage() {
         <Card className="w-full shadow-lg sticky top-8">
             <CardHeader>
                 <CardTitle>Actividad Generada</CardTitle>
-                <CardDescription>Aquí aparecerá la propuesta de la IA. Puedes copiarla o guardarla.</CardDescription>
+                <CardDescription>Aquí aparecerá la propuesta de la IA. Se guardará automáticamente.</CardDescription>
             </CardHeader>
             <CardContent className="min-h-[400px] max-h-[60vh] overflow-y-auto">
                 {cargando && (
@@ -234,7 +261,7 @@ export default function CreateActivityPage() {
                         <p>Creando una actividad increíble...</p>
                     </div>
                 )}
-                {error && (
+                {error && !cargando && (
                     <div className="h-full flex items-center justify-center">
                         <p className="text-destructive text-center">{error}</p>
                     </div>
