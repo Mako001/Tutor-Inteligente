@@ -2,29 +2,60 @@
 'use server';
 
 import { firestore } from '@/lib/firebase/client';
-import { collection, getDocs, query, orderBy, doc, deleteDoc, updateDoc, Timestamp } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, doc, deleteDoc, updateDoc, Timestamp, where, addDoc, serverTimestamp } from 'firebase/firestore';
 
 // Based on the FormData from /create/page.tsx
 export interface SavedProposal {
   id: string;
+  userId: string; // Add userId
   subject: string;
   grade: string;
   centralTheme: string;
   textoGenerado: string;
-  timestamp: string | null; // Changed from 'any' to 'string | null' for serializability
-  [key: string]: any; // Allow other properties
+  timestamp: string | null;
+  [key: string]: any;
 }
 
-export async function getSavedProposals(): Promise<{ success: boolean, data?: SavedProposal[], error?: string }> {
+export async function saveProposal(proposalData: Omit<SavedProposal, 'id' | 'timestamp'>): Promise<{ success: boolean, id?: string, error?: string }> {
+  if (!firestore) {
+    const message = "Firestore no está inicializado. No se puede guardar la propuesta.";
+    console.error(message);
+    return { success: false, error: message };
+  }
+  if (!proposalData.userId) {
+    return { success: false, error: "Se requiere un ID de usuario para guardar la propuesta." };
+  }
+  try {
+    const dataToSave = {
+      ...proposalData,
+      timestamp: serverTimestamp(),
+    };
+    const docRef = await addDoc(collection(firestore, 'propuestas'), dataToSave);
+    console.log("Propuesta guardada en Firebase con ID: ", docRef.id);
+    return { success: true, id: docRef.id };
+  } catch (e: any) {
+    console.error("Error al guardar la propuesta en Firebase: ", e);
+    return { success: false, error: e.message || 'Error desconocido al guardar.' };
+  }
+}
+
+export async function getSavedProposals(userId: string): Promise<{ success: boolean, data?: SavedProposal[], error?: string }> {
   if (!firestore) {
     const message = "Firestore no está inicializado. No se pueden obtener las propuestas.";
     console.error(message);
     return { success: false, error: message };
   }
+  if (!userId) {
+    return { success: false, error: "Se requiere un ID de usuario para obtener las propuestas." };
+  }
 
   try {
     const proposalsCollection = collection(firestore, 'propuestas');
-    const proposalsQuery = query(proposalsCollection, orderBy('timestamp', 'desc'));
+    const proposalsQuery = query(
+      proposalsCollection,
+      where('userId', '==', userId), // Filter by userId
+      orderBy('timestamp', 'desc')
+    );
     const querySnapshot = await getDocs(proposalsQuery);
     
     const proposals = querySnapshot.docs.map(doc => {
@@ -33,7 +64,6 @@ export async function getSavedProposals(): Promise<{ success: boolean, data?: Sa
       return {
         id: doc.id,
         ...data,
-        // Convert Firestore Timestamp to a serializable ISO string
         timestamp: timestamp ? timestamp.toDate().toISOString() : null,
       }
     }) as SavedProposal[];

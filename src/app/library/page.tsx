@@ -1,7 +1,7 @@
 // src/app/library/page.tsx
 'use client';
 
-import { useState, useEffect, FormEvent } from 'react';
+import { useState, useEffect, FormEvent, useContext } from 'react';
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -44,7 +44,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Search, Save, BookOpen, AlertTriangle, FileText, Link as LinkIcon, Pencil, Trash2 } from 'lucide-react';
+import { Loader2, Search, Save, BookOpen, AlertTriangle, FileText, Link as LinkIcon, Pencil, Trash2, User } from 'lucide-react';
 import { type FindResourcesInput, type FoundResource, type SaveResourceInput } from '@/ai/flows/schemas';
 import { findResources } from '@/ai/flows/find-resources';
 import { getSavedResources, saveResource } from '@/lib/firebase/actions/resource-actions';
@@ -54,6 +54,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { AuthContext, AuthProvider } from '@/lib/firebase/auth-provider';
 
 
 const subjectOptions = Object.keys(curriculumData);
@@ -67,9 +68,10 @@ const resourceTypeOptions = [
     "Podcast Educativo",
 ];
 
-type SavedResource = SaveResourceInput & { id: string; createdAt: string | null };
+type SavedResource = SaveResourceInput & { id: string; userId: string; createdAt: string | null };
 
-export default function LibraryPage() {
+function LibraryPageContent() {
+  const { user } = useContext(AuthContext);
   const { toast } = useToast();
   // State for search
   const [searchQuery, setSearchQuery] = useState<FindResourcesInput>({
@@ -98,32 +100,38 @@ export default function LibraryPage() {
   const [editedText, setEditedText] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
 
-
-  const fetchSavedContent = async () => {
-    setIsLoadingLibrary(true);
-    setLibraryError('');
-    const resResult = await getSavedResources();
-    if (resResult.success && resResult.data) {
-      setSavedResources(resResult.data);
-    } else {
-      setLibraryError(resResult.error || 'No se pudieron cargar los recursos.');
-    }
-    setIsLoadingLibrary(false);
-
-    setIsLoadingProposals(true);
-    setProposalsError('');
-    const propResult = await getSavedProposals();
-    if (propResult.success && propResult.data) {
-      setSavedProposals(propResult.data);
-    } else {
-      setProposalsError(propResult.error || 'No se pudieron cargar las propuestas.');
-    }
-    setIsLoadingProposals(false);
-  };
-
   useEffect(() => {
+    const fetchSavedContent = async () => {
+      if (!user) {
+        // Still waiting for user auth state
+        setIsLoadingLibrary(false);
+        setIsLoadingProposals(false);
+        return;
+      };
+
+      setIsLoadingLibrary(true);
+      setLibraryError('');
+      const resResult = await getSavedResources(user.uid);
+      if (resResult.success && resResult.data) {
+        setSavedResources(resResult.data as any); // TODO: Fix type
+      } else {
+        setLibraryError(resResult.error || 'No se pudieron cargar los recursos.');
+      }
+      setIsLoadingLibrary(false);
+
+      setIsLoadingProposals(true);
+      setProposalsError('');
+      const propResult = await getSavedProposals(user.uid);
+      if (propResult.success && propResult.data) {
+        setSavedProposals(propResult.data);
+      } else {
+        setProposalsError(propResult.error || 'No se pudieron cargar las propuestas.');
+      }
+      setIsLoadingProposals(false);
+    };
+
     fetchSavedContent();
-  }, []);
+  }, [user]);
 
   const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -157,7 +165,11 @@ export default function LibraryPage() {
   };
 
   const handleSaveResource = async (resource: FoundResource) => {
-    const resourceToSave: SaveResourceInput = { ...resource, ...searchQuery };
+    if (!user) {
+        toast({ variant: "destructive", title: "Error", description: "Debes estar autenticado para guardar recursos." });
+        return;
+    }
+    const resourceToSave = { ...resource, ...searchQuery, userId: user.uid };
     const result = await saveResource(resourceToSave);
 
     if (result.success) {
@@ -166,8 +178,8 @@ export default function LibraryPage() {
         description: `"${resource.title}" se ha añadido a tu biblioteca.`,
       });
       // Refetch resources
-      const resResult = await getSavedResources();
-      if (resResult.success && resResult.data) setSavedResources(resResult.data);
+      const resResult = await getSavedResources(user.uid);
+      if (resResult.success && resResult.data) setSavedResources(resResult.data as any);
     } else {
       toast({
         variant: "destructive",
@@ -177,17 +189,13 @@ export default function LibraryPage() {
     }
   };
 
-  // Handlers for proposal actions
-  const handleDeleteClick = (proposal: SavedProposal) => {
-    setProposalToDelete(proposal);
-  };
-
   const confirmDelete = async () => {
-    if (!proposalToDelete) return;
+    if (!proposalToDelete || !user) return;
     const result = await deleteProposal(proposalToDelete.id);
     if (result.success) {
       toast({ title: "¡Propuesta eliminada!", description: "La propuesta ha sido eliminada de tu biblioteca." });
-      await fetchSavedContent();
+      const propResult = await getSavedProposals(user.uid);
+      if (propResult.success && propResult.data) setSavedProposals(propResult.data);
     } else {
       toast({ variant: "destructive", title: "Error", description: result.error });
     }
@@ -200,13 +208,14 @@ export default function LibraryPage() {
   };
 
   const confirmUpdate = async () => {
-    if (!proposalToEdit) return;
+    if (!proposalToEdit || !user) return;
     setIsUpdating(true);
     const result = await updateProposal(proposalToEdit.id, { textoGenerado: editedText });
 
     if (result.success) {
       toast({ title: "¡Propuesta actualizada!", description: "Los cambios han sido guardados." });
-      await fetchSavedContent();
+      const propResult = await getSavedProposals(user.uid);
+      if (propResult.success && propResult.data) setSavedProposals(propResult.data);
       setProposalToEdit(null);
     } else {
       toast({ variant: "destructive", title: "Error", description: result.error });
@@ -293,7 +302,7 @@ export default function LibraryPage() {
                                 <p className="text-sm text-muted-foreground">{res.description}</p>
                             </CardContent>
                             <CardFooter>
-                                <Button onClick={() => handleSaveResource(res)} size="sm">
+                                <Button onClick={() => handleSaveResource(res)} size="sm" disabled={!user}>
                                     <Save className="mr-2 h-4 w-4"/>
                                     Guardar en mi Biblioteca
                                 </Button>
@@ -313,8 +322,9 @@ export default function LibraryPage() {
     <div className="container mx-auto p-4 md:p-8">
       <header className="text-center mb-10 py-6">
         <h1 className="text-4xl font-bold text-primary">Mi Biblioteca</h1>
-        <p className="text-lg text-foreground/80 mt-2">
-          Encuentra, guarda y gestiona todo tu contenido educativo.
+        <p className="text-lg text-foreground/80 mt-2 flex items-center justify-center gap-2">
+            <User className="h-5 w-5" />
+            {user ? `Sesión de Usuario: ${user.uid.substring(0, 12)}...` : 'Iniciando sesión anónima...'}
         </p>
       </header>
 
@@ -336,7 +346,7 @@ export default function LibraryPage() {
         <Card className="w-full shadow-lg">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2"><BookOpen/> Contenido Guardado</CardTitle>
-                <CardDescription>Aquí están los recursos y propuestas que has guardado.</CardDescription>
+                <CardDescription>Aquí están los recursos y propuestas que has guardado en esta sesión.</CardDescription>
             </CardHeader>
             <CardContent>
                 <Tabs defaultValue="proposals" className="w-full">
@@ -345,19 +355,19 @@ export default function LibraryPage() {
                         <TabsTrigger value="resources"><LinkIcon className="mr-2"/> Recursos (Enlaces)</TabsTrigger>
                     </TabsList>
                     <TabsContent value="proposals" className="pt-4">
-                        {isLoadingProposals && (
+                        {(!user || isLoadingProposals) && (
                             <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
                                 <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
                                 <p>Cargando tus propuestas...</p>
                             </div>
                         )}
-                        {proposalsError && (
+                        {user && !isLoadingProposals && proposalsError && (
                             <div className="h-40 flex flex-col items-center justify-center text-center">
                                 <AlertTriangle className="h-10 w-10 text-destructive mb-4"/>
                                 <p className="text-destructive">{proposalsError}</p>
                             </div>
                         )}
-                        {!isLoadingProposals && !proposalsError && savedProposals.length > 0 && (
+                        {user && !isLoadingProposals && !proposalsError && savedProposals.length > 0 && (
                              <div className="space-y-3">
                                 {savedProposals.map((prop) => (
                                     <Card key={prop.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-secondary gap-4">
@@ -383,26 +393,26 @@ export default function LibraryPage() {
                                 ))}
                              </div>
                         )}
-                         {!isLoadingProposals && !proposalsError && savedProposals.length === 0 && (
+                         {user && !isLoadingProposals && !proposalsError && savedProposals.length === 0 && (
                             <div className="h-40 flex items-center justify-center">
-                                <p className="text-muted-foreground text-center">No has guardado ninguna propuesta todavía.<br/>¡Crea una desde la página de "Crear Plan de Clase"!</p>
+                                <p className="text-muted-foreground text-center">No has guardado ninguna propuesta todavía.<br/>¡Crea una y aparecerá aquí!</p>
                             </div>
                         )}
                     </TabsContent>
                     <TabsContent value="resources" className="pt-4">
-                         {isLoadingLibrary && (
+                         {(!user || isLoadingLibrary) && (
                             <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
                                 <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
                                 <p>Cargando tus recursos...</p>
                             </div>
                         )}
-                        {libraryError && (
+                        {user && !isLoadingLibrary && libraryError && (
                             <div className="h-40 flex flex-col items-center justify-center text-center">
                                 <AlertTriangle className="h-10 w-10 text-destructive mb-4"/>
                                 <p className="text-destructive">{libraryError}</p>
                             </div>
                         )}
-                        {!isLoadingLibrary && !libraryError && savedResources.length > 0 && (
+                        {user && !isLoadingLibrary && !libraryError && savedResources.length > 0 && (
                             <div className="space-y-4">
                                 {savedResources.map((res) => (
                                     <div key={res.id} className="border p-4 rounded-lg bg-secondary">
@@ -422,7 +432,7 @@ export default function LibraryPage() {
                                 ))}
                             </div>
                         )}
-                        {!isLoadingLibrary && !libraryError && savedResources.length === 0 && (
+                        {user && !isLoadingLibrary && !libraryError && savedResources.length === 0 && (
                             <div className="h-40 flex items-center justify-center">
                                 <p className="text-muted-foreground text-center">Tu biblioteca de recursos está vacía.<br/>¡Usa el buscador para encontrar y guardar nuevos recursos!</p>
                             </div>
@@ -433,7 +443,6 @@ export default function LibraryPage() {
         </Card>
       </main>
 
-      {/* Dialog for Deleting */}
       {!!proposalToDelete && (
         <AlertDialog open onOpenChange={(isOpen) => !isOpen && setProposalToDelete(null)}>
             <AlertDialogContent>
@@ -453,7 +462,6 @@ export default function LibraryPage() {
         </AlertDialog>
       )}
 
-      {/* Dialog for Editing */}
       {!!proposalToEdit && (
         <Dialog open onOpenChange={(isOpen) => !isOpen && setProposalToEdit(null)}>
             <DialogContent className="sm:max-w-2xl">
@@ -481,7 +489,14 @@ export default function LibraryPage() {
             </DialogContent>
         </Dialog>
       )}
-
     </div>
   );
+}
+
+export default function LibraryPage() {
+    return (
+        <AuthProvider>
+            <LibraryPageContent />
+        </AuthProvider>
+    )
 }
