@@ -25,16 +25,35 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import { Loader2, Search, Save, BookOpen, AlertTriangle, FileText, Link as LinkIcon } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Loader2, Search, Save, BookOpen, AlertTriangle, FileText, Link as LinkIcon, Pencil, Trash2 } from 'lucide-react';
 import { type FindResourcesInput, type FoundResource, type SaveResourceInput } from '@/ai/flows/schemas';
 import { findResources } from '@/ai/flows/find-resources';
 import { getSavedResources, saveResource } from '@/lib/firebase/actions/resource-actions';
-import { getSavedProposals, type SavedProposal } from '@/lib/firebase/actions/proposal-actions';
+import { getSavedProposals, deleteProposal, updateProposal, type SavedProposal } from '@/lib/firebase/actions/proposal-actions';
 import { curriculumData } from '@/lib/data/curriculum';
 import { useToast } from "@/hooks/use-toast";
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import rehypeRaw from 'rehype-raw';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+
 
 const subjectOptions = Object.keys(curriculumData);
 const gradeOptions = [ "6º", "7º", "8º", "9º", "10º", "11º", "Otro" ];
@@ -67,10 +86,16 @@ export default function LibraryPage() {
   const [isLoadingLibrary, setIsLoadingLibrary] = useState(true);
   const [libraryError, setLibraryError] = useState('');
 
-  // State for saved proposals (from the old /create page)
+  // State for saved proposals
   const [savedProposals, setSavedProposals] = useState<SavedProposal[]>([]);
   const [isLoadingProposals, setIsLoadingProposals] = useState(true);
   const [proposalsError, setProposalsError] = useState('');
+
+  // State for actions
+  const [proposalToDelete, setProposalToDelete] = useState<SavedProposal | null>(null);
+  const [proposalToEdit, setProposalToEdit] = useState<SavedProposal | null>(null);
+  const [editedText, setEditedText] = useState('');
+  const [isUpdating, setIsUpdating] = useState(false);
 
 
   const fetchSavedContent = async () => {
@@ -149,6 +174,43 @@ export default function LibraryPage() {
         description: result.error || 'No se pudo guardar el recurso.',
       });
     }
+  };
+
+  // Handlers for proposal actions
+  const handleDeleteClick = (proposal: SavedProposal) => {
+    setProposalToDelete(proposal);
+  };
+
+  const confirmDelete = async () => {
+    if (!proposalToDelete) return;
+    const result = await deleteProposal(proposalToDelete.id);
+    if (result.success) {
+      toast({ title: "¡Propuesta eliminada!", description: "La propuesta ha sido eliminada de tu biblioteca." });
+      await fetchSavedContent();
+    } else {
+      toast({ variant: "destructive", title: "Error", description: result.error });
+    }
+    setProposalToDelete(null);
+  };
+
+  const handleEditClick = (proposal: SavedProposal) => {
+    setProposalToEdit(proposal);
+    setEditedText(proposal.textoGenerado);
+  };
+
+  const confirmUpdate = async () => {
+    if (!proposalToEdit) return;
+    setIsUpdating(true);
+    const result = await updateProposal(proposalToEdit.id, { textoGenerado: editedText });
+
+    if (result.success) {
+      toast({ title: "¡Propuesta actualizada!", description: "Los cambios han sido guardados." });
+      await fetchSavedContent();
+      setProposalToEdit(null);
+    } else {
+      toast({ variant: "destructive", title: "Error", description: result.error });
+    }
+    setIsUpdating(false);
   };
 
   const SearchAndResults = () => (
@@ -283,32 +345,39 @@ export default function LibraryPage() {
                     </TabsList>
                     <TabsContent value="proposals" className="pt-4">
                         {isLoadingProposals && (
-                            <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-8">
+                            <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
                                 <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
                                 <p>Cargando tus propuestas...</p>
                             </div>
                         )}
                         {proposalsError && (
-                            <div className="h-full flex flex-col items-center justify-center text-center p-8">
+                            <div className="h-40 flex flex-col items-center justify-center text-center">
                                 <AlertTriangle className="h-10 w-10 text-destructive mb-4"/>
                                 <p className="text-destructive">{proposalsError}</p>
                             </div>
                         )}
                         {!isLoadingProposals && !proposalsError && savedProposals.length > 0 && (
-                             <div className="space-y-4">
+                             <div className="space-y-3">
                                 {savedProposals.map((prop) => (
-                                    <Card key={prop.id} className="bg-secondary">
-                                        <CardHeader>
-                                            <CardTitle>{prop.centralTheme}</CardTitle>
-                                            <CardDescription>{prop.subject} - Grado {prop.grade}</CardDescription>
-                                        </CardHeader>
-                                        <CardContent>
-                                            <div className="markdown-content-in-card max-h-60 overflow-y-auto border p-4 rounded-md bg-background">
-                                                <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
-                                                  {prop.textoGenerado}
-                                                </ReactMarkdown>
-                                            </div>
-                                        </CardContent>
+                                    <Card key={prop.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-secondary gap-4">
+                                        <div className="flex-1 overflow-hidden">
+                                            <p className="font-semibold truncate" title={prop.centralTheme}>
+                                            {prop.centralTheme || 'Propuesta sin título'}
+                                            </p>
+                                            <p className="text-sm text-muted-foreground">
+                                            {prop.subject} &bull; Grado {prop.grade} &bull; Creado: {prop.timestamp?.toDate ? format(prop.timestamp.toDate(), 'd MMM yyyy', { locale: es }) : 'Fecha desconocida'}
+                                            </p>
+                                        </div>
+                                        <div className="flex items-center gap-2 self-end sm:self-center">
+                                            <Button variant="ghost" size="icon" onClick={() => handleEditClick(prop)}>
+                                                <Pencil className="h-4 w-4" />
+                                                <span className="sr-only">Modificar</span>
+                                            </Button>
+                                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleDeleteClick(prop)}>
+                                                <Trash2 className="h-4 w-4" />
+                                                <span className="sr-only">Borrar</span>
+                                            </Button>
+                                        </div>
                                     </Card>
                                 ))}
                              </div>
@@ -321,13 +390,13 @@ export default function LibraryPage() {
                     </TabsContent>
                     <TabsContent value="resources" className="pt-4">
                          {isLoadingLibrary && (
-                            <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-8">
+                            <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
                                 <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
                                 <p>Cargando tus recursos...</p>
                             </div>
                         )}
                         {libraryError && (
-                            <div className="h-full flex flex-col items-center justify-center text-center p-8">
+                            <div className="h-40 flex flex-col items-center justify-center text-center">
                                 <AlertTriangle className="h-10 w-10 text-destructive mb-4"/>
                                 <p className="text-destructive">{libraryError}</p>
                             </div>
@@ -362,6 +431,56 @@ export default function LibraryPage() {
             </CardContent>
         </Card>
       </main>
+
+      {/* Dialog for Deleting */}
+      {!!proposalToDelete && (
+        <AlertDialog open onOpenChange={(isOpen) => !isOpen && setProposalToDelete(null)}>
+            <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>¿Estás realmente seguro?</AlertDialogTitle>
+                <AlertDialogDescription>
+                Esta acción no se puede deshacer. Esto eliminará permanentemente la propuesta
+                <strong className="mx-1">"{proposalToDelete.centralTheme}"</strong>
+                de la base de datos.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setProposalToDelete(null)}>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={confirmDelete} className={buttonVariants({ variant: "destructive" })}>Sí, eliminar</AlertDialogAction>
+            </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+      )}
+
+      {/* Dialog for Editing */}
+      {!!proposalToEdit && (
+        <Dialog open onOpenChange={(isOpen) => !isOpen && setProposalToEdit(null)}>
+            <DialogContent className="sm:max-w-2xl">
+            <DialogHeader>
+                <DialogTitle>Modificar Propuesta: {proposalToEdit.centralTheme}</DialogTitle>
+                <DialogDescription>
+                Realiza los cambios necesarios en el texto generado por la IA.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+                <Textarea
+                value={editedText}
+                onChange={(e) => setEditedText(e.target.value)}
+                rows={18}
+                className="w-full"
+                />
+            </div>
+            <DialogFooter>
+                <Button variant="outline" onClick={() => setProposalToEdit(null)}>Cancelar</Button>
+                <Button onClick={confirmUpdate} disabled={isUpdating}>
+                    {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Guardar Cambios
+                </Button>
+            </DialogFooter>
+            </DialogContent>
+        </Dialog>
+      )}
+
     </div>
   );
 }
