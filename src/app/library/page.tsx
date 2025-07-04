@@ -54,7 +54,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { AuthContext, AuthProvider } from '@/lib/firebase/auth-provider';
+import { AuthContext } from '@/lib/firebase/auth-provider';
 
 
 const subjectOptions = Object.keys(curriculumData);
@@ -70,7 +70,7 @@ const resourceTypeOptions = [
 
 type SavedResource = SaveResourceInput & { id: string; userId: string; createdAt: string | null };
 
-function LibraryPageContent() {
+export default function LibraryPage() {
   const { user } = useContext(AuthContext);
   const { toast } = useToast();
   // State for search
@@ -200,6 +200,10 @@ function LibraryPageContent() {
       toast({ variant: "destructive", title: "Error", description: result.error });
     }
     setProposalToDelete(null);
+  };
+  
+  const handleDeleteClick = (proposal: SavedProposal) => {
+    setProposalToDelete(proposal);
   };
 
   const handleEditClick = (proposal: SavedProposal) => {
@@ -491,12 +495,4 @@ function LibraryPageContent() {
       )}
     </div>
   );
-}
-
-export default function LibraryPage() {
-    return (
-        <AuthProvider>
-            <LibraryPageContent />
-        </AuthProvider>
-    )
 }

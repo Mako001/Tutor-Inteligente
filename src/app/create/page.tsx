@@ -23,7 +23,7 @@ import { type GenerateActivityProposalInput } from '@/ai/flows/schemas';
 import { cn } from '@/lib/utils';
 import { Check, Loader2 } from 'lucide-react';
 import { curriculumData, CurriculumData } from '@/lib/data/curriculum';
-import { AuthContext, AuthProvider } from '@/lib/firebase/auth-provider';
+import { AuthContext } from '@/lib/firebase/auth-provider';
 import { saveProposal } from '@/lib/firebase/actions/proposal-actions';
 import { useToast } from '@/hooks/use-toast';
 
@@ -61,7 +61,7 @@ const wizardSteps = [
     { id: 4, name: 'Detalles Finales' },
 ];
 
-function CreatePageContent() {
+export default function CreatePage() {
   const { user } = useContext(AuthContext);
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
@@ -121,7 +121,7 @@ function CreatePageContent() {
 
   const handlePrev = () => {
     if (currentStep > 1) {
-      setCurrentStep(step => step - 1);
+      setCurrentStep(step => step + 1);
     }
   };
 
@@ -364,12 +364,4 @@ function CreatePageContent() {
       </footer>
     </div>
   );
-}
-
-export default function CreatePage() {
-    return (
-        <AuthProvider>
-            <CreatePageContent />
-        </AuthProvider>
-    )
 }

@@ -4,7 +4,7 @@ import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import { onAuthStateChanged, signInAnonymously, User, FirebaseError } from 'firebase/auth';
 import { auth } from './client';
 import { Loader2, AlertTriangle } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
 interface AuthContextType {
   user: User | null;
@@ -20,7 +20,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (!auth) {
-        const errorMessage = "Configuración de Firebase no válida. Revisa tu archivo .env.local y las variables de entorno.";
+        const errorMessage = "Configuración de Firebase no válida. El servicio de autenticación no pudo inicializarse.";
         console.error(errorMessage);
         setConfigError(errorMessage);
         setLoading(false);
@@ -36,9 +36,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const userCredential = await signInAnonymously(auth);
           setUser(userCredential.user);
         } catch (error) {
-          console.error('Error signing in anonymously:', error);
+          console.error('Error durante el inicio de sesión anónimo:', error);
           if (error instanceof FirebaseError && (error.code === 'auth/invalid-api-key' || error.code === 'auth/api-key-not-valid')) {
-              const friendlyError = "La API Key de Firebase no es válida. Por favor, revisa la variable NEXT_PUBLIC_FIREBASE_API_KEY en tu archivo .env.local. Asegúrate de que el archivo exista, que la clave sea correcta y que hayas reiniciado el servidor de desarrollo.";
+              const friendlyError = "La API Key de Firebase no es válida. La aplicación no puede conectarse a los servicios de autenticación.";
               setConfigError(friendlyError);
           } else {
               setConfigError("Ocurrió un error inesperado durante la autenticación. Revisa la consola para más detalles.");
@@ -71,14 +71,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                       </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                      <p className="text-foreground">La aplicación no pudo conectarse a los servicios de Firebase. Esto usualmente se debe a una configuración incorrecta de las variables de entorno.</p>
+                      <p className="text-foreground">La aplicación no pudo conectarse a los servicios de Firebase debido a un problema con las credenciales.</p>
                       <div className="p-4 bg-secondary rounded-md">
                         <p className="font-semibold text-foreground">Mensaje de Error:</p>
                         <p className="font-mono text-sm text-muted-foreground">{configError}</p>
                       </div>
-                      <p className="text-foreground">
-                          Por favor, consulta las instrucciones en el archivo <code className="bg-secondary p-1 rounded-sm font-semibold">README.md</code> para configurar tu archivo <code className="bg-secondary p-1 rounded-sm font-semibold">.env.local</code> correctamente.
-                      </p>
+                      <p className="font-semibold">Pasos para solucionarlo:</p>
+                      <ol className="list-decimal list-inside space-y-2 text-sm">
+                          <li>Asegúrate de tener un archivo llamado <code className="bg-secondary p-1 rounded-sm font-semibold">.env.local</code> en la raíz del proyecto.</li>
+                          <li>Verifica que la variable <code className="bg-secondary p-1 rounded-sm font-semibold">NEXT_PUBLIC_FIREBASE_API_KEY</code> y las otras variables de Firebase en ese archivo sean las correctas para tu proyecto.</li>
+                          <li>
+                              Después de guardar los cambios en <code className="bg-secondary p-1 rounded-sm font-semibold">.env.local</code>, **debes reiniciar el servidor de desarrollo** para que los cambios se apliquen.
+                          </li>
+                      </ol>
                   </CardContent>
               </Card>
           </div>
