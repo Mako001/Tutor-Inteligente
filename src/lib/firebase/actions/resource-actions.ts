@@ -76,7 +76,7 @@ export async function getSavedResources(userId: string): Promise<{ success: bool
 
     return { success: true, data: resources };
 
-  } catch (e: any) e) {
+  } catch (e: any) {
     console.error("Error al obtener los recursos de Firebase: ", e);
     return { success: false, error: e.message || 'Error desconocido al obtener los recursos.' };
   }
