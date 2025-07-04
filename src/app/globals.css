@@ -208,3 +208,34 @@ button:active {
 input:focus, textarea:focus, select:focus {
   @apply border-primary ring-2 ring-primary/50 shadow-md outline-none;
 }
+
+/* Styles for ReactMarkdown rendered content inside a Card */
+.markdown-content-in-card h1,
+.markdown-content-in-card h2,
+.markdown-content-in-card h3 {
+  @apply text-xl font-semibold mb-4 mt-4 first:mt-0 border-b pb-2;
+}
+
+.markdown-content-in-card h4 {
+  @apply text-lg font-medium mb-2;
+}
+
+.markdown-content-in-card p {
+  @apply mb-4 leading-relaxed;
+}
+
+.markdown-content-in-card ul {
+  @apply list-disc list-inside mb-4 space-y-2;
+}
+
+.markdown-content-in-card ol {
+  @apply list-decimal list-inside mb-4 space-y-2;
+}
+
+.markdown-content-in-card strong {
+  @apply font-semibold text-foreground;
+}
+
+.markdown-content-in-card code {
+  @apply bg-muted px-1.5 py-1 rounded-md text-sm;
+}

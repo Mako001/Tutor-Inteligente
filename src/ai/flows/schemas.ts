@@ -2,6 +2,19 @@
 // This file does NOT have 'use server' and can be safely imported by clients and servers.
 import {z} from 'zod';
 
+// Schema for generating a single, modular activity
+export const GenerateSingleActivityInputSchema = z.object({
+  subject: z.string().describe('The subject or area of knowledge for the activity.'),
+  grade: z.string().describe('The specific grade(s) for the activity.'),
+  topic: z.string().optional().describe('The broader lesson topic this activity belongs to (optional).'),
+  activityType: z.string().describe('The type of activity (e.g., Introduction, Practice, Evaluation, Icebreaker).'),
+  duration: z.string().describe('The estimated duration of the activity (e.g., 15 minutes, 1 class period).'),
+  learningObjective: z.string().describe('The specific learning objective for this single activity.'),
+  availableResources: z.string().optional().describe('Specific resources available for this activity.'),
+});
+export type GenerateSingleActivityInput = z.infer<typeof GenerateSingleActivityInputSchema>;
+
+
 // Schemas for GenerateActivityProposal
 export const GenerateActivityProposalInputSchema = z.object({
   subject: z.string().describe('The subject or area of knowledge for the activity (e.g., "Tecnología e Informática", "Matemáticas", "Ciencias Naturales").'),
