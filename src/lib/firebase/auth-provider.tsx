@@ -1,10 +1,10 @@
 'use client';
 
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
-import { onAuthStateChanged, signInAnonymously, User, FirebaseError } from 'firebase/auth';
+import { onAuthStateChanged, signInAnonymously, User } from 'firebase/auth';
 import { auth } from './client';
 import { Loader2, AlertTriangle } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface AuthContextType {
   user: User | null;
@@ -35,9 +35,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         try {
           const userCredential = await signInAnonymously(auth);
           setUser(userCredential.user);
-        } catch (error) {
+        } catch (error: any) {
           console.error('Error durante el inicio de sesión anónimo:', error);
-          if (error instanceof FirebaseError && (error.code === 'auth/invalid-api-key' || error.code === 'auth/api-key-not-valid')) {
+          // Safer check: check for the 'code' property instead of using 'instanceof'
+          if (error && (error.code === 'auth/invalid-api-key' || error.code === 'auth/api-key-not-valid')) {
               const friendlyError = "La API Key de Firebase no es válida. La aplicación no puede conectarse a los servicios de autenticación.";
               setConfigError(friendlyError);
           } else {
