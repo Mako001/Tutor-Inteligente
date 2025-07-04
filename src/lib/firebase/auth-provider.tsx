@@ -38,7 +38,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         } catch (error: any) {
           console.error('Error durante el inicio de sesión anónimo:', error);
           const errorMessageString = String(error?.message || '');
-          // Check for error code OR a specific string in the message for robustness
+          // This is a more robust check for the specific API key error.
           if (error?.code === 'auth/invalid-api-key' || error?.code === 'auth/api-key-not-valid' || errorMessageString.includes('API key not valid')) {
               const friendlyError = "La API Key de Firebase no es válida. La aplicación no puede conectarse a los servicios de autenticación.";
               setConfigError(friendlyError);
