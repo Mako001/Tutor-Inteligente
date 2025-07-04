@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { Hub } from '@/components/hub';
+import { Toaster } from "@/components/ui/toaster";
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
@@ -25,6 +26,7 @@ export default function RootLayout({
       <body className="antialiased bg-secondary text-foreground" suppressHydrationWarning={true}>
         <Hub />
         <main>{children}</main>
+        <Toaster />
       </body>
     </html>
   );

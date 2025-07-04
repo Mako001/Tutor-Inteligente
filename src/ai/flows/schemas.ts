@@ -64,3 +64,35 @@ export const RefineActivityProposalInputSchema = z.object({
 export type RefineActivityProposalInput = z.infer<
   typeof RefineActivityProposalInputSchema
 >;
+
+// Schemas for FindResources
+export const FindResourcesInputSchema = z.object({
+  topic: z.string().describe('The central topic to search resources for (e.g., "Python loops", "Photosynthesis").'),
+  resourceType: z.string().describe('The type of resource to find (e.g., "Video de YouTube", "Artículo académico", "Simulación interactiva").'),
+  subject: z.string().describe('The subject area for context (e.g., "Tecnología e Informática", "Ciencias Naturales").'),
+  grade: z.string().describe('The grade level the resources should be appropriate for.'),
+});
+export type FindResourcesInput = z.infer<typeof FindResourcesInputSchema>;
+
+export const FoundResourceSchema = z.object({
+    title: z.string().describe("The title of the resource."),
+    url: z.string().url({ message: "La URL proporcionada no es válida." }).describe("The direct URL to access the resource."),
+    description: z.string().describe("A brief description of why this resource is useful for a teacher."),
+});
+export type FoundResource = z.infer<typeof FoundResourceSchema>;
+
+
+export const FindResourcesOutputSchema = z.object({
+    resources: z.array(FoundResourceSchema).describe("A list of up to 3 high-quality resources found."),
+});
+export type FindResourcesOutput = z.infer<typeof FindResourcesOutputSchema>;
+
+
+// Schema for saving a resource to Firestore
+export const SaveResourceInputSchema = FoundResourceSchema.extend({
+    topic: z.string(),
+    resourceType: z.string(),
+    subject: z.string(),
+    grade: z.string(),
+});
+export type SaveResourceInput = z.infer<typeof SaveResourceInputSchema>;
