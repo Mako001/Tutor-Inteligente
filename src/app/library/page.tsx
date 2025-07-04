@@ -45,9 +45,9 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Search, Save, BookOpen, AlertTriangle, FileText, Link as LinkIcon, Pencil, Trash2, User } from 'lucide-react';
-import { type FindResourcesInput, type FoundResource, type SaveResourceInput } from '@/ai/flows/schemas';
+import { type FindResourcesInput, type FoundResource } from '@/ai/flows/schemas';
 import { findResources } from '@/ai/flows/find-resources';
-import { getSavedResources, saveResource } from '@/lib/firebase/actions/resource-actions';
+import { getUserLibrary, saveResourceToLibrary, type Resource } from '@/lib/firebase/actions/resource-actions';
 import { getSavedProposals, deleteProposal, updateProposal, type SavedProposal } from '@/lib/firebase/actions/proposal-actions';
 import { curriculumData } from '@/lib/data/curriculum';
 import { useToast } from "@/hooks/use-toast";
@@ -55,6 +55,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { AuthContext } from '@/lib/firebase/auth-provider';
+import { Badge } from '@/components/ui/badge';
 
 
 const subjectOptions = Object.keys(curriculumData);
@@ -67,8 +68,6 @@ const resourceTypeOptions = [
     "Documento PDF / Guía",
     "Podcast Educativo",
 ];
-
-type SavedResource = SaveResourceInput & { id: string; userId: string; createdAt: string | null };
 
 export default function LibraryPage() {
   const { user } = useContext(AuthContext);
@@ -85,7 +84,7 @@ export default function LibraryPage() {
   const [foundResources, setFoundResources] = useState<FoundResource[]>([]);
 
   // State for saved resources
-  const [savedResources, setSavedResources] = useState<SavedResource[]>([]);
+  const [savedResources, setSavedResources] = useState<Resource[]>([]);
   const [isLoadingLibrary, setIsLoadingLibrary] = useState(true);
   const [libraryError, setLibraryError] = useState('');
 
@@ -103,22 +102,24 @@ export default function LibraryPage() {
   useEffect(() => {
     const fetchSavedContent = async () => {
       if (!user) {
-        // Still waiting for user auth state
         setIsLoadingLibrary(false);
         setIsLoadingProposals(false);
         return;
       };
 
+      // Fetch Saved Resources
       setIsLoadingLibrary(true);
       setLibraryError('');
-      const resResult = await getSavedResources(user.uid);
-      if (resResult.success && resResult.data) {
-        setSavedResources(resResult.data as any); // TODO: Fix type
-      } else {
-        setLibraryError(resResult.error || 'No se pudieron cargar los recursos.');
+      try {
+        const resources = await getUserLibrary(user.uid);
+        setSavedResources(resources);
+      } catch (e: any) {
+        setLibraryError(e.message || 'No se pudieron cargar los recursos.');
+      } finally {
+        setIsLoadingLibrary(false);
       }
-      setIsLoadingLibrary(false);
-
+      
+      // Fetch Saved Proposals
       setIsLoadingProposals(true);
       setProposalsError('');
       const propResult = await getSavedProposals(user.uid);
@@ -169,25 +170,32 @@ export default function LibraryPage() {
         toast({ variant: "destructive", title: "Error", description: "Debes estar autenticado para guardar recursos." });
         return;
     }
-    const resourceToSave = { ...resource, ...searchQuery, userId: user.uid };
-    const result = await saveResource(resourceToSave);
 
-    if (result.success) {
+    const resourceData = {
+        title: resource.title,
+        url: resource.url,
+        description: resource.description,
+        tags: [searchQuery.resourceType, searchQuery.subject, searchQuery.grade].filter(Boolean)
+    };
+
+    try {
+      await saveResourceToLibrary(user.uid, resourceData);
       toast({
         title: "¡Recurso Guardado!",
         description: `"${resource.title}" se ha añadido a tu biblioteca.`,
       });
       // Refetch resources
-      const resResult = await getSavedResources(user.uid);
-      if (resResult.success && resResult.data) setSavedResources(resResult.data as any);
-    } else {
-      toast({
+      const resources = await getUserLibrary(user.uid);
+      setSavedResources(resources);
+    } catch (e: any) {
+       toast({
         variant: "destructive",
         title: "Error al Guardar",
-        description: result.error || 'No se pudo guardar el recurso.',
+        description: e.message || 'No se pudo guardar el recurso.',
       });
     }
   };
+
 
   const confirmDelete = async () => {
     if (!proposalToDelete || !user) return;
@@ -425,12 +433,8 @@ export default function LibraryPage() {
                                             {res.url}
                                     </a>
                                     <p className="text-sm text-muted-foreground mt-2">{res.description}</p>
-                                    <div className="text-xs text-muted-foreground mt-2 space-x-2">
-                                        <span>{res.subject}</span>
-                                        <span>&bull;</span>
-                                        <span>{res.grade}</span>
-                                        <span>&bull;</span>
-                                        <span>{res.resourceType}</span>
+                                    <div className="flex flex-wrap gap-2 text-xs text-muted-foreground mt-2">
+                                        {res.tags.map(tag => <Badge key={tag} variant="outline">{tag}</Badge>)}
                                     </div>
                                     </div>
                                 ))}

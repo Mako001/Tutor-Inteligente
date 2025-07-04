@@ -2,82 +2,75 @@
 'use server';
 
 import { firestore } from '@/lib/firebase/client';
-import { collection, addDoc, getDocs, serverTimestamp, query, orderBy, Timestamp, where } from 'firebase/firestore';
-import { type SaveResourceInput, SaveResourceInputSchema } from '@/ai/flows/schemas';
+import { collection, addDoc, getDocs, query, where, serverTimestamp, Timestamp } from 'firebase/firestore';
 
-type SaveResourceWithUser = SaveResourceInput & { userId: string };
-
-type SavedResourceSerializable = SaveResourceInput & { id: string; userId: string; createdAt: string | null };
+// Define la estructura de un recurso para claridad
+export interface Resource {
+  id: string;
+  userId: string;
+  title: string;
+  url: string;
+  description: string;
+  tags: string[];
+  createdAt: Timestamp;
+}
 
 /**
- * Saves a resource to the 'resources' collection in Firestore.
+ * Guarda un nuevo recurso en la biblioteca de un usuario específico.
  */
-export async function saveResource(resourceData: SaveResourceWithUser): Promise<{ success: boolean, id?: string, error?: string }> {
+export async function saveResourceToLibrary(
+  userId: string,
+  resourceData: { title: string; url: string; description: string; tags: string[] }
+) {
   if (!firestore) {
-    const message = "Firestore no está inicializado. No se puede guardar el recurso.";
-    console.error(message);
-    return { success: false, error: message };
+    throw new Error("Firestore no está inicializado.");
   }
-   if (!resourceData.userId) {
-    return { success: false, error: "Se requiere un ID de usuario para guardar el recurso." };
+  if (!userId) {
+    throw new Error('Se requiere un ID de usuario para guardar el recurso.');
   }
 
   try {
-    // We can't validate userId with the existing schema, so we separate it.
-    const { userId, ...restOfData } = resourceData;
-    const validatedData = SaveResourceInputSchema.parse(restOfData);
-    
-    const docRef = await addDoc(collection(firestore, 'resources'), {
-      ...validatedData,
+    const resourceToSave = {
+      ...resourceData,
       userId,
       createdAt: serverTimestamp(),
-    });
+    };
 
-    console.log("Recurso guardado en Firebase con ID: ", docRef.id);
+    const docRef = await addDoc(collection(firestore, 'resources'), resourceToSave);
+    console.log('Recurso guardado con ID:', docRef.id);
     return { success: true, id: docRef.id };
-
   } catch (e: any) {
-    console.error("Error al guardar el recurso en Firebase: ", e);
-    return { success: false, error: e.message || 'Error desconocido al guardar.' };
+    console.error('Error al guardar el recurso en Firestore:', e);
+    throw new Error(`Error al guardar: ${e.message}`);
   }
 }
 
 /**
- * Fetches saved resources for a specific user.
+ * Obtiene todos los recursos de la biblioteca para un usuario específico.
  */
-export async function getSavedResources(userId: string): Promise<{ success: boolean, data?: SavedResourceSerializable[], error?: string }> {
+export async function getUserLibrary(userId: string): Promise<Resource[]> {
   if (!firestore) {
-    const message = "Firestore no está inicializado. No se pueden obtener los recursos.";
-    console.error(message);
-    return { success: false, error: message };
+    throw new Error("Firestore no está inicializado.");
   }
-   if (!userId) {
-    return { success: false, error: "Se requiere un ID de usuario para obtener los recursos." };
+  if (!userId) {
+    console.log('No se proporcionó ID de usuario, devolviendo biblioteca vacía.');
+    return [];
   }
 
   try {
-    const resourcesCollection = collection(firestore, 'resources');
-    const resourcesQuery = query(
-        resourcesCollection,
-        where('userId', '==', userId), // Filter by userId
-        orderBy('createdAt', 'desc')
-    );
-    const querySnapshot = await getDocs(resourcesQuery);
-    
-    const resources = querySnapshot.docs.map(doc => {
-      const data = doc.data();
-      const createdAt = data.createdAt as Timestamp | undefined;
-      return {
-        id: doc.id,
-        ...data,
-        createdAt: createdAt ? createdAt.toDate().toISOString() : null,
-      }
-    }) as SavedResourceSerializable[];
+    const resourcesCol = collection(firestore, 'resources');
+    const q = query(resourcesCol, where('userId', '==', userId));
+    const querySnapshot = await getDocs(q);
 
-    return { success: true, data: resources };
+    const library: Resource[] = [];
+    querySnapshot.forEach(doc => {
+      library.push({ id: doc.id, ...doc.data() } as Resource);
+    });
 
+    console.log(`Se encontraron ${library.length} recursos para el usuario ${userId}`);
+    return library;
   } catch (e: any) {
-    console.error("Error al obtener los recursos de Firebase: ", e);
-    return { success: false, error: e.message || 'Error desconocido al obtener los recursos.' };
+    console.error('Error al obtener la biblioteca del usuario:', e);
+    throw new Error(`Error al leer la biblioteca: ${e.message}`);
   }
 }
