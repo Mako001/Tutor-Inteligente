@@ -1,38 +1,50 @@
 // src/ai/flows/generate-class-plan.ts
 'use server';
+/**
+ * @fileOverview Generates an educational plan with varying levels of detail.
+ * - generateClassPlan - A function that handles the class plan generation process.
+ */
 
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import { type GenerateClassPlanInput } from './schemas';
+import {ai} from '@/ai/ai-instance';
+import {z} from 'zod';
+import {
+  GenerateClassPlanInputSchema,
+  type GenerateClassPlanInput,
+} from './schemas';
 
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY!);
+export async function generateClassPlan(
+  input: GenerateClassPlanInput
+): Promise<string> {
+  const result = await generateClassPlanFlow(input);
+  return result;
+}
 
-export async function generateClassPlan(input: GenerateClassPlanInput): Promise<string> {
-  try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro-latest" });
-
-    const prompt = `
+const classPlanPrompt = ai.definePrompt({
+  name: 'generateClassPlanPrompt',
+  input: {schema: GenerateClassPlanInputSchema},
+  prompt: `
       Actúa como un pedagogo experto y diseñador curricular para el sistema educativo de Colombia, con pleno conocimiento de los lineamientos del Ministerio de Educación Nacional (MEN).
 
       Tu tarea es generar una planificación educativa basada en la siguiente información proporcionada por un docente. La estructura y profundidad de tu respuesta debe corresponder al **"Nivel de Detalle Solicitado"**.
 
-      **Nivel de Detalle Solicitado: ${input.planDepth}**
+      **Nivel de Detalle Solicitado: {{planDepth}}**
 
       ---
 
       **Información Base Proporcionada por el Docente:**
-      - Título del Plan: ${input.planTitle}
-      - Materia: ${input.subject}
-      - Grado(s): ${input.grade}
-      - Duración Total Estimada: ${input.totalDuration}
-      - Gran Objetivo de Aprendizaje (Big Idea): ${input.bigIdea}
-      ${input.competencies ? `- Competencias a Desarrollar (basadas en MEN): ${input.competencies}` : ''}
-      ${input.specificObjectives ? `- Objetivos de Aprendizaje Específicos: ${input.specificObjectives}` : ''}
-      ${input.sessionSequence ? `- Secuencia de Sesiones Propuesta: ${input.sessionSequence}` : ''}
-      ${input.summativeAssessment ? `- Evaluación Sumativa: ${input.summativeAssessment}` : ''}
-      ${input.formativeAssessment ? `- Evaluación Formativa (seguimiento): ${input.formativeAssessment}` : ''}
-      ${input.generalResources ? `- Recursos Generales: ${input.generalResources}` : ''}
-      ${input.differentiation ? `- Estrategias de Diferenciación: ${input.differentiation}` : ''}
-      ${input.interdisciplinarity ? `- Conexiones Interdisciplinares: ${input.interdisciplinarity}` : ''}
+      - Título del Plan: {{planTitle}}
+      - Materia: {{subject}}
+      - Grado(s): {{grade}}
+      - Duración Total Estimada: {{totalDuration}}
+      - Gran Objetivo de Aprendizaje (Big Idea): {{bigIdea}}
+      {{#if competencies}}- Competencias a Desarrollar (basadas en MEN): {{competencies}}{{/if}}
+      {{#if specificObjectives}}- Objetivos de Aprendizaje Específicos: {{specificObjectives}}{{/if}}
+      {{#if sessionSequence}}- Secuencia de Sesiones Propuesta: {{sessionSequence}}{{/if}}
+      {{#if summativeAssessment}}- Evaluación Sumativa: {{summativeAssessment}}{{/if}}
+      {{#if formativeAssessment}}- Evaluación Formativa (seguimiento): {{formativeAssessment}}{{/if}}
+      {{#if generalResources}}- Recursos Generales: {{generalResources}}{{/if}}
+      {{#if differentiation}}- Estrategias de Diferenciación: {{differentiation}}{{/if}}
+      {{#if interdisciplinarity}}- Conexiones Interdisciplinares: {{interdisciplinarity}}{{/if}}
 
       ---
 
@@ -46,7 +58,7 @@ export async function generateClassPlan(input: GenerateClassPlanInput): Promise<
       - El **Gran Objetivo de Aprendizaje** reformulado.
       - Una **propuesta de 2 a 3 actividades principales** que se podrían realizar para alcanzar el objetivo.
       - Una **idea para la evaluación final**.
-      Sé breve, directo y práctico. Ideal para una lluvia de ideas inicial. **NO uses las secciones detalladas del "Plan Detallado"**.
+      Sé breve, directo y práctico. **NO uses las secciones detalladas del "Plan Detallado"**.
 
       **2. Si el nivel es "Plan Detallado":**
       Genera un "Plan de Clase" o "Secuencia Didáctica" bien estructurada. El resultado debe ser un documento en formato Markdown que contenga las siguientes secciones claramente definidas:
@@ -71,17 +83,18 @@ export async function generateClassPlan(input: GenerateClassPlanInput): Promise<
       - **Presentación Pública:** Propón una idea para presentar el proyecto a una audiencia real.
       Utiliza toda la información proporcionada por el docente para contextualizar el proyecto.
 
-      Procede a generar el plan según las instrucciones correspondientes al nivel de detalle: **"${input.planDepth}"**.
-    `;
+      Procede a generar el plan según las instrucciones correspondientes al nivel de detalle: **"{{planDepth}}"**.
+    `,
+});
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
-
-    return text;
-
-  } catch (error) {
-    console.error("ERROR en generateClassPlan:", error);
-    throw new Error("La llamada a la API de Gemini para generar el plan de clase falló.");
+const generateClassPlanFlow = ai.defineFlow(
+  {
+    name: 'generateClassPlanFlow',
+    inputSchema: GenerateClassPlanInputSchema,
+    outputSchema: z.string(),
+  },
+  async (input) => {
+    const response = await classPlanPrompt(input);
+    return response.text;
   }
-}
+);
