@@ -244,7 +244,14 @@ export default function CreatePlanPage() {
                     <div className="space-y-3">
                       <Label className="block text-lg font-semibold text-foreground">Estándares y Competencias (MEN)</Label>
                       <CardDescription>Selecciona las competencias clave del Ministerio de Educación que abordará este plan.</CardDescription>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 max-h-60 overflow-y-auto p-2 border rounded-md">{dynamicOptions?.competencias.map((comp, index) => (<div key={`comp-${index}`} className="flex items-start space-x-3 p-2 rounded-md hover:bg-muted"><Checkbox id={`comp-${index}`} checked={formData.competencies.includes(comp)} onCheckedChange={() => handleCheckboxChange(comp)} /><Label htmlFor={`comp-${index}`} className="text-sm cursor-pointer">{comp}</Label></div>))}</div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 max-h-60 overflow-y-auto p-2 border rounded-md">
+                        {dynamicOptions?.competencias.map((comp, index) => (
+                          <div key={`comp-${index}`} className="flex items-start space-x-3 p-2 rounded-md hover:bg-muted">
+                            <Checkbox id={`comp-${index}`} checked={formData.competencies.includes(comp)} onCheckedChange={() => handleCheckboxChange(comp)} />
+                            <Label htmlFor={`comp-${index}`} className="text-sm cursor-pointer">{comp}</Label>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                     <div>
                       <Label htmlFor="specificObjectives" className="block text-lg font-semibold text-foreground mb-2">Objetivos de Aprendizaje Específicos</Label>
