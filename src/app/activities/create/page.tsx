@@ -14,13 +14,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Progress } from "@/components/ui/progress";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
-import { Loader2, Sparkles } from 'lucide-react';
+import { Loader2, Sparkles, Lightbulb, FileText, Workflow, ArrowLeft } from 'lucide-react';
 import { generateActivity } from '@/ai/flows/generate-activity';
 import { type GenerateSingleActivityInput } from '@/ai/flows/schemas';
 import { curriculumData } from '@/lib/data/curriculum';
+import { cn } from '@/lib/utils';
 
 const subjectOptions = Object.keys(curriculumData);
 const gradeOptions = [
@@ -46,8 +49,16 @@ const durationOptions = [
     "Flexible",
 ];
 
+const activityDepthOptions = [
+    { value: "Lluvia de Ideas", label: "Lluvia de Ideas", description: "Genera 3-5 conceptos de actividades sobre un tema.", icon: Lightbulb },
+    { value: "Actividad Detallada", label: "Actividad Detallada", description: "Crea una actividad única con instrucciones y recursos.", icon: FileText },
+    { value: "Mini-Secuencia", label: "Mini-Secuencia", description: "Diseña una clase con inicio, desarrollo y cierre.", icon: Workflow },
+];
+
 export default function CreateActivityPage() {
+  const [step, setStep] = useState(1);
   const [formData, setFormData] = useState<GenerateSingleActivityInput>({
+    activityDepth: 'Actividad Detallada',
     subject: 'Tecnología e Informática',
     grade: '9º',
     activityType: 'Práctica Guiada',
@@ -67,6 +78,10 @@ export default function CreateActivityPage() {
 
   const handleSelectChange = (name: keyof GenerateSingleActivityInput, value: string) => {
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+  
+  const handleRadioChange = (value: string) => {
+      setFormData(prev => ({...prev, activityDepth: value}));
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -91,72 +106,118 @@ export default function CreateActivityPage() {
     }
   };
 
+  const nextStep = () => setStep(prev => Math.min(prev + 1, 3));
+  const prevStep = () => setStep(prev => Math.max(prev - 1, 1));
+  const progressValue = (step / 3) * 100;
+
   return (
     <div className="container mx-auto p-4 md:p-8">
       <header className="text-center mb-10 py-6">
-        <h1 className="text-4xl font-bold text-primary">Generador de Actividades Modulares</h1>
+        <h1 className="text-4xl font-bold text-primary">Asistente de Creación de Actividades</h1>
         <p className="text-lg text-foreground/80 mt-2">
-          Diseña un bloque de construcción para tus planes de clase.
+          Diseña un bloque de construcción para tus clases en 3 simples pasos.
         </p>
       </header>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
         <Card className="w-full shadow-lg">
           <CardHeader>
-              <CardTitle>Diseña tu Actividad</CardTitle>
-              <CardDescription>Completa los campos para que la IA cree una actividad a tu medida.</CardDescription>
+              <CardTitle>Paso {step} de 3</CardTitle>
+              <Progress value={progressValue} className="w-full mt-2" />
           </CardHeader>
           <form onSubmit={handleSubmit}>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="subject">Materia</Label>
-                  <Select name="subject" value={formData.subject} onValueChange={(value) => handleSelectChange('subject', value)}>
-                    <SelectTrigger id="subject"><SelectValue /></SelectTrigger>
-                    <SelectContent>{subjectOptions.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-                  </Select>
+            <CardContent className="space-y-6 min-h-[400px]">
+              {step === 1 && (
+                <div className="space-y-6 animate-in fade-in">
+                    <h2 className="text-xl font-semibold">Contexto Básico</h2>
+                    <div>
+                      <Label htmlFor="subject">Materia</Label>
+                      <Select name="subject" value={formData.subject} onValueChange={(value) => handleSelectChange('subject', value)}>
+                        <SelectTrigger id="subject"><SelectValue /></SelectTrigger>
+                        <SelectContent>{subjectOptions.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="grade">Grado</Label>
+                      <Select name="grade" value={formData.grade} onValueChange={(value) => handleSelectChange('grade', value)}>
+                        <SelectTrigger id="grade"><SelectValue /></SelectTrigger>
+                        <SelectContent>{gradeOptions.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="topic">Tema General del Plan (Opcional)</Label>
+                      <Input id="topic" name="topic" value={formData.topic || ''} onChange={handleInputChange} placeholder="Ej: La Revolución Industrial" />
+                    </div>
                 </div>
-                <div>
-                  <Label htmlFor="grade">Grado</Label>
-                  <Select name="grade" value={formData.grade} onValueChange={(value) => handleSelectChange('grade', value)}>
-                    <SelectTrigger id="grade"><SelectValue /></SelectTrigger>
-                    <SelectContent>{gradeOptions.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
-                  </Select>
+              )}
+              {step === 2 && (
+                <div className="space-y-6 animate-in fade-in">
+                    <h2 className="text-xl font-semibold">Define la Actividad</h2>
+                    <div>
+                        <Label>Profundidad de la Actividad</Label>
+                        <RadioGroup value={formData.activityDepth} onValueChange={handleRadioChange} className="grid grid-cols-1 gap-4 mt-2">
+                            {activityDepthOptions.map(option => (
+                               <Label key={option.value} htmlFor={option.value} className={cn(
+                                   "flex flex-col items-start p-4 rounded-lg border-2 cursor-pointer transition-colors",
+                                   formData.activityDepth === option.value ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
+                               )}>
+                                    <RadioGroupItem value={option.value} id={option.value} className="sr-only"/>
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <option.icon className="h-6 w-6 text-primary" />
+                                        <span className="font-bold text-lg">{option.label}</span>
+                                    </div>
+                                    <span className="text-sm font-normal text-muted-foreground">{option.description}</span>
+                               </Label>
+                            ))}
+                        </RadioGroup>
+                    </div>
+                     <div>
+                      <Label htmlFor="learningObjective">Objetivo de Aprendizaje de la Actividad</Label>
+                      <Textarea id="learningObjective" name="learningObjective" value={formData.learningObjective} onChange={handleInputChange} required placeholder="Ej: Que los estudiantes puedan nombrar tres inventos clave y su impacto." rows={3}/>
+                    </div>
                 </div>
-              </div>
-               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="activityType">Tipo de Actividad</Label>
-                  <Select name="activityType" value={formData.activityType} onValueChange={(value) => handleSelectChange('activityType', value)}>
-                    <SelectTrigger id="activityType"><SelectValue /></SelectTrigger>
-                    <SelectContent>{activityTypeOptions.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
-                  </Select>
+              )}
+               {step === 3 && (
+                <div className="space-y-6 animate-in fade-in">
+                    <h2 className="text-xl font-semibold">Detalles Finales</h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                        <Label htmlFor="duration">Duración Estimada</Label>
+                        <Select name="duration" value={formData.duration} onValueChange={(value) => handleSelectChange('duration', value)}>
+                            <SelectTrigger id="duration"><SelectValue /></SelectTrigger>
+                            <SelectContent>{durationOptions.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
+                        </Select>
+                        </div>
+                         <div>
+                        <Label htmlFor="activityType">Tipo de Actividad (Contexto)</Label>
+                        <Select name="activityType" value={formData.activityType} onValueChange={(value) => handleSelectChange('activityType', value)}>
+                            <SelectTrigger id="activityType"><SelectValue /></SelectTrigger>
+                            <SelectContent>{activityTypeOptions.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                        </Select>
+                        </div>
+                    </div>
+                    <div>
+                        <Label htmlFor="availableResources">Recursos Disponibles (Opcional)</Label>
+                        <Input id="availableResources" name="availableResources" value={formData.availableResources || ''} onChange={handleInputChange} placeholder="Ej: Proyector, acceso a internet, cartulinas" />
+                    </div>
                 </div>
-                <div>
-                  <Label htmlFor="duration">Duración Estimada</Label>
-                   <Select name="duration" value={formData.duration} onValueChange={(value) => handleSelectChange('duration', value)}>
-                    <SelectTrigger id="duration"><SelectValue /></SelectTrigger>
-                    <SelectContent>{durationOptions.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="topic">Tema General del Plan (Opcional)</Label>
-                <Input id="topic" name="topic" value={formData.topic || ''} onChange={handleInputChange} placeholder="Ej: La Revolución Industrial" />
-              </div>
-              <div>
-                <Label htmlFor="learningObjective">Objetivo de Aprendizaje de la Actividad</Label>
-                <Textarea id="learningObjective" name="learningObjective" value={formData.learningObjective} onChange={handleInputChange} required placeholder="Ej: Que los estudiantes puedan nombrar tres inventos clave de la época y su impacto." rows={3}/>
-              </div>
-               <div>
-                <Label htmlFor="availableResources">Recursos Disponibles (Opcional)</Label>
-                <Input id="availableResources" name="availableResources" value={formData.availableResources || ''} onChange={handleInputChange} placeholder="Ej: Proyector, acceso a internet, cartulinas" />
-              </div>
+              )}
             </CardContent>
-            <CardFooter>
-              <Button type="submit" className="w-full" disabled={cargando}>
-                {cargando ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                Generar Actividad
-              </Button>
+            <CardFooter className="flex justify-between">
+              {step > 1 ? (
+                 <Button type="button" variant="ghost" onClick={prevStep}>
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Anterior
+                </Button>
+              ) : <div />}
+
+              {step < 3 ? (
+                <Button type="button" onClick={nextStep}>Siguiente</Button>
+              ) : (
+                <Button type="submit" className="w-1/2" disabled={cargando}>
+                    {cargando ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                    Generar Actividad
+                </Button>
+              )}
             </CardFooter>
           </form>
         </Card>

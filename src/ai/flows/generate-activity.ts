@@ -1,18 +1,19 @@
 // src/ai/flows/generate-activity.ts
 'use server';
 /**
- * @fileOverview Generates a modular learning activity using AI.
+ * @fileOverview Generates a modular learning activity using AI with varying levels of detail.
  *
  * - generateActivity - A function that handles the activity generation process.
  */
 import { model } from '@/ai/ai-instance';
 import { type GenerateSingleActivityInput } from './schemas';
 
-// The main function, now using @google/generative-ai
+// The main function, now using @google/generative-ai and supporting different depths
 export async function generateActivity(
   input: GenerateSingleActivityInput
 ): Promise<string> {
   const { 
+    activityDepth,
     activityType, 
     subject, 
     grade, 
@@ -23,19 +24,49 @@ export async function generateActivity(
   } = input;
 
   const prompt = `
-      Eres un diseñador de actividades pedagógicas experto en el sistema educativo colombiano.
-      Genera una actividad de tipo "${activityType}" para una clase de "${subject}" de grado "${grade}".
-      ${topic ? `Esta actividad forma parte de un tema más amplio: "${topic}".` : ''}
-      La actividad debe durar aproximadamente "${duration}" y cumplir con el siguiente objetivo de aprendizaje específico: "${learningObjective}".
-      ${availableResources ? `Considera los siguientes recursos disponibles: "${availableResources}".` : ''}
+      Eres un diseñador pedagógico experto en el sistema educativo colombiano.
+      Tu tarea es generar una propuesta de actividad basada en la siguiente información y el nivel de profundidad solicitado.
 
-      La actividad generada debe incluir claramente las siguientes secciones:
-      - Nombre de la Actividad: Un título claro y atractivo.
-      - Instrucciones para el Docente: Pasos claros y concisos para guiar la actividad.
-      - Instrucciones para el Estudiante: Qué deben hacer los alumnos, formulado de manera que se pueda compartir directamente con ellos.
-      - Recursos Necesarios: Una lista de materiales o herramientas específicas para esta actividad.
+      **Nivel de Profundidad Solicitado: ${activityDepth}**
 
-      Formatea toda tu respuesta en Markdown para una fácil lectura y presentación. No incluyas nada más que el contenido de la actividad.
+      ---
+      **Información Base:**
+      - Materia: ${subject}
+      - Grado: ${grade}
+      - Tema General (si aplica): ${topic}
+      - Tipo de Actividad (contexto): ${activityType}
+      - Duración Estimada: ${duration}
+      - Objetivo de Aprendizaje: ${learningObjective}
+      - Recursos Disponibles: ${availableResources || 'No especificados'}
+      ---
+
+      **INSTRUCCIONES DE GENERACIÓN**
+
+      Ahora, genera la propuesta siguiendo ESTRICTAMENTE las directrices para el nivel de profundidad solicitado:
+
+      **1. Si el nivel es "Lluvia de Ideas":**
+      Genera una lista de 3 a 5 ideas de actividades concisas y creativas. Para cada idea, proporciona solo:
+      - **Un Título Atractivo:**
+      - **Un Concepto Breve:** (1-2 frases explicando la idea).
+      **NO** desarrolles las actividades. Solo presenta la lista de ideas en formato Markdown.
+
+      **2. Si el nivel es "Actividad Detallada":**
+      Genera una única actividad bien estructurada. El resultado debe ser un documento en formato Markdown que contenga las siguientes secciones claramente definidas:
+      - **Nombre de la Actividad:** Un título claro y atractivo.
+      - **Instrucciones para el Docente:** Pasos claros y concisos para guiar la actividad.
+      - **Instrucciones para el Estudiante:** Qué deben hacer los alumnos, formulado de manera que se pueda compartir directamente con ellos.
+      - **Recursos Necesarios:** Una lista de materiales o herramientas específicas.
+      Asegúrate de que el lenguaje sea claro y práctico.
+
+      **3. Si el nivel es "Mini-Secuencia":**
+      Diseña una secuencia didáctica corta para una sesión de clase, dividida en tres momentos clave. El resultado debe ser un documento en formato Markdown con las siguientes secciones:
+      - **Título de la Sesión:** Un título general para la clase.
+      - **Momento 1: Inicio (Warm-up / Engagement):** Describe una actividad corta para activar conocimientos previos o enganchar a los estudiantes.
+      - **Momento 2: Desarrollo (Actividad Principal):** Describe la actividad central donde se trabaja el objetivo de aprendizaje.
+      - **Momento 3: Cierre (Wrap-up / Síntesis):** Describe una actividad corta para consolidar el aprendizaje y verificar la comprensión.
+      Para cada momento, explica brevemente la actividad y su propósito.
+
+      Procede a generar la propuesta según las instrucciones para el nivel de profundidad: **"${activityDepth}"**. Formatea toda tu respuesta en Markdown para una fácil lectura.
     `;
     
   try {

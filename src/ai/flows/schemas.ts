@@ -4,6 +4,7 @@ import {z} from 'zod';
 
 // Schema for generating a single, modular activity
 export const GenerateSingleActivityInputSchema = z.object({
+  activityDepth: z.string().describe('The desired level of detail: "Lluvia de Ideas", "Actividad Detallada", "Mini-Secuencia".'),
   subject: z.string().describe('The subject or area of knowledge for the activity.'),
   grade: z.string().describe('The specific grade(s) for the activity.'),
   topic: z.string().optional().describe('The broader lesson topic this activity belongs to (optional).'),
