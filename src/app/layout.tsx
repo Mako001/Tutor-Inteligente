@@ -21,8 +21,6 @@ export default function RootLayout({
   return (
     <html lang="es" className={inter.variable}>
       <head>
-        {/* You can have comments and line breaks INSIDE head without issues */}
-        {/* For example, for additional scripts or metatags */}
       </head>
       <body className="antialiased bg-secondary text-foreground" suppressHydrationWarning={true}>
         <AuthProvider>
