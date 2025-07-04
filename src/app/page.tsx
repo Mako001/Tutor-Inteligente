@@ -29,8 +29,8 @@ export default function HomePage() {
             </CardContent>
             <CardFooter>
               <Button asChild className="w-full">
-                {/* Nota: Se usa /create que ya existe y corresponde a la funcionalidad */}
-                <Link href="/create">Empezar Plan</Link>
+                {/* Updated link to point to the new plan creator */}
+                <Link href="/plans/create">Empezar Plan</Link>
               </Button>
             </CardFooter>
           </Card>
@@ -70,8 +70,8 @@ export default function HomePage() {
             </CardContent>
             <CardFooter>
               <Button asChild className="w-full" variant="outline">
-                 {/* Nota: Se usa /plans que ya existe y corresponde a "Mis Planes" (Biblioteca) */}
-                <Link href="/plans">Ir a Biblioteca</Link>
+                 {/* Updated link to point to /library */}
+                <Link href="/library">Ir a Biblioteca</Link>
               </Button>
             </CardFooter>
           </Card>
