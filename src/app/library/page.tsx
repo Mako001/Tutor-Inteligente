@@ -13,12 +13,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Search, Save, BookOpen, AlertTriangle } from 'lucide-react';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import { Loader2, Search, Save, BookOpen, AlertTriangle, FileText, Link as LinkIcon } from 'lucide-react';
 import { type FindResourcesInput, type FoundResource, type SaveResourceInput } from '@/ai/flows/schemas';
 import { findResources } from '@/ai/flows/find-resources';
 import { getSavedResources, saveResource } from '@/lib/firebase/actions/resource-actions';
+import { getSavedProposals, type SavedProposal } from '@/lib/firebase/actions/proposal-actions';
 import { curriculumData } from '@/lib/data/curriculum';
 import { useToast } from "@/hooks/use-toast";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 
 const subjectOptions = Object.keys(curriculumData);
 const gradeOptions = [ "6º", "7º", "8º", "9º", "10º", "11º", "Otro" ];
@@ -35,6 +51,7 @@ type SavedResource = SaveResourceInput & { id: string };
 
 export default function LibraryPage() {
   const { toast } = useToast();
+  // State for search
   const [searchQuery, setSearchQuery] = useState<FindResourcesInput>({
     topic: '',
     resourceType: 'Video de YouTube',
@@ -45,24 +62,41 @@ export default function LibraryPage() {
   const [searchError, setSearchError] = useState('');
   const [foundResources, setFoundResources] = useState<FoundResource[]>([]);
 
+  // State for saved resources
   const [savedResources, setSavedResources] = useState<SavedResource[]>([]);
   const [isLoadingLibrary, setIsLoadingLibrary] = useState(true);
   const [libraryError, setLibraryError] = useState('');
 
-  const fetchSavedResources = async () => {
+  // State for saved proposals (from the old /create page)
+  const [savedProposals, setSavedProposals] = useState<SavedProposal[]>([]);
+  const [isLoadingProposals, setIsLoadingProposals] = useState(true);
+  const [proposalsError, setProposalsError] = useState('');
+
+
+  const fetchSavedContent = async () => {
     setIsLoadingLibrary(true);
     setLibraryError('');
-    const result = await getSavedResources();
-    if (result.success && result.data) {
-      setSavedResources(result.data);
+    const resResult = await getSavedResources();
+    if (resResult.success && resResult.data) {
+      setSavedResources(resResult.data);
     } else {
-      setLibraryError(result.error || 'No se pudieron cargar los recursos guardados.');
+      setLibraryError(resResult.error || 'No se pudieron cargar los recursos.');
     }
     setIsLoadingLibrary(false);
+
+    setIsLoadingProposals(true);
+    setProposalsError('');
+    const propResult = await getSavedProposals();
+    if (propResult.success && propResult.data) {
+      setSavedProposals(propResult.data);
+    } else {
+      setProposalsError(propResult.error || 'No se pudieron cargar las propuestas.');
+    }
+    setIsLoadingProposals(false);
   };
 
   useEffect(() => {
-    fetchSavedResources();
+    fetchSavedContent();
   }, []);
 
   const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -105,7 +139,9 @@ export default function LibraryPage() {
         title: "¡Recurso Guardado!",
         description: `"${resource.title}" se ha añadido a tu biblioteca.`,
       });
-      await fetchSavedResources();
+      // Refetch resources
+      const resResult = await getSavedResources();
+      if (resResult.success && resResult.data) setSavedResources(resResult.data);
     } else {
       toast({
         variant: "destructive",
@@ -115,154 +151,217 @@ export default function LibraryPage() {
     }
   };
 
+  const SearchAndResults = () => (
+    <div className="space-y-8">
+        <Card className="w-full">
+            <CardHeader>
+                <CardTitle>Buscador Inteligente de Recursos</CardTitle>
+                <CardDescription>Describe lo que necesitas y la IA buscará en la web por ti.</CardDescription>
+            </CardHeader>
+            <form onSubmit={handleSearch}>
+                <CardContent className="space-y-4">
+                    <div>
+                        <Label htmlFor="topic">Tema a Buscar</Label>
+                        <Input id="topic" name="topic" value={searchQuery.topic} onChange={handleSearchInputChange} placeholder="Ej: Algoritmos de ordenamiento, La célula eucariota" required/>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <Label htmlFor="resourceType">Tipo de Recurso</Label>
+                            <Select name="resourceType" value={searchQuery.resourceType} onValueChange={(value) => handleSearchSelectChange('resourceType', value)}>
+                                <SelectTrigger id="resourceType"><SelectValue /></SelectTrigger>
+                                <SelectContent>{resourceTypeOptions.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                            </Select>
+                        </div>
+                        <div>
+                            <Label htmlFor="grade">Grado</Label>
+                            <Select name="grade" value={searchQuery.grade} onValueChange={(value) => handleSearchSelectChange('grade', value)}>
+                                <SelectTrigger id="grade"><SelectValue /></SelectTrigger>
+                                <SelectContent>{gradeOptions.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                     <div>
+                        <Label htmlFor="subject">Materia (para contexto)</Label>
+                        <Select name="subject" value={searchQuery.subject} onValueChange={(value) => handleSearchSelectChange('subject', value)}>
+                            <SelectTrigger id="subject"><SelectValue /></SelectTrigger>
+                            <SelectContent>{subjectOptions.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                        </Select>
+                    </div>
+                </CardContent>
+                <CardFooter>
+                    <Button type="submit" className="w-full" disabled={isSearching}>
+                        {isSearching ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
+                        Buscar Recursos
+                    </Button>
+                </CardFooter>
+            </form>
+        </Card>
+
+        <div className="space-y-4">
+            <h2 className="text-2xl font-semibold">Resultados de la Búsqueda</h2>
+            {isSearching && (
+                <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-8">
+                    <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
+                    <p>La IA está buscando los mejores recursos...</p>
+                </div>
+            )}
+            {searchError && (
+                <Card className="bg-destructive/10 border-destructive/50">
+                    <CardHeader className="flex-row items-center gap-4">
+                        <AlertTriangle className="h-6 w-6 text-destructive"/>
+                        <CardTitle className="text-destructive">Error en la Búsqueda</CardTitle>
+                    </CardHeader>
+                    <CardContent><p>{searchError}</p></CardContent>
+                </Card>
+            )}
+            {!isSearching && !searchError && foundResources.length > 0 && (
+                <div className="space-y-4">
+                    {foundResources.map((res, index) => (
+                        <Card key={index} className="overflow-hidden">
+                            <CardHeader>
+                                <CardTitle className="text-lg">{res.title}</CardTitle>
+                                <CardDescription>
+                                    <a href={res.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline break-all">
+                                        {res.url}
+                                    </a>
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <p className="text-sm text-muted-foreground">{res.description}</p>
+                            </CardContent>
+                            <CardFooter>
+                                <Button onClick={() => handleSaveResource(res)} size="sm">
+                                    <Save className="mr-2 h-4 w-4"/>
+                                    Guardar en mi Biblioteca
+                                </Button>
+                            </CardFooter>
+                        </Card>
+                    ))}
+                </div>
+            )}
+            {!isSearching && !searchError && foundResources.length === 0 && (
+                <p className="text-muted-foreground text-center py-4">Los resultados de la búsqueda aparecerán aquí.</p>
+            )}
+        </div>
+    </div>
+  );
 
   return (
     <div className="container mx-auto p-4 md:p-8">
       <header className="text-center mb-10 py-6">
-        <h1 className="text-4xl font-bold text-primary">Mi Biblioteca de Recursos</h1>
+        <h1 className="text-4xl font-bold text-primary">Mi Biblioteca</h1>
         <p className="text-lg text-foreground/80 mt-2">
-          Encuentra, guarda y gestiona recursos educativos de alta calidad con la ayuda de la IA.
+          Encuentra, guarda y gestiona todo tu contenido educativo.
         </p>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-        <div className="space-y-8">
-            <Card className="w-full shadow-lg">
-                <CardHeader>
-                    <CardTitle>Buscador Inteligente de Recursos</CardTitle>
-                    <CardDescription>Describe lo que necesitas y la IA buscará en la web por ti.</CardDescription>
-                </CardHeader>
-                <form onSubmit={handleSearch}>
-                    <CardContent className="space-y-4">
-                        <div>
-                            <Label htmlFor="topic">Tema a Buscar</Label>
-                            <Input id="topic" name="topic" value={searchQuery.topic} onChange={handleSearchInputChange} placeholder="Ej: Algoritmos de ordenamiento, La célula eucariota" required/>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <Label htmlFor="resourceType">Tipo de Recurso</Label>
-                                <Select name="resourceType" value={searchQuery.resourceType} onValueChange={(value) => handleSearchSelectChange('resourceType', value)}>
-                                    <SelectTrigger id="resourceType"><SelectValue /></SelectTrigger>
-                                    <SelectContent>{resourceTypeOptions.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
-                                </Select>
-                            </div>
-                            <div>
-                                <Label htmlFor="grade">Grado</Label>
-                                <Select name="grade" value={searchQuery.grade} onValueChange={(value) => handleSearchSelectChange('grade', value)}>
-                                    <SelectTrigger id="grade"><SelectValue /></SelectTrigger>
-                                    <SelectContent>{gradeOptions.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                         <div>
-                            <Label htmlFor="subject">Materia (para contexto)</Label>
-                            <Select name="subject" value={searchQuery.subject} onValueChange={(value) => handleSearchSelectChange('subject', value)}>
-                                <SelectTrigger id="subject"><SelectValue /></SelectTrigger>
-                                <SelectContent>{subjectOptions.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-                            </Select>
-                        </div>
-                    </CardContent>
-                    <CardFooter>
-                        <Button type="submit" className="w-full" disabled={isSearching}>
-                            {isSearching ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
-                            Buscar Recursos
-                        </Button>
-                    </CardFooter>
-                </form>
-            </Card>
-
-            <div className="space-y-4">
-                <h2 className="text-2xl font-semibold">Resultados de la Búsqueda</h2>
-                {isSearching && (
-                    <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-8">
-                        <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
-                        <p>La IA está buscando los mejores recursos...</p>
+      <main className="space-y-8">
+        <Accordion type="single" collapsible className="w-full shadow-lg rounded-xl border bg-card">
+            <AccordionItem value="item-1" className="border-b-0">
+                <AccordionTrigger className="p-6 hover:no-underline">
+                    <div className="flex items-center gap-2 text-lg font-semibold">
+                        <Search />
+                        <span>Buscador Inteligente de Recursos</span>
                     </div>
-                )}
-                {searchError && (
-                    <Card className="bg-destructive/10 border-destructive/50">
-                        <CardHeader className="flex-row items-center gap-4">
-                            <AlertTriangle className="h-6 w-6 text-destructive"/>
-                            <CardTitle className="text-destructive">Error en la Búsqueda</CardTitle>
-                        </CardHeader>
-                        <CardContent><p>{searchError}</p></CardContent>
-                    </Card>
-                )}
-                {!isSearching && !searchError && foundResources.length > 0 && (
-                    <div className="space-y-4">
-                        {foundResources.map((res, index) => (
-                            <Card key={index} className="overflow-hidden">
-                                <CardHeader>
-                                    <CardTitle className="text-lg">{res.title}</CardTitle>
-                                    <CardDescription>
-                                        <a href={res.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline break-all">
-                                            {res.url}
-                                        </a>
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    <p className="text-sm text-muted-foreground">{res.description}</p>
-                                </CardContent>
-                                <CardFooter>
-                                    <Button onClick={() => handleSaveResource(res)} size="sm">
-                                        <Save className="mr-2 h-4 w-4"/>
-                                        Guardar en mi Biblioteca
-                                    </Button>
-                                </CardFooter>
-                            </Card>
-                        ))}
-                    </div>
-                )}
-                {!isSearching && !searchError && foundResources.length === 0 && (
-                    <p className="text-muted-foreground text-center py-4">Los resultados de la búsqueda aparecerán aquí.</p>
-                )}
-            </div>
-        </div>
+                </AccordionTrigger>
+                <AccordionContent className="p-6 pt-0">
+                    <SearchAndResults />
+                </AccordionContent>
+            </AccordionItem>
+        </Accordion>
 
-        <Card className="w-full shadow-lg sticky top-8">
+        <Card className="w-full shadow-lg">
             <CardHeader>
-                <CardTitle className="flex items-center gap-2"><BookOpen/> Mi Biblioteca Guardada</CardTitle>
-                <CardDescription>Aquí están los recursos que has guardado para uso futuro.</CardDescription>
+                <CardTitle className="flex items-center gap-2"><BookOpen/> Contenido Guardado</CardTitle>
+                <CardDescription>Aquí están los recursos y propuestas que has guardado.</CardDescription>
             </CardHeader>
-            <CardContent className="min-h-[400px] max-h-[70vh] overflow-y-auto space-y-4">
-                {isLoadingLibrary && (
-                    <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-                        <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
-                        <p>Cargando tu biblioteca...</p>
-                    </div>
-                )}
-                {libraryError && (
-                    <div className="h-full flex flex-col items-center justify-center text-center">
-                        <AlertTriangle className="h-10 w-10 text-destructive mb-4"/>
-                        <p className="text-destructive">{libraryError}</p>
-                    </div>
-                )}
-                {!isLoadingLibrary && !libraryError && savedResources.length > 0 && (
-                     savedResources.map((res) => (
-                        <div key={res.id} className="border p-4 rounded-lg bg-card">
-                           <h4 className="font-semibold">{res.title}</h4>
-                           <a href={res.url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline break-all">
-                                {res.url}
-                           </a>
-                           <p className="text-sm text-muted-foreground mt-2">{res.description}</p>
-                           <div className="text-xs text-muted-foreground mt-2 space-x-2">
-                               <span>{res.subject}</span>
-                               <span>&bull;</span>
-                               <span>{res.grade}</span>
-                               <span>&bull;</span>
-                               <span>{res.resourceType}</span>
-                           </div>
-                        </div>
-                    ))
-                )}
-                 {!isLoadingLibrary && !libraryError && savedResources.length === 0 && (
-                    <div className="h-full flex items-center justify-center">
-                        <p className="text-muted-foreground text-center">Tu biblioteca está vacía. ¡Usa el buscador para encontrar y guardar recursos!</p>
-                    </div>
-                )}
+            <CardContent>
+                <Tabs defaultValue="proposals" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="proposals"><FileText className="mr-2"/> Propuestas de Actividad</TabsTrigger>
+                        <TabsTrigger value="resources"><LinkIcon className="mr-2"/> Recursos (Enlaces)</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="proposals" className="pt-4">
+                        {isLoadingProposals && (
+                            <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-8">
+                                <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
+                                <p>Cargando tus propuestas...</p>
+                            </div>
+                        )}
+                        {proposalsError && (
+                            <div className="h-full flex flex-col items-center justify-center text-center p-8">
+                                <AlertTriangle className="h-10 w-10 text-destructive mb-4"/>
+                                <p className="text-destructive">{proposalsError}</p>
+                            </div>
+                        )}
+                        {!isLoadingProposals && !proposalsError && savedProposals.length > 0 && (
+                             <div className="space-y-4">
+                                {savedProposals.map((prop) => (
+                                    <Card key={prop.id} className="bg-secondary">
+                                        <CardHeader>
+                                            <CardTitle>{prop.centralTheme}</CardTitle>
+                                            <CardDescription>{prop.subject} - Grado {prop.grade}</CardDescription>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <div className="markdown-content-in-card max-h-60 overflow-y-auto border p-4 rounded-md bg-background">
+                                                <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+                                                  {prop.textoGenerado}
+                                                </ReactMarkdown>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                             </div>
+                        )}
+                         {!isLoadingProposals && !proposalsError && savedProposals.length === 0 && (
+                            <div className="h-40 flex items-center justify-center">
+                                <p className="text-muted-foreground text-center">No has guardado ninguna propuesta todavía.<br/>¡Crea una desde la página de "Crear Plan de Clase"!</p>
+                            </div>
+                        )}
+                    </TabsContent>
+                    <TabsContent value="resources" className="pt-4">
+                         {isLoadingLibrary && (
+                            <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-8">
+                                <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
+                                <p>Cargando tus recursos...</p>
+                            </div>
+                        )}
+                        {libraryError && (
+                            <div className="h-full flex flex-col items-center justify-center text-center p-8">
+                                <AlertTriangle className="h-10 w-10 text-destructive mb-4"/>
+                                <p className="text-destructive">{libraryError}</p>
+                            </div>
+                        )}
+                        {!isLoadingLibrary && !libraryError && savedResources.length > 0 && (
+                            <div className="space-y-4">
+                                {savedResources.map((res) => (
+                                    <div key={res.id} className="border p-4 rounded-lg bg-secondary">
+                                    <h4 className="font-semibold">{res.title}</h4>
+                                    <a href={res.url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline break-all">
+                                            {res.url}
+                                    </a>
+                                    <p className="text-sm text-muted-foreground mt-2">{res.description}</p>
+                                    <div className="text-xs text-muted-foreground mt-2 space-x-2">
+                                        <span>{res.subject}</span>
+                                        <span>&bull;</span>
+                                        <span>{res.grade}</span>
+                                        <span>&bull;</span>
+                                        <span>{res.resourceType}</span>
+                                    </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        {!isLoadingLibrary && !libraryError && savedResources.length === 0 && (
+                            <div className="h-40 flex items-center justify-center">
+                                <p className="text-muted-foreground text-center">Tu biblioteca de recursos está vacía.<br/>¡Usa el buscador para encontrar y guardar nuevos recursos!</p>
+                            </div>
+                        )}
+                    </TabsContent>
+                </Tabs>
             </CardContent>
         </Card>
-      </div>
+      </main>
     </div>
   );
 }
