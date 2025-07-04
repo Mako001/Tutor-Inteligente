@@ -4,47 +4,56 @@
  * @fileOverview Generates an educational plan with varying levels of detail.
  * - generateClassPlan - A function that handles the class plan generation process.
  */
+import { model } from '@/ai/ai-instance';
+import { type GenerateClassPlanInput } from './schemas';
 
-import {ai} from '@/ai/ai-instance';
-import {z} from 'zod';
-import {
-  GenerateClassPlanInputSchema,
-  type GenerateClassPlanInput,
-} from './schemas';
-
+// This function now uses the @google/generative-ai SDK directly
 export async function generateClassPlan(
   input: GenerateClassPlanInput
 ): Promise<string> {
-  const result = await generateClassPlanFlow(input);
-  return result;
-}
+  const { 
+    planDepth, 
+    planTitle,
+    subject,
+    grade,
+    totalDuration,
+    bigIdea,
+    competencies,
+    specificObjectives,
+    sessionSequence,
+    summativeAssessment,
+    formativeAssessment,
+    generalResources,
+    differentiation,
+    interdisciplinarity
+  } = input;
 
-const classPlanPrompt = ai.definePrompt({
-  name: 'generateClassPlanPrompt',
-  input: {schema: GenerateClassPlanInputSchema},
-  prompt: `
+  // The form might pass an array, so we ensure it's a string.
+  const competenciesString = Array.isArray(competencies) ? competencies.join(', ') : competencies;
+
+  const prompt = `
       Actúa como un pedagogo experto y diseñador curricular para el sistema educativo de Colombia, con pleno conocimiento de los lineamientos del Ministerio de Educación Nacional (MEN).
 
       Tu tarea es generar una planificación educativa basada en la siguiente información proporcionada por un docente. La estructura y profundidad de tu respuesta debe corresponder al **"Nivel de Detalle Solicitado"**.
 
-      **Nivel de Detalle Solicitado: {{planDepth}}**
+      **Nivel de Detalle Solicitado: ${planDepth}**
 
       ---
 
       **Información Base Proporcionada por el Docente:**
-      - Título del Plan: {{planTitle}}
-      - Materia: {{subject}}
-      - Grado(s): {{grade}}
-      - Duración Total Estimada: {{totalDuration}}
-      - Gran Objetivo de Aprendizaje (Big Idea): {{bigIdea}}
-      {{#if competencies}}- Competencias a Desarrollar (basadas en MEN): {{competencies}}{{/if}}
-      {{#if specificObjectives}}- Objetivos de Aprendizaje Específicos: {{specificObjectives}}{{/if}}
-      {{#if sessionSequence}}- Secuencia de Sesiones Propuesta: {{sessionSequence}}{{/if}}
-      {{#if summativeAssessment}}- Evaluación Sumativa: {{summativeAssessment}}{{/if}}
-      {{#if formativeAssessment}}- Evaluación Formativa (seguimiento): {{formativeAssessment}}{{/if}}
-      {{#if generalResources}}- Recursos Generales: {{generalResources}}{{/if}}
-      {{#if differentiation}}- Estrategias de Diferenciación: {{differentiation}}{{/if}}
-      {{#if interdisciplinarity}}- Conexiones Interdisciplinares: {{interdisciplinarity}}{{/if}}
+      - Título del Plan: ${planTitle}
+      - Materia: ${subject}
+      - Grado(s): ${grade}
+      - Duración Total Estimada: ${totalDuration}
+      - Gran Objetivo de Aprendizaje (Big Idea): ${bigIdea}
+      ${competenciesString ? `- Competencias a Desarrollar (basadas en MEN): ${competenciesString}` : ''}
+      ${specificObjectives ? `- Objetivos de Aprendizaje Específicos: ${specificObjectives}` : ''}
+      ${sessionSequence ? `- Secuencia de Sesiones Propuesta: ${sessionSequence}` : ''}
+      ${summativeAssessment ? `- Evaluación Sumativa: ${summativeAssessment}` : ''}
+      ${formativeAssessment ? `- Evaluación Formativa (seguimiento): ${formativeAssessment}` : ''}
+      ${generalResources ? `- Recursos Generales: ${generalResources}` : ''}
+      ${differentiation ? `- Estrategias de Diferenciación: ${differentiation}` : ''}
+      ${interdisciplinarity ? `- Conexiones Interdisciplinares: ${interdisciplinarity}` : ''}
 
       ---
 
@@ -83,18 +92,16 @@ const classPlanPrompt = ai.definePrompt({
       - **Presentación Pública:** Propón una idea para presentar el proyecto a una audiencia real.
       Utiliza toda la información proporcionada por el docente para contextualizar el proyecto.
 
-      Procede a generar el plan según las instrucciones correspondientes al nivel de detalle: **"{{planDepth}}"**.
-    `,
-});
+      Procede a generar el plan según las instrucciones correspondientes al nivel de detalle: **"${planDepth}"**.
+    `;
 
-const generateClassPlanFlow = ai.defineFlow(
-  {
-    name: 'generateClassPlanFlow',
-    inputSchema: GenerateClassPlanInputSchema,
-    outputSchema: z.string(),
-  },
-  async (input) => {
-    const response = await classPlanPrompt(input);
-    return response.text;
+  try {
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+    return text;
+  } catch (error) {
+    console.error("Error generating class plan with Gemini:", error);
+    throw new Error("La IA no pudo generar el plan de clase.");
   }
-);
+}
