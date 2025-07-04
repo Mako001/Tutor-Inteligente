@@ -1,9 +1,7 @@
 // src/app/plans/create/page.tsx
 'use client';
 
-import { useState, FormEvent, useEffect, Fragment } from 'react';
-// import { firestore } from '@/lib/firebase/client';
-// import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { useState, FormEvent, useEffect, Fragment, useContext } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,8 +18,11 @@ import {
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
-// import { generateActivityProposal } from '@/ai/flows/generate-activity-proposal';
-// import { type GenerateActivityProposalInput } from '@/ai/flows/schemas';
+import { generateClassPlan } from '@/ai/flows/generate-class-plan';
+import { type GenerateClassPlanInput } from '@/ai/flows/schemas';
+import { savePlan } from '@/lib/firebase/actions/plan-actions';
+import { AuthContext } from '@/lib/firebase/auth-provider';
+import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Check, Loader2 } from 'lucide-react';
 import { curriculumData, CurriculumData } from '@/lib/data/curriculum';
@@ -69,6 +70,8 @@ const wizardSteps = [
 ];
 
 export default function CreatePlanPage() {
+  const { user } = useContext(AuthContext);
+  const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<PlanFormData>({
     planTitle: '',
@@ -136,6 +139,28 @@ export default function CreatePlanPage() {
     });
   };
 
+  const guardarPlanEnFirebase = async (planGenerado: string, datos: PlanFormData) => {
+    if (!user) {
+        toast({ variant: "destructive", title: "Error", description: "Debes estar autenticado para guardar." });
+        return;
+    }
+    // Create a slim version of the data for saving
+    const dataToSave = {
+        userId: user.uid,
+        planTitle: datos.planTitle,
+        subject: datos.subject,
+        grade: datos.grade,
+        textoGenerado: planGenerado,
+        // include any other fields you want to save for filtering/display
+    };
+    const result = await savePlan(dataToSave as any); // Cast needed due to schema mismatch
+    if (result.success) {
+        toast({ title: "¡Plan Guardado!", description: "Tu plan de clase se ha guardado en la biblioteca." });
+    } else {
+        setError(`Error al guardar el plan: ${result.error}`);
+    }
+  };
+
   const handleGenerarPlan = async (e: FormEvent) => {
     e.preventDefault();
     setCargando(true);
@@ -148,11 +173,20 @@ export default function CreatePlanPage() {
       return;
     }
     
-    // Placeholder for AI call
-    setTimeout(() => {
-        setResultadoTexto("Funcionalidad de generación de plan en construcción. Los datos han sido capturados y pronto se enviarán a la IA para generar un plan completo.");
-        setCargando(false);
-    }, 1500);
+    const flowInput: GenerateClassPlanInput = {
+      ...formData,
+      competencies: formData.competencies.join(', '), // Convert array to string for the flow
+    };
+
+    try {
+      const responseText = await generateClassPlan(flowInput);
+      setResultadoTexto(responseText);
+      await guardarPlanEnFirebase(responseText, formData);
+    } catch (apiError: any) {
+      setError(`Hubo un error al generar el plan: ${apiError.message}`);
+    } finally {
+      setCargando(false);
+    }
   };
   
   const Stepper = () => (
@@ -311,9 +345,9 @@ export default function CreatePlanPage() {
                  {currentStep < totalSteps ? (
                   <Button type="button" onClick={handleNext}>Siguiente</Button>
                  ) : (
-                  <Button type="submit" disabled={cargando}>
+                  <Button type="submit" disabled={cargando || !user}>
                     {cargando && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Generar Plan
+                    Generar y Guardar Plan
                   </Button>
                  )}
               </div>
@@ -325,12 +359,12 @@ export default function CreatePlanPage() {
           {cargando && (
             <div className="flex justify-center items-center p-6 text-center">
               <Loader2 className="h-8 w-8 animate-spin text-primary mr-3" />
-              <p className="text-muted-foreground">Generando plan de clase...</p>
+              <p className="text-muted-foreground">La IA está diseñando tu plan de clase, por favor espera...</p>
             </div>
           )}
           {error && !cargando && (
             <div className="propuesta-generada-estilizada-error p-6 border border-destructive/50 rounded-lg bg-destructive/10 text-destructive">
-              <h2 className="text-xl font-semibold text-destructive mb-3">Error</h2>
+              <h2 className="text-xl font-semibold text-destructive mb-3">Error al Generar Plan</h2>
               <p>{error}</p>
             </div>
           )}

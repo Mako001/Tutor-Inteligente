@@ -44,11 +44,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Search, Save, BookOpen, AlertTriangle, FileText, Link as LinkIcon, Pencil, Trash2, User } from 'lucide-react';
+import { Loader2, Search, Save, BookOpen, AlertTriangle, FileText, Link as LinkIcon, Pencil, Trash2, User, ClipboardList } from 'lucide-react';
 import { type FindResourcesInput, type FoundResource } from '@/ai/flows/schemas';
 import { findResources } from '@/ai/flows/find-resources';
 import { getUserLibrary, saveResourceToLibrary, type Resource } from '@/lib/firebase/actions/resource-actions';
 import { getSavedProposals, deleteProposal, updateProposal, type SavedProposal } from '@/lib/firebase/actions/proposal-actions';
+import { getSavedPlans, deletePlan, updatePlan, type SavedPlan } from '@/lib/firebase/actions/plan-actions';
 import { curriculumData } from '@/lib/data/curriculum';
 import { useToast } from "@/hooks/use-toast";
 import { format } from 'date-fns';
@@ -92,18 +93,26 @@ export default function LibraryPage() {
   const [savedProposals, setSavedProposals] = useState<SavedProposal[]>([]);
   const [isLoadingProposals, setIsLoadingProposals] = useState(true);
   const [proposalsError, setProposalsError] = useState('');
-
-  // State for actions
   const [proposalToDelete, setProposalToDelete] = useState<SavedProposal | null>(null);
   const [proposalToEdit, setProposalToEdit] = useState<SavedProposal | null>(null);
-  const [editedText, setEditedText] = useState('');
-  const [isUpdating, setIsUpdating] = useState(false);
+  const [editedProposalText, setEditedProposalText] = useState('');
+  const [isUpdatingProposal, setIsUpdatingProposal] = useState(false);
+
+  // State for saved plans
+  const [savedPlans, setSavedPlans] = useState<SavedPlan[]>([]);
+  const [isLoadingPlans, setIsLoadingPlans] = useState(true);
+  const [plansError, setPlansError] = useState('');
+  const [planToDelete, setPlanToDelete] = useState<SavedPlan | null>(null);
+  const [planToEdit, setPlanToEdit] = useState<SavedPlan | null>(null);
+  const [editedPlanText, setEditedPlanText] = useState('');
+  const [isUpdatingPlan, setIsUpdatingPlan] = useState(false);
 
   useEffect(() => {
     const fetchSavedContent = async () => {
       if (!user) {
         setIsLoadingLibrary(false);
         setIsLoadingProposals(false);
+        setIsLoadingPlans(false);
         return;
       };
 
@@ -129,6 +138,17 @@ export default function LibraryPage() {
         setProposalsError(propResult.error || 'No se pudieron cargar las propuestas.');
       }
       setIsLoadingProposals(false);
+
+      // Fetch Saved Plans
+      setIsLoadingPlans(true);
+      setPlansError('');
+      const planResult = await getSavedPlans(user.uid);
+      if (planResult.success && planResult.data) {
+        setSavedPlans(planResult.data);
+      } else {
+        setPlansError(planResult.error || 'No se pudieron cargar los planes de clase.');
+      }
+      setIsLoadingPlans(false);
     };
 
     fetchSavedContent();
@@ -196,8 +216,8 @@ export default function LibraryPage() {
     }
   };
 
-
-  const confirmDelete = async () => {
+  // --- Proposal Actions ---
+  const confirmDeleteProposal = async () => {
     if (!proposalToDelete || !user) return;
     const result = await deleteProposal(proposalToDelete.id);
     if (result.success) {
@@ -210,19 +230,19 @@ export default function LibraryPage() {
     setProposalToDelete(null);
   };
   
-  const handleDeleteClick = (proposal: SavedProposal) => {
+  const handleDeleteProposalClick = (proposal: SavedProposal) => {
     setProposalToDelete(proposal);
   };
 
-  const handleEditClick = (proposal: SavedProposal) => {
+  const handleEditProposalClick = (proposal: SavedProposal) => {
     setProposalToEdit(proposal);
-    setEditedText(proposal.textoGenerado);
+    setEditedProposalText(proposal.textoGenerado);
   };
 
-  const confirmUpdate = async () => {
+  const confirmUpdateProposal = async () => {
     if (!proposalToEdit || !user) return;
-    setIsUpdating(true);
-    const result = await updateProposal(proposalToEdit.id, { textoGenerado: editedText });
+    setIsUpdatingProposal(true);
+    const result = await updateProposal(proposalToEdit.id, { textoGenerado: editedProposalText });
 
     if (result.success) {
       toast({ title: "¡Propuesta actualizada!", description: "Los cambios han sido guardados." });
@@ -232,7 +252,46 @@ export default function LibraryPage() {
     } else {
       toast({ variant: "destructive", title: "Error", description: result.error });
     }
-    setIsUpdating(false);
+    setIsUpdatingProposal(false);
+  };
+
+  // --- Plan Actions ---
+  const confirmDeletePlan = async () => {
+    if (!planToDelete || !user) return;
+    const result = await deletePlan(planToDelete.id);
+    if (result.success) {
+      toast({ title: "¡Plan eliminado!", description: "El plan ha sido eliminado de tu biblioteca." });
+      const planResult = await getSavedPlans(user.uid);
+      if (planResult.success && planResult.data) setSavedPlans(planResult.data);
+    } else {
+      toast({ variant: "destructive", title: "Error", description: result.error });
+    }
+    setPlanToDelete(null);
+  };
+
+  const handleDeletePlanClick = (plan: SavedPlan) => {
+    setPlanToDelete(plan);
+  };
+
+  const handleEditPlanClick = (plan: SavedPlan) => {
+    setPlanToEdit(plan);
+    setEditedPlanText(plan.textoGenerado);
+  };
+
+  const confirmUpdatePlan = async () => {
+    if (!planToEdit || !user) return;
+    setIsUpdatingPlan(true);
+    const result = await updatePlan(planToEdit.id, { textoGenerado: editedPlanText });
+
+    if (result.success) {
+      toast({ title: "¡Plan actualizado!", description: "Los cambios han sido guardados." });
+      const planResult = await getSavedPlans(user.uid);
+      if (planResult.success && planResult.data) setSavedPlans(planResult.data);
+      setPlanToEdit(null);
+    } else {
+      toast({ variant: "destructive", title: "Error", description: result.error });
+    }
+    setIsUpdatingPlan(false);
   };
 
   const SearchAndResults = () => (
@@ -358,19 +417,67 @@ export default function LibraryPage() {
         <Card className="w-full shadow-lg">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2"><BookOpen/> Contenido Guardado</CardTitle>
-                <CardDescription>Aquí están los recursos y propuestas que has guardado en esta sesión.</CardDescription>
+                <CardDescription>Aquí están los recursos, propuestas y planes de clase que has guardado.</CardDescription>
             </CardHeader>
             <CardContent>
-                <Tabs defaultValue="proposals" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="proposals"><FileText className="mr-2"/> Propuestas de Actividad</TabsTrigger>
+                <Tabs defaultValue="plans" className="w-full">
+                    <TabsList className="grid w-full grid-cols-3">
+                        <TabsTrigger value="plans"><ClipboardList className="mr-2"/> Planes de Clase</TabsTrigger>
+                        <TabsTrigger value="proposals"><FileText className="mr-2"/> Actividades</TabsTrigger>
                         <TabsTrigger value="resources"><LinkIcon className="mr-2"/> Recursos (Enlaces)</TabsTrigger>
                     </TabsList>
+                    
+                    <TabsContent value="plans" className="pt-4">
+                        {(!user || isLoadingPlans) && (
+                            <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
+                                <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
+                                <p>Cargando tus planes de clase...</p>
+                            </div>
+                        )}
+                        {user && !isLoadingPlans && plansError && (
+                            <div className="h-40 flex flex-col items-center justify-center text-center">
+                                <AlertTriangle className="h-10 w-10 text-destructive mb-4"/>
+                                <p className="text-destructive">{plansError}</p>
+                            </div>
+                        )}
+                        {user && !isLoadingPlans && !plansError && savedPlans.length > 0 && (
+                             <div className="space-y-3">
+                                {savedPlans.map((plan) => (
+                                    <Card key={plan.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-secondary gap-4">
+                                        <div className="flex-1 overflow-hidden">
+                                            <p className="font-semibold truncate" title={plan.planTitle}>
+                                            {plan.planTitle || 'Plan sin título'}
+                                            </p>
+                                            <p className="text-sm text-muted-foreground">
+                                            {plan.subject} &bull; Grado {plan.grade} &bull; Creado: {plan.timestamp ? format(new Date(plan.timestamp), 'd MMM yyyy', { locale: es }) : 'Fecha desconocida'}
+                                            </p>
+                                        </div>
+                                        <div className="flex items-center gap-2 self-end sm:self-center">
+                                            <Button variant="ghost" size="icon" onClick={() => handleEditPlanClick(plan)}>
+                                                <Pencil className="h-4 w-4" />
+                                                <span className="sr-only">Modificar</span>
+                                            </Button>
+                                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleDeletePlanClick(plan)}>
+                                                <Trash2 className="h-4 w-4" />
+                                                <span className="sr-only">Borrar</span>
+                                            </Button>
+                                        </div>
+                                    </Card>
+                                ))}
+                             </div>
+                        )}
+                         {user && !isLoadingPlans && !plansError && savedPlans.length === 0 && (
+                            <div className="h-40 flex items-center justify-center">
+                                <p className="text-muted-foreground text-center">No has guardado ningún plan de clase todavía.<br/>¡Crea uno y aparecerá aquí!</p>
+                            </div>
+                        )}
+                    </TabsContent>
+
                     <TabsContent value="proposals" className="pt-4">
                         {(!user || isLoadingProposals) && (
                             <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
                                 <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
-                                <p>Cargando tus propuestas...</p>
+                                <p>Cargando tus propuestas de actividad...</p>
                             </div>
                         )}
                         {user && !isLoadingProposals && proposalsError && (
@@ -385,18 +492,18 @@ export default function LibraryPage() {
                                     <Card key={prop.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-secondary gap-4">
                                         <div className="flex-1 overflow-hidden">
                                             <p className="font-semibold truncate" title={prop.centralTheme}>
-                                            {prop.centralTheme || 'Propuesta sin título'}
+                                            {prop.centralTheme || 'Actividad sin título'}
                                             </p>
                                             <p className="text-sm text-muted-foreground">
                                             {prop.subject} &bull; Grado {prop.grade} &bull; Creado: {prop.timestamp ? format(new Date(prop.timestamp), 'd MMM yyyy', { locale: es }) : 'Fecha desconocida'}
                                             </p>
                                         </div>
                                         <div className="flex items-center gap-2 self-end sm:self-center">
-                                            <Button variant="ghost" size="icon" onClick={() => handleEditClick(prop)}>
+                                            <Button variant="ghost" size="icon" onClick={() => handleEditProposalClick(prop)}>
                                                 <Pencil className="h-4 w-4" />
                                                 <span className="sr-only">Modificar</span>
                                             </Button>
-                                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleDeleteClick(prop)}>
+                                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleDeleteProposalClick(prop)}>
                                                 <Trash2 className="h-4 w-4" />
                                                 <span className="sr-only">Borrar</span>
                                             </Button>
@@ -407,10 +514,11 @@ export default function LibraryPage() {
                         )}
                          {user && !isLoadingProposals && !proposalsError && savedProposals.length === 0 && (
                             <div className="h-40 flex items-center justify-center">
-                                <p className="text-muted-foreground text-center">No has guardado ninguna propuesta todavía.<br/>¡Crea una y aparecerá aquí!</p>
+                                <p className="text-muted-foreground text-center">No has guardado ninguna actividad todavía.<br/>¡Crea una y aparecerá aquí!</p>
                             </div>
                         )}
                     </TabsContent>
+                    
                     <TabsContent value="resources" className="pt-4">
                          {(!user || isLoadingLibrary) && (
                             <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
@@ -451,6 +559,7 @@ export default function LibraryPage() {
         </Card>
       </main>
 
+      {/* Dialogs for Proposals */}
       {!!proposalToDelete && (
         <AlertDialog open onOpenChange={(isOpen) => !isOpen && setProposalToDelete(null)}>
             <AlertDialogContent>
@@ -464,7 +573,7 @@ export default function LibraryPage() {
             </AlertDialogHeader>
             <AlertDialogFooter>
                 <AlertDialogCancel onClick={() => setProposalToDelete(null)}>Cancelar</AlertDialogCancel>
-                <AlertDialogAction onClick={confirmDelete} className={cn(buttonVariants({ variant: "destructive" }))}>Sí, eliminar</AlertDialogAction>
+                <AlertDialogAction onClick={confirmDeleteProposal} className={cn(buttonVariants({ variant: "destructive" }))}>Sí, eliminar</AlertDialogAction>
             </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
@@ -481,16 +590,64 @@ export default function LibraryPage() {
             </DialogHeader>
             <div className="py-4">
                 <Textarea
-                value={editedText}
-                onChange={(e) => setEditedText(e.target.value)}
+                value={editedProposalText}
+                onChange={(e) => setEditedProposalText(e.target.value)}
                 rows={18}
                 className="w-full"
                 />
             </div>
             <DialogFooter>
                 <Button variant="outline" onClick={() => setProposalToEdit(null)}>Cancelar</Button>
-                <Button onClick={confirmUpdate} disabled={isUpdating}>
-                    {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <Button onClick={confirmUpdateProposal} disabled={isUpdatingProposal}>
+                    {isUpdatingProposal && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Guardar Cambios
+                </Button>
+            </DialogFooter>
+            </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Dialogs for Plans */}
+      {!!planToDelete && (
+        <AlertDialog open onOpenChange={(isOpen) => !isOpen && setPlanToDelete(null)}>
+            <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>¿Estás realmente seguro?</AlertDialogTitle>
+                <AlertDialogDescription>
+                Esta acción no se puede deshacer. Esto eliminará permanentemente el plan
+                <strong className="mx-1">"{planToDelete.planTitle}"</strong>
+                de la base de datos.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setPlanToDelete(null)}>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={confirmDeletePlan} className={cn(buttonVariants({ variant: "destructive" }))}>Sí, eliminar</AlertDialogAction>
+            </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+      )}
+
+      {!!planToEdit && (
+        <Dialog open onOpenChange={(isOpen) => !isOpen && setPlanToEdit(null)}>
+            <DialogContent className="sm:max-w-2xl">
+            <DialogHeader>
+                <DialogTitle>Modificar Plan: {planToEdit.planTitle}</DialogTitle>
+                <DialogDescription>
+                Realiza los cambios necesarios en el texto generado por la IA.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+                <Textarea
+                value={editedPlanText}
+                onChange={(e) => setEditedPlanText(e.target.value)}
+                rows={18}
+                className="w-full"
+                />
+            </div>
+            <DialogFooter>
+                <Button variant="outline" onClick={() => setPlanToEdit(null)}>Cancelar</Button>
+                <Button onClick={confirmUpdatePlan} disabled={isUpdatingPlan}>
+                    {isUpdatingPlan && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Guardar Cambios
                 </Button>
             </DialogFooter>

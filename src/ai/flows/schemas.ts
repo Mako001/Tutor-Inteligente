@@ -96,3 +96,21 @@ export const SaveResourceInputSchema = FoundResourceSchema.extend({
     grade: z.string(),
 });
 export type SaveResourceInput = z.infer<typeof SaveResourceInputSchema>;
+
+// Schema for generating a full class plan
+export const GenerateClassPlanInputSchema = z.object({
+  planTitle: z.string().describe('The title of the class plan.'),
+  subject: z.string().describe('The subject or area of knowledge.'),
+  grade: z.string().describe('The specific grade(s) for the plan.'),
+  totalDuration: z.string().describe('The total estimated duration of the plan (e.g., 2 weeks, 1 month).'),
+  bigIdea: z.string().describe('The central concept or big idea students should understand.'),
+  competencies: z.string().describe('A string listing the key competencies to be developed.'),
+  specificObjectives: z.string().describe('A list of specific, measurable learning objectives.'),
+  sessionSequence: z.string().describe('A description of the sequence of sessions or activities.'),
+  summativeAssessment: z.string().describe('The method for summative assessment at the end of the plan.'),
+  formativeAssessment: z.string().describe('Methods for formative assessment throughout the plan.'),
+  generalResources: z.string().describe('A list of general resources needed for the entire plan.'),
+  differentiation: z.string().describe('Strategies for adapting the plan for diverse learners.'),
+  interdisciplinarity: z.string().describe('How the plan connects with other subject areas.'),
+});
+export type GenerateClassPlanInput = z.infer<typeof GenerateClassPlanInputSchema>;
