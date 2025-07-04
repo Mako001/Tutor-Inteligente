@@ -99,6 +99,7 @@ export type SaveResourceInput = z.infer<typeof SaveResourceInputSchema>;
 
 // Schema for generating a full class plan
 export const GenerateClassPlanInputSchema = z.object({
+  planDepth: z.string().describe('The desired level of detail for the plan: "Esquema Rápido", "Plan Detallado", "Proyecto Completo".'),
   planTitle: z.string().describe('The title of the class plan.'),
   subject: z.string().describe('The subject or area of knowledge.'),
   grade: z.string().describe('The specific grade(s) for the plan.'),
