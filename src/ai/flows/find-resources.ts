@@ -2,15 +2,16 @@
 'use server';
 /**
  * @fileOverview Finds educational resources using AI.
- * - findResources - Finds resources based on input.
- * - FindResourcesInput - Input schema for finding resources.
- * - FindResourcesOutput - Output schema for found resources.
+ * This file exports a single function:
+ * - findResources: Finds resources based on input.
  */
 import { jsonModel } from '@/ai/ai-instance';
 import {
   type FindResourcesInput,
   type FindResourcesOutput,
+  FindResourcesOutputSchema, // Need the schema for parsing
 } from './schemas';
+import { ZodError } from 'zod';
 
 // This function now uses the @google/generative-ai SDK directly
 export async function findResources(
@@ -35,10 +36,15 @@ export async function findResources(
     const result = await jsonModel.generateContent(prompt);
     const response = await result.response;
     const jsonText = response.text();
-    const parsedJson = JSON.parse(jsonText);
-    return parsedJson as FindResourcesOutput;
+    // Use Zod to parse and validate the AI's output
+    const parsedJson = FindResourcesOutputSchema.parse(JSON.parse(jsonText));
+    return parsedJson;
   } catch (error) {
+    if (error instanceof ZodError) {
+        console.error("Error de validación Zod:", error.errors);
+        throw new Error('La respuesta de la IA no coincide con el formato esperado.');
+    }
     console.error("Error finding resources with Gemini:", error);
-    throw new Error('La IA no generó una salida JSON válida.');
+    throw new Error('La IA no generó una salida JSON válida o ocurrió otro error.');
   }
 }
