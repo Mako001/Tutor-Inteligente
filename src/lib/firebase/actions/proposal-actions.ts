@@ -2,7 +2,7 @@
 'use server';
 
 import { firestore } from '@/lib/firebase/client';
-import { collection, getDocs, query, orderBy, doc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, doc, deleteDoc, updateDoc, Timestamp } from 'firebase/firestore';
 
 // Based on the FormData from /create/page.tsx
 export interface SavedProposal {
@@ -11,7 +11,7 @@ export interface SavedProposal {
   grade: string;
   centralTheme: string;
   textoGenerado: string;
-  timestamp: any; // Firestore timestamp object
+  timestamp: string | null; // Changed from 'any' to 'string | null' for serializability
   [key: string]: any; // Allow other properties
 }
 
@@ -27,10 +27,16 @@ export async function getSavedProposals(): Promise<{ success: boolean, data?: Sa
     const proposalsQuery = query(proposalsCollection, orderBy('timestamp', 'desc'));
     const querySnapshot = await getDocs(proposalsQuery);
     
-    const proposals = querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as SavedProposal[];
+    const proposals = querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      const timestamp = data.timestamp as Timestamp | undefined;
+      return {
+        id: doc.id,
+        ...data,
+        // Convert Firestore Timestamp to a serializable ISO string
+        timestamp: timestamp ? timestamp.toDate().toISOString() : null,
+      }
+    }) as SavedProposal[];
 
     return { success: true, data: proposals };
 

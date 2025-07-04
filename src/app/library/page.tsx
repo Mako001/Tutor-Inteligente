@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, FormEvent } from 'react';
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card";
@@ -53,6 +53,7 @@ import { curriculumData } from '@/lib/data/curriculum';
 import { useToast } from "@/hooks/use-toast";
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 
 
 const subjectOptions = Object.keys(curriculumData);
@@ -66,7 +67,7 @@ const resourceTypeOptions = [
     "Podcast Educativo",
 ];
 
-type SavedResource = SaveResourceInput & { id: string };
+type SavedResource = SaveResourceInput & { id: string; createdAt: string | null };
 
 export default function LibraryPage() {
   const { toast } = useToast();
@@ -365,7 +366,7 @@ export default function LibraryPage() {
                                             {prop.centralTheme || 'Propuesta sin título'}
                                             </p>
                                             <p className="text-sm text-muted-foreground">
-                                            {prop.subject} &bull; Grado {prop.grade} &bull; Creado: {prop.timestamp?.toDate ? format(prop.timestamp.toDate(), 'd MMM yyyy', { locale: es }) : 'Fecha desconocida'}
+                                            {prop.subject} &bull; Grado {prop.grade} &bull; Creado: {prop.timestamp ? format(new Date(prop.timestamp), 'd MMM yyyy', { locale: es }) : 'Fecha desconocida'}
                                             </p>
                                         </div>
                                         <div className="flex items-center gap-2 self-end sm:self-center">
@@ -446,7 +447,7 @@ export default function LibraryPage() {
             </AlertDialogHeader>
             <AlertDialogFooter>
                 <AlertDialogCancel onClick={() => setProposalToDelete(null)}>Cancelar</AlertDialogCancel>
-                <AlertDialogAction onClick={confirmDelete} className={buttonVariants({ variant: "destructive" })}>Sí, eliminar</AlertDialogAction>
+                <AlertDialogAction onClick={confirmDelete} className={cn(buttonVariants({ variant: "destructive" }))}>Sí, eliminar</AlertDialogAction>
             </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>

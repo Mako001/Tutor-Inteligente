@@ -2,8 +2,11 @@
 'use server';
 
 import { firestore } from '@/lib/firebase/client';
-import { collection, addDoc, getDocs, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { collection, addDoc, getDocs, serverTimestamp, query, orderBy, Timestamp } from 'firebase/firestore';
 import { type SaveResourceInput, SaveResourceInputSchema } from '@/ai/flows/schemas';
+
+type SavedResourceWithTimestamp = SaveResourceInput & { id: string; createdAt: any };
+type SavedResourceSerializable = SaveResourceInput & { id: string; createdAt: string | null };
 
 /**
  * Saves a resource to the 'resources' collection in Firestore.
@@ -36,7 +39,7 @@ export async function saveResource(resourceData: SaveResourceInput): Promise<{ s
 /**
  * Fetches all saved resources from the 'resources' collection in Firestore, ordered by creation date.
  */
-export async function getSavedResources(): Promise<{ success: boolean, data?: (SaveResourceInput & { id: string })[], error?: string }> {
+export async function getSavedResources(): Promise<{ success: boolean, data?: SavedResourceSerializable[], error?: string }> {
   if (!firestore) {
     const message = "Firestore no está inicializado. No se pueden obtener los recursos.";
     console.error(message);
@@ -48,10 +51,15 @@ export async function getSavedResources(): Promise<{ success: boolean, data?: (S
     const resourcesQuery = query(resourcesCollection, orderBy('createdAt', 'desc'));
     const querySnapshot = await getDocs(resourcesQuery);
     
-    const resources = querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as (SaveResourceInput & { id: string; createdAt: any })[];
+    const resources = querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      const createdAt = data.createdAt as Timestamp | undefined;
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: createdAt ? createdAt.toDate().toISOString() : null,
+      }
+    }) as SavedResourceSerializable[];
 
     return { success: true, data: resources };
 
