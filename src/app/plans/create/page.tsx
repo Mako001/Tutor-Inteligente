@@ -131,7 +131,7 @@ export default function CreatePlanPage() {
     };
     const result = await savePlan(dataToSave as any);
     if (result.success) {
-        toast({ title: "¡Plan Guardado!", description: "Tu plan de clase se ha guardado en la biblioteca." });
+        toast({ title: "¡Plan Guardado!", description: "Tu plan de clase se ha guardado en tu biblioteca." });
     } else {
         setError(`Error al guardar el plan: ${result.error}`);
     }

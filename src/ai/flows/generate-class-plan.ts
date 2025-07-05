@@ -12,6 +12,7 @@ import { z } from 'zod';
 export async function generateClassPlan(
   input: z.infer<typeof GenerateClassPlanInputSchema>
 ): Promise<string> {
+  // The input is already validated by the Zod schema passed from the client-side logic.
   const { 
     planDepth, 
     planTitle,
@@ -19,7 +20,7 @@ export async function generateClassPlan(
     grade,
     totalDuration,
     bigIdea,
-    competencies,
+    competencies, // This is already a string, joined in the client component.
     specificObjectives,
     sessionSequence,
     summativeAssessment,
@@ -28,9 +29,6 @@ export async function generateClassPlan(
     differentiation,
     interdisciplinarity
   } = input;
-
-  // The form might pass an array, so we ensure it's a string.
-  const competenciesString = Array.isArray(competencies) ? competencies.join(', ') : competencies;
 
   const prompt = `
       Actúa como un pedagogo experto y diseñador curricular para el sistema educativo de Colombia, con pleno conocimiento de los lineamientos del Ministerio de Educación Nacional (MEN).
@@ -47,7 +45,7 @@ export async function generateClassPlan(
       - Grado(s): ${grade}
       - Duración Total Estimada: ${totalDuration}
       - Gran Objetivo de Aprendizaje (Big Idea): ${bigIdea}
-      ${competenciesString ? `- Competencias a Desarrollar (basadas en MEN): ${competenciesString}` : ''}
+      ${competencies ? `- Competencias a Desarrollar (basadas en MEN): ${competencies}` : ''}
       ${specificObjectives ? `- Objetivos de Aprendizaje Específicos: ${specificObjectives}` : ''}
       ${sessionSequence ? `- Secuencia de Sesiones Propuesta: ${sessionSequence}` : ''}
       ${summativeAssessment ? `- Evaluación Sumativa: ${summativeAssessment}` : ''}
