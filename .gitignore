@@ -9,6 +9,9 @@
 /.next/
 /out/
 
+# Ignorar archivos de credenciales y secretos
+service-account-key.json
+
 # Log files
 npm-debug.log*
 yarn-debug.log*
