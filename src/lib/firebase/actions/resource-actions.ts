@@ -2,18 +2,8 @@
 'use server';
 
 import { firestore } from '@/lib/firebase/client';
-import { collection, addDoc, getDocs, query, where, serverTimestamp, Timestamp } from 'firebase/firestore';
-
-// Define la estructura de un recurso para claridad
-export interface Resource {
-  id: string;
-  userId: string;
-  title: string;
-  url: string;
-  description: string;
-  tags: string[];
-  createdAt: Timestamp;
-}
+import { collection, addDoc, getDocs, query, where, serverTimestamp } from 'firebase/firestore';
+import type { Resource } from './resource-schemas';
 
 /**
  * Guarda un nuevo recurso en la biblioteca de un usuario específico.

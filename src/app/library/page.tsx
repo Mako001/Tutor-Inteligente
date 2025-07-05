@@ -47,11 +47,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Search, Save, BookOpen, AlertTriangle, FileText, Link as LinkIcon, Pencil, Trash2, User, ClipboardList } from 'lucide-react';
 import { type FindResourcesInput, type FoundResource } from '@/ai/flows/schemas';
 import { findResources } from '@/ai/flows/find-resources';
-import { getUserLibrary, saveResourceToLibrary, type Resource } from '@/lib/firebase/actions/resource-actions';
+import { getUserLibrary, saveResourceToLibrary } from '@/lib/firebase/actions/resource-actions';
 import { getSavedActivities, deleteActivity, updateActivity } from '@/lib/firebase/actions/activity-actions';
 import { getSavedPlans, deletePlan, updatePlan } from '@/lib/firebase/actions/plan-actions';
 import type { SavedActivity } from '@/lib/firebase/actions/activity-schemas';
 import type { SavedPlan } from '@/lib/firebase/actions/plan-schemas';
+import type { Resource } from '@/lib/firebase/actions/resource-schemas';
 
 import { curriculumData } from '@/lib/data/curriculum';
 import { useToast } from "@/hooks/use-toast";
