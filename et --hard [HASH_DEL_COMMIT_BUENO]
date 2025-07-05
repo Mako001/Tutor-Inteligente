@@ -1,0 +1,236 @@
+[33mcommit 075f7f3b3a33b95e0ac3ad2cc37ed798a5296f51[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m)[m
+Author: Marlon Cobos <marloncobos001@gmail.com>
+Date:   Sat Jul 5 19:19:30 2025 +0000
+
+    git
+
+[33mcommit 564570f9f78b0c875d62d18a098a7d453182e811[m
+Author: Marlon Cobos <marloncobos001@gmail.com>
+Date:   Sat Jul 5 19:18:45 2025 +0000
+
+    chore: Remove service account key from tracking
+
+[33mcommit 58bea2569a395340d406b887872b8df94f3029ce[m
+Author: Marlon Cobos <marloncobos001@gmail.com>
+Date:   Sat Jul 5 18:48:19 2025 +0000
+
+    Diagnóstico Final y Definitivo
+    El Problema: El archivo src/lib/firebase/
+
+[33mcommit aa6044ee78270c504528e7881b256e5ef9baab72[m
+Author: Marlon Cobos <marloncobos001@gmail.com>
+Date:   Sat Jul 5 18:41:05 2025 +0000
+
+    Paso 1: Crear un Nuevo Archivo para los Schemas de Actividad
+    En tu explo
+
+[33mcommit 561f8c57c33eed82ca9b637e6427e8716f025691[m
+Author: Marlon Cobos <marloncobos001@gmail.com>
+Date:   Fri Jul 4 19:03:20 2025 +0000
+
+    Solución: Corregir el Nuevo Archivo de "Actividades"
+    Vamos a asegurarnos
+
+[33mcommit 85a9736ca2cbe056677ec0519d6a5c54545e9587[m
+Author: Marlon Cobos <marloncobos001@gmail.com>
+Date:   Fri Jul 4 18:32:56 2025 +0000
+
+    al intentar hacer una actividad me da este error A "use server" file can
+
+[33mcommit 0389d5455a0d96ae0d9ee167c64f6eb078c52923[m
+Author: Marlon Cobos <marloncobos001@gmail.com>
+Date:   Fri Jul 4 18:24:13 2025 +0000
+
+    bien, es funcional la parte de la pagina de crear actividad, ahora me gu
+
+[33mcommit 671485678977ac8decbdb18cfa6f80fc58fcc695[m
+Author: Marlon Cobos <marloncobos001@gmail.com>
+Date:   Fri Jul 4 18:18:11 2025 +0000
+
+    Error with Permissions-Policy header: Unrecognized feature: 'ch-ua-form-
+
+[33mcommit 602e9a56e680f5dfeb2b25f139344bed4e571cd4[m
+Author: Marlon Cobos <marloncobos001@gmail.com>
+Date:   Fri Jul 4 18:12:19 2025 +0000
+
+    vuelve a utilizar (@google/generative-ai y quita los  paquetes de Genkit
+
+[33mcommit 17c708abb8dd0f44e20a486a554cf9575f538a00[m
+Author: Marlon Cobos <marloncobos001@gmail.com>
+Date:   Fri Jul 4 18:07:40 2025 +0000
+
+    la pagina quedo en blanco
+
+[33mcommit 4ef59b79b3ddff16cc69cfc522d4a361efd535d5[m
+Author: Marlon Cobos <marloncobos001@gmail.com>
+Date:   Fri Jul 4 18:03:50 2025 +0000
+
+    I see this error with the app, reported by NextJS, please fix it. The er
+
+[33mcommit 34eadc472143b19add754d677bce446c39441433[m
+Author: Marlon Cobos <marloncobos001@gmail.com>
+Date:   Fri Jul 4 17:54:02 2025 +0000
+
+    podrías reestructurar de nuevo la creación de plan de clases para no sol
+
+[33mcommit eb6f6c48bdec3d041cafb85d8cb8132f238eb7fa[m
+Author: Marlon Cobos <marloncobos001@gmail.com>
+Date:   Fri Jul 4 17:47:40 2025 +0000
+
+    veo que a la hora de crear el plan de clase no esta totalmente conectado
+
+[33mcommit 9ddd2756b718893bb98a215449b66b3cab7a792f[m
+Author: Marlon Cobos <marloncobos001@gmail.com>
+Date:   Fri Jul 4 17:32:15 2025 +0000
+
+    I see this error with the app, reported by NextJS, please fix it. The er
+
+[33mcommit 1b4c9d8bbf79d9083a25386b722a7be397e78ed8[m
+Author: Marlon Cobos <marloncobos001@gmail.com>
+Date:   Fri Jul 4 16:29:14 2025 +0000
+
+    La Solución: Corregir el Archivo Definitivo
+    Pido disculpas de nuevo. El
+
+[33mcommit 6ee71e7fb4c96796e035e632ee53c0ccb0c01c3f[m
+Author: Marlon Cobos <marloncobos001@gmail.com>
+Date:   Fri Jul 4 15:18:44 2025 +0000
+
+    sigue dando el mismo error, me gustaría que me dices una descripción det
+
+[33mcommit bce332ade830fc482e0820525df445dfa8164153[m
+Author: Marlon Cobos <marloncobos001@gmail.com>
+Date:   Fri Jul 4 15:16:58 2025 +0000
+
+    este es el error mas espesifico Error with Permissions-Policy header: Un
+
+[33mcommit e4a6a57bba63f3ada48964face2e46705c4eb5c7[m
+Author: Marlon Cobos <marloncobos001@gmail.com>
+Date:   Fri Jul 4 15:14:33 2025 +0000
+
+    ahora salo este error
+
+[33mcommit 09fe9ebacc5265f2761db4b6d6639661fb643f7c[m
+Author: Marlon Cobos <marloncobos001@gmail.com>
+Date:   Fri Jul 4 15:12:02 2025 +0000
+
+    sigue si mostrar el contenido guardado de las propuestas de actividad, a
+
+[33mcommit b505430aa706fef600e07a8e0ecc9f3243476588[m
+Author: Marlon Cobos <marloncobos001@gmail.com>
+Date:   Fri Jul 4 15:07:40 2025 +0000
+
+    sigue el mismo problema y la propuestas de actividades tampoco cargan
+
+[33mcommit d1de7778e4e9a20303cca52215db33f0a7842671[m
+Author: Marlon Cobos <marloncobos001@gmail.com>
+Date:   Fri Jul 4 15:02:35 2025 +0000
+
+    I see this error with the app, reported by NextJS, please fix it. The er
+
+[33mcommit 5b54ebfebfbe325c8a0665704e074be3824ae068[m
+Author: Marlon Cobos <marloncobos001@gmail.com>
+Date:   Fri Jul 4 14:55:21 2025 +0000
+
+    I see this error with the app, reported by NextJS, please fix it. The er
+
+[33mcommit a0cb01a6b5dbde540b4614117b55753f0b49d184[m
+Author: Marlon Cobos <marloncobos001@gmail.com>
+Date:   Fri Jul 4 14:48:19 2025 +0000
+
+    no hay forma de que no se necesite eso y utilizar los datos ip de el dis
+
+[33mcommit 0eeecd82b3f7183cf2195a689492eb2fb6525200[m
+Author: Marlon Cobos <marloncobos001@gmail.com>
+Date:   Fri Jul 4 14:38:58 2025 +0000
+
+    I see this error with the app, reported by NextJS, please fix it. The er
+
+[33mcommit 03d628beeac2b8fb3396263c32891e96de692742[m
+Author: Marlon Cobos <marloncobos001@gmail.com>
+Date:   Fri Jul 4 14:32:58 2025 +0000
+
+    bien pero ahora que la propuestas de actividad se muestre mas pequeñas c
+
+[33mcommit 4b577da26d6d02bb75634636b0a3cc2d2d8a5bc6[m
+Author: Marlon Cobos <marloncobos001@gmail.com>
+Date:   Fri Jul 4 14:27:51 2025 +0000
+
+    bien pero me gustaría que la parte de Mi Biblioteca Guardada sea la part
+
+[33mcommit e29ee7dd650fbd1ff2dc2acb52a79fc8d2ac48fd[m
+Author: Marlon Cobos <marloncobos001@gmail.com>
+Date:   Fri Jul 4 14:21:57 2025 +0000
+
+    bien ahora me gustaría que implementara la biblioteca como se planeo, me
+
+[33mcommit b52712fe5fb804e04969717c799069c9f2bda180[m
+Author: Marlon Cobos <marloncobos001@gmail.com>
+Date:   Fri Jul 4 13:53:34 2025 +0000
+
+    Bien, ahora me gVisión General de la Nueva Arquitectura de Contenidos
+    Pe
+
+[33mcommit 968d7545ae2358cb8869b28f24bf069560643f2c[m
+Author: Marlon Cobos <marloncobos001@gmail.com>
+Date:   Fri Jul 4 00:55:32 2025 +0000
+
+    Paso 2: Diseñar el Asistente para "Plan de Clase Completo"
+    Objetivo: Pla
+
+[33mcommit 790447c3dbc1e7472448144be46f2e132522f680[m
+Author: Marlon Cobos <marloncobos001@gmail.com>
+Date:   Fri Jul 4 00:36:18 2025 +0000
+
+    "Usando Next.js 14, TypeScript y componentes de ShadCN/ui, crea el conte
+
+[33mcommit c153af06978273b8a1417386cad19ffe08a7d464[m
+Author: Marlon Cobos <marloncobos001@gmail.com>
+Date:   Thu Jul 3 23:14:53 2025 +0000
+
+    Abre el archivo src/ai/flows/generate-activity-proposal.ts.
+    Reemplaza TO
+
+[33mcommit 933a3e9c190c1830dd53c9b5a133402b6c48d1e4[m
+Author: Marlon Cobos <marloncobos001@gmail.com>
+Date:   Thu Jul 3 22:39:33 2025 +0000
+
+    Paso 1: Modificar el Script test-gemini.js para usar Vertex AI
+    Vamos a c
+
+[33mcommit ae505429f7c9c65c6086d05927c1ab03bf207bf9[m
+Author: Marlon Cobos <marloncobos001@gmail.com>
+Date:   Thu Jul 3 22:31:51 2025 +0000
+
+    Paso 1: Crear el Archivo de Prueba
+    En la raíz de tu proyecto (al mismo n
+
+[33mcommit 784ce34a58175e3f8c4a2553d20b4962cd775036[m
+Author: Marlon Cobos <marloncobos001@gmail.com>
+Date:   Thu Jul 3 22:11:06 2025 +0000
+
+    Paso 1: Corregir la Importación en schemas.ts
+    Abre el archivo src/ai/flo
+
+[33mcommit 4d72c26e21142f5b54847033a70c4c788b223599[m
+Author: Marlon Cobos <marloncobos001@gmail.com>
+Date:   Thu Jul 3 21:48:11 2025 +0000
+
+    I see this error with the app, reported by NextJS, please fix it. The er
+
+[33mcommit 4690f6bda08ec76bee7dc127f2175ee4b7d8b6b2[m
+Author: Marlon Cobos <marloncobos001@gmail.com>
+Date:   Thu Jul 3 21:41:36 2025 +0000
+
+    Paso 3: Modificar la Lógica del Backend (El cambio clave)
+    Elimina el arc
+
+[33mcommit 35b04658d005051f5939a26b2994145abbf6874c[m
+Author: Marlon Cobos <marloncobos001@gmail.com>
+Date:   Thu Jul 3 21:31:42 2025 +0000
+
+    Paso 5: Limpiar y Confirmar el Código
+    Asegúrate de que tu src/ai/ai-inst
+
+[33mcommit 34fdca3925d19341a9da0bfa41eb61e6ec8d1b94[m
+Author: Marlon Cobos <marlonc
