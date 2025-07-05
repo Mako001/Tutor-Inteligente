@@ -1,6 +1,7 @@
 // src/lib/types.ts
-// This file is neutral, no 'use server', can be imported by anyone.
+// Este archivo es neutral, no tiene 'use server', puede ser importado por cualquiera.
 
+// Para el formulario de CREAR ACTIVIDAD
 export interface GenerateSingleActivityInput {
   activityDepth: string;
   subject: string;
@@ -12,6 +13,7 @@ export interface GenerateSingleActivityInput {
   availableResources?: string;
 }
 
+// Para el formulario de CREAR PLAN
 export interface PlanFormData {
     planDepth: string;
     planTitle: string;
@@ -19,7 +21,7 @@ export interface PlanFormData {
     grade: string;
     totalDuration: string;
     bigIdea: string;
-    competencies: string[]; // Form uses array
+    competencies: string[]; // El formulario usa un array
     specificObjectives: string;
     sessionSequence: string;
     summativeAssessment: string;
@@ -29,6 +31,7 @@ export interface PlanFormData {
     interdisciplinarity: string;
 }
 
+// Para la ACCIÓN DE IA de CREAR PLAN
 export interface GenerateClassPlanInput {
     planDepth: string;
     planTitle: string;
@@ -36,7 +39,7 @@ export interface GenerateClassPlanInput {
     grade: string;
     totalDuration: string;
     bigIdea: string;
-    competencies: string; // Flow expects string
+    competencies: string; // La acción espera un string
     specificObjectives: string;
     sessionSequence: string;
     summativeAssessment: string;
@@ -46,6 +49,7 @@ export interface GenerateClassPlanInput {
     interdisciplinarity: string;
 }
 
+// Para la búsqueda de recursos en la biblioteca
 export interface FindResourcesInput {
   topic: string;
   resourceType: string;
@@ -53,12 +57,14 @@ export interface FindResourcesInput {
   grade: string;
 }
 
+// Para un recurso encontrado por la IA
 export interface FoundResource {
     title: string;
     url: string;
     description: string;
 }
 
+// Para la salida de la acción de buscar recursos
 export interface FindResourcesOutput {
     resources: FoundResource[];
 }
