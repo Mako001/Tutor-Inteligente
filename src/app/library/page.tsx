@@ -45,7 +45,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Search, Save, BookOpen, AlertTriangle, FileText, Link as LinkIcon, Pencil, Trash2, User, ClipboardList } from 'lucide-react';
-import { type FindResourcesInput, type FoundResource } from '@/ai/flows/schemas';
+import { type FindResourcesInput, type FoundResource } from '@/lib/types';
 import { findResources } from '@/ai/flows/find-resources';
 import { getUserLibrary, saveResourceToLibrary } from '@/lib/firebase/actions/resource-actions';
 import { getSavedActivities, deleteActivity, updateActivity } from '@/lib/firebase/actions/activity-actions';

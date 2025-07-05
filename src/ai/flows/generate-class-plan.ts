@@ -5,11 +5,12 @@
  * - generateClassPlan - A function that handles the class plan generation process.
  */
 import { model } from '@/ai/ai-instance';
-import { type GenerateClassPlanInput } from './schemas';
+import { GenerateClassPlanInputSchema } from './schemas';
+import { z } from 'zod';
 
 // This function now uses the @google/generative-ai SDK directly
 export async function generateClassPlan(
-  input: GenerateClassPlanInput
+  input: z.infer<typeof GenerateClassPlanInputSchema>
 ): Promise<string> {
   const { 
     planDepth, 

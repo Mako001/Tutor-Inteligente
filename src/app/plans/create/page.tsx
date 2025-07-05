@@ -26,31 +26,13 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import { generateClassPlan } from '@/ai/flows/generate-class-plan';
-import { type GenerateClassPlanInput } from '@/ai/flows/schemas';
+import { type PlanFormData, type GenerateClassPlanInput } from '@/lib/types';
 import { savePlan } from '@/lib/firebase/actions/plan-actions';
 import { AuthContext } from '@/lib/firebase/auth-provider';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Loader2, BookCopy, FileText, Bot } from 'lucide-react';
 import { curriculumData, CurriculumData } from '@/lib/data/curriculum';
-
-// Interfaz para los datos del formulario del Plan de Clase
-interface PlanFormData {
-  planDepth: string; // "Esquema Rápido", "Plan Detallado", "Proyecto Completo"
-  planTitle: string;
-  subject: string;
-  grade: string;
-  totalDuration: string;
-  bigIdea: string;
-  competencies: string[];
-  specificObjectives: string;
-  sessionSequence: string;
-  summativeAssessment: string;
-  formativeAssessment: string;
-  generalResources: string;
-  differentiation: string;
-  interdisciplinarity: string;
-}
 
 // Opciones
 const subjectOptions = Object.keys(curriculumData);

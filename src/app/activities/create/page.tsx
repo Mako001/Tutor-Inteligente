@@ -21,7 +21,7 @@ import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import { Loader2, Sparkles, Lightbulb, FileText, Workflow, ArrowLeft, Save } from 'lucide-react';
 import { generateActivity } from '@/ai/flows/generate-activity';
-import { type GenerateSingleActivityInput } from '@/ai/flows/schemas';
+import { type GenerateSingleActivityInput } from '@/lib/types';
 import { saveActivity } from '@/lib/firebase/actions/activity-actions';
 import { AuthContext } from '@/lib/firebase/auth-provider';
 import { useToast } from '@/hooks/use-toast';

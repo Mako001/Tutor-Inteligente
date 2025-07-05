@@ -7,16 +7,15 @@
  */
 import { jsonModel } from '@/ai/ai-instance';
 import {
-  type FindResourcesInput,
-  type FindResourcesOutput,
-  FindResourcesOutputSchema, // Need the schema for parsing
+  FindResourcesInputSchema,
+  FindResourcesOutputSchema,
 } from './schemas';
-import { ZodError } from 'zod';
+import { z, ZodError } from 'zod';
 
 // This function now uses the @google/generative-ai SDK directly
 export async function findResources(
-  input: FindResourcesInput
-): Promise<FindResourcesOutput> {
+  input: z.infer<typeof FindResourcesInputSchema>
+): Promise<z.infer<typeof FindResourcesOutputSchema>> {
   const { subject, resourceType, topic, grade } = input;
   
   const prompt = `

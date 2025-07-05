@@ -6,11 +6,12 @@
  * - generateActivity - A function that handles the activity generation process.
  */
 import { model } from '@/ai/ai-instance';
-import { type GenerateSingleActivityInput } from './schemas';
+import { GenerateSingleActivityInputSchema } from './schemas';
+import { z } from 'zod';
 
 // The main function, now using @google/generative-ai and supporting different depths
 export async function generateActivity(
-  input: GenerateSingleActivityInput
+  input: z.infer<typeof GenerateSingleActivityInputSchema>
 ): Promise<string> {
   const { 
     activityDepth,
