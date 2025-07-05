@@ -3,18 +3,7 @@
 
 import { firestore } from '@/lib/firebase/client';
 import { collection, getDocs, query, orderBy, doc, deleteDoc, updateDoc, Timestamp, where, addDoc, serverTimestamp } from 'firebase/firestore';
-
-// Based on the FormData from /activities/create/page.tsx
-export interface SavedActivity {
-  id: string;
-  userId: string;
-  subject: string;
-  grade: string;
-  learningObjective: string; // Used as the primary identifier/title
-  textoGenerado: string;
-  timestamp: string | null;
-  [key: string]: any;
-}
+import type { SavedActivity } from './activity-schemas';
 
 export async function saveActivity(activityData: Omit<SavedActivity, 'id' | 'timestamp'>): Promise<{ success: boolean, id?: string, error?: string }> {
   if (!firestore) {

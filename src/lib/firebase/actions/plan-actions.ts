@@ -3,18 +3,7 @@
 
 import { firestore } from '@/lib/firebase/client';
 import { collection, getDocs, query, orderBy, doc, deleteDoc, updateDoc, Timestamp, where, addDoc, serverTimestamp } from 'firebase/firestore';
-
-// Based on PlanFormData from plans/create/page.tsx
-export interface SavedPlan {
-  id: string;
-  userId: string;
-  planTitle: string;
-  subject: string;
-  grade: string;
-  textoGenerado: string;
-  timestamp: string | null;
-  [key: string]: any;
-}
+import type { SavedPlan } from './plan-schemas';
 
 export async function savePlan(planData: Omit<SavedPlan, 'id' | 'timestamp'>): Promise<{ success: boolean, id?: string, error?: string }> {
   if (!firestore) {
