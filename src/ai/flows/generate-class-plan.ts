@@ -10,7 +10,7 @@ import { z } from 'zod';
 
 export async function generateClassPlan(
   input: z.infer<typeof GenerateClassPlanInputSchema>
-): Promise<string> {
+): Promise<{ success: true; data: string } | { success: false; error: string }> {
   const { 
     planDepth, 
     planTitle,
@@ -96,9 +96,9 @@ export async function generateClassPlan(
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = response.text();
-    return text;
+    return { success: true, data: text };
   } catch (error) {
     console.error("Error generating class plan with Gemini:", error);
-    throw new Error("La IA no pudo generar el plan de clase.");
+    return { success: false, error: "La IA no pudo generar el plan de clase. Por favor, revisa tu conexión o inténtalo de nuevo." };
   }
 }

@@ -134,6 +134,7 @@ export default function CreatePlanPage() {
         toast({ title: "¡Plan Guardado!", description: "Tu plan de clase se ha guardado en tu biblioteca." });
     } else {
         setError(`Error al guardar el plan: ${result.error}`);
+        toast({ variant: "destructive", title: "Error al guardar", description: result.error || 'Ocurrió un error desconocido' });
     }
   };
 
@@ -144,7 +145,9 @@ export default function CreatePlanPage() {
     setError('');
 
     if (!formData.planTitle || !formData.bigIdea) {
-      setError("Por favor, completa al menos el Título y el Gran Objetivo de Aprendizaje.");
+      const errorMessage = "Por favor, completa al menos el Título y el Gran Objetivo de Aprendizaje.";
+      setError(errorMessage);
+      toast({ variant: "destructive", title: "Campos incompletos", description: errorMessage });
       setCargando(false);
       return;
     }
@@ -155,11 +158,22 @@ export default function CreatePlanPage() {
     };
 
     try {
-      const responseText = await generateClassPlan(flowInput);
-      setResultadoTexto(responseText);
-      await guardarPlanEnFirebase(responseText, formData);
+      const response = await generateClassPlan(flowInput);
+      if (response.success) {
+        setResultadoTexto(response.data);
+        await guardarPlanEnFirebase(response.data, formData);
+      } else {
+        setError(response.error);
+        toast({
+          variant: "destructive",
+          title: "Error al generar el plan",
+          description: response.error,
+        });
+      }
     } catch (apiError: any) {
-      setError(`Hubo un error al generar el plan: ${apiError.message}`);
+      const message = `Hubo un error al generar el plan: ${apiError.message}`;
+      setError(message);
+      toast({ variant: "destructive", title: "Error inesperado", description: message });
     } finally {
       setCargando(false);
     }
@@ -318,7 +332,7 @@ export default function CreatePlanPage() {
             <div className="flex justify-end sticky bottom-4 z-10">
                 <Button type="submit" size="lg" className="shadow-lg" disabled={cargando || !user}>
                     {cargando ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Bot className="mr-2 h-5 w-5"/>}
-                    Generar Plan con IA y Guardar
+                    {cargando ? 'Generando...' : 'Generar Plan y Guardar'}
                 </Button>
             </div>
         </form>
@@ -343,7 +357,7 @@ export default function CreatePlanPage() {
                     <CardTitle>Plan Generado</CardTitle>
                     <CardDescription>Tu plan ha sido generado y guardado en tu biblioteca.</CardDescription>
                 </CardHeader>
-                <CardContent className="propuesta-generada-estilizada bg-secondary/20 p-4 rounded-lg">
+                <CardContent className="markdown-content-in-card bg-secondary/20 p-4 rounded-lg">
                     <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
                         {resultadoTexto}
                     </ReactMarkdown>

@@ -246,17 +246,22 @@ export default function LibraryPage() {
   const confirmUpdateActivity = async () => {
     if (!activityToEdit || !user) return;
     setIsUpdatingActivity(true);
-    const result = await updateActivity(activityToEdit.id, { textoGenerado: editedActivityText });
+    try {
+      const result = await updateActivity(activityToEdit.id, { textoGenerado: editedActivityText });
 
-    if (result.success) {
-      toast({ title: "¡Actividad actualizada!", description: "Los cambios han sido guardados." });
-      const actResult = await getSavedActivities(user.uid);
-      if (actResult.success && actResult.data) setSavedActivities(actResult.data);
-      setActivityToEdit(null);
-    } else {
-      toast({ variant: "destructive", title: "Error", description: result.error });
+      if (result.success) {
+        toast({ title: "¡Actividad actualizada!", description: "Los cambios han sido guardados." });
+        const actResult = await getSavedActivities(user.uid);
+        if (actResult.success && actResult.data) setSavedActivities(actResult.data);
+        setActivityToEdit(null);
+      } else {
+        toast({ variant: "destructive", title: "Error", description: result.error });
+      }
+    } catch (e: any) {
+       toast({ variant: "destructive", title: "Error inesperado", description: "No se pudo actualizar la actividad." });
+    } finally {
+        setIsUpdatingActivity(false);
     }
-    setIsUpdatingActivity(false);
   };
 
   // --- Plan Actions ---
@@ -285,17 +290,22 @@ export default function LibraryPage() {
   const confirmUpdatePlan = async () => {
     if (!planToEdit || !user) return;
     setIsUpdatingPlan(true);
-    const result = await updatePlan(planToEdit.id, { textoGenerado: editedPlanText });
+    try {
+      const result = await updatePlan(planToEdit.id, { textoGenerado: editedPlanText });
 
-    if (result.success) {
-      toast({ title: "¡Plan actualizado!", description: "Los cambios han sido guardados." });
-      const planResult = await getSavedPlans(user.uid);
-      if (planResult.success && planResult.data) setSavedPlans(planResult.data);
-      setPlanToEdit(null);
-    } else {
-      toast({ variant: "destructive", title: "Error", description: result.error });
+      if (result.success) {
+        toast({ title: "¡Plan actualizado!", description: "Los cambios han sido guardados." });
+        const planResult = await getSavedPlans(user.uid);
+        if (planResult.success && planResult.data) setSavedPlans(planResult.data);
+        setPlanToEdit(null);
+      } else {
+        toast({ variant: "destructive", title: "Error", description: result.error });
+      }
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Error inesperado", description: "No se pudo actualizar el plan." });
+    } finally {
+      setIsUpdatingPlan(false);
     }
-    setIsUpdatingPlan(false);
   };
 
   const SearchAndResults = () => (
@@ -336,7 +346,7 @@ export default function LibraryPage() {
                     </div>
                 </CardContent>
                 <CardFooter>
-                    <Button type="submit" className="w-full" disabled={isSearching}>
+                    <Button type="submit" className="w-full" disabled={isSearching || !user}>
                         {isSearching ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
                         Buscar Recursos
                     </Button>
