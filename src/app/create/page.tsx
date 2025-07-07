@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription }
 import { Loader2, Sparkles, Download, Save } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { generateProposal } from '@/ai/flows/generate-proposal';
+import { generateProposal, refineProposal } from '@/ai/flows/generate-proposal';
 import { type ProposalFormData } from '@/lib/types';
 import { GenerateProposalInputSchema } from '@/ai/flows/schemas';
 import { useToast } from "@/hooks/use-toast";
@@ -53,6 +53,8 @@ export default function CreateProposalPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [generation, setGeneration] = useState('');
   const [error, setError] = useState('');
+  const [refinementInstruction, setRefinementInstruction] = useState('');
+  const [isRefining, setIsRefining] = useState(false);
 
   // Load data from cookies on component mount
   useEffect(() => {
@@ -142,7 +144,6 @@ export default function CreateProposalPage() {
     setError('');
     setGeneration('');
     
-    // Zod validation on the client
     const validation = GenerateProposalInputSchema.safeParse(formData);
     if (!validation.success) {
       const firstError = validation.error.errors[0];
@@ -171,6 +172,45 @@ export default function CreateProposalPage() {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleRefineProposal = async () => {
+    if (!refinementInstruction.trim() || !generation) {
+        toast({
+            variant: "destructive",
+            title: "Faltan datos",
+            description: "Por favor, escribe una instrucción para refinar la propuesta existente.",
+        });
+        return;
+    }
+
+    setIsRefining(true);
+    const previousGeneration = generation; 
+    setGeneration('');
+    setError('');
+
+    try {
+        const { output } = await refineProposal({
+            originalProposal: previousGeneration,
+            refinementInstruction,
+        });
+
+        for await (const delta of readStreamableValue(output)) {
+            setGeneration(currentGeneration => `${currentGeneration}${delta}`);
+        }
+        setRefinementInstruction('');
+    } catch (apiError: any) {
+        const message = apiError.message || "Ocurrió un error desconocido al refinar la propuesta.";
+        setError(message);
+        setGeneration(previousGeneration);
+        toast({
+            variant: "destructive",
+            title: "Error al Refinar",
+            description: message,
+        });
+    } finally {
+        setIsRefining(false);
     }
   };
 
@@ -214,7 +254,7 @@ export default function CreateProposalPage() {
                 </div>
             </CardContent>
             <CardFooter className="flex flex-col items-center gap-4">
-                 <Button type="submit" className="w-full md:w-1/2" disabled={isLoading}>
+                 <Button type="submit" className="w-full md:w-1/2" disabled={isLoading || isRefining}>
                     {isLoading ? (
                         <>
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -231,19 +271,19 @@ export default function CreateProposalPage() {
         </form>
        </Card>
 
-        {(generation || isLoading || error) && (
+        {(generation || isLoading || isRefining || error) && (
             <Card className="w-full max-w-4xl mx-auto mt-8 shadow-lg">
                 <CardHeader>
                     <CardTitle>Propuesta de Actividad Generada</CardTitle>
                 </CardHeader>
                 <CardContent className="min-h-[200px]">
-                    {isLoading && !generation && (
+                    {(isLoading || isRefining) && !generation && (
                         <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
                             <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
-                            <p>Creando una propuesta increíble...</p>
+                            <p>{isLoading ? 'Creando una propuesta increíble...' : 'Refinando la propuesta...'}</p>
                         </div>
                     )}
-                    {error && !isLoading && (
+                    {error && !isLoading && !isRefining && (
                         <div className="h-full flex items-center justify-center p-4 bg-destructive/10 rounded-md">
                             <p className="text-destructive text-center">{error}</p>
                         </div>
@@ -256,7 +296,7 @@ export default function CreateProposalPage() {
                         </div>
                     )}
                 </CardContent>
-                {generation && !isLoading && (
+                {generation && !isLoading && !isRefining && (
                     <CardFooter className="flex justify-end gap-2">
                          <Button onClick={handleSaveProposal} disabled={isSaving || !user}>
                            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
@@ -271,6 +311,35 @@ export default function CreateProposalPage() {
                         </Button>
                     </CardFooter>
                 )}
+            </Card>
+        )}
+
+        {generation && !isLoading && (
+            <Card className="w-full max-w-4xl mx-auto mt-4 shadow-lg">
+                <CardHeader>
+                    <CardTitle>Refinar Propuesta</CardTitle>
+                    <CardDescription>
+                        Dale a la IA una instrucción para que mejore la propuesta.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Textarea
+                        value={refinementInstruction}
+                        onChange={(e) => setRefinementInstruction(e.target.value)}
+                        placeholder="Ej: Hazla más corta, añade una actividad para romper el hielo, enfócala para estudiantes de 11º grado."
+                        rows={3}
+                        disabled={isRefining}
+                    />
+                </CardContent>
+                <CardFooter>
+                    <Button onClick={handleRefineProposal} disabled={isRefining || !refinementInstruction.trim()}>
+                        {isRefining ? (
+                        <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Refinando...</>
+                        ) : (
+                        <><Sparkles className="mr-2 h-4 w-4" /> Refinar</>
+                        )}
+                    </Button>
+                </CardFooter>
             </Card>
         )}
     </div>

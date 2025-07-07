@@ -46,6 +46,11 @@ export const GenerateProposalInputSchema = z.object({
   interdisciplinariedad: z.string(),
 });
 
+// Schema para refinar una propuesta existente
+export const RefineProposalInputSchema = z.object({
+  originalProposal: z.string().min(1, 'La propuesta original no puede estar vacía.'),
+  refinementInstruction: z.string().min(1, 'La instrucción de refinamiento no puede estar vacía.'),
+});
 
 // Schemas para FindResources
 export const FindResourcesInputSchema = z.object({

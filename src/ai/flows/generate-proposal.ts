@@ -2,7 +2,7 @@
 'use server';
 
 import { model } from '@/ai/ai-instance';
-import { GenerateProposalInputSchema } from './schemas';
+import { GenerateProposalInputSchema, RefineProposalInputSchema } from './schemas';
 import { z } from 'zod';
 import { createStreamableValue } from 'ai/rsc';
 
@@ -58,6 +58,50 @@ export async function generateProposal(
     } catch (error) {
       console.error("Error generating proposal with Gemini:", error);
       stream.update("Error al generar la propuesta. Por favor, inténtelo de nuevo.");
+    } finally {
+      stream.done();
+    }
+  })();
+
+  return {
+    output: stream.value
+  };
+}
+
+export async function refineProposal(
+  input: z.infer<typeof RefineProposalInputSchema>
+) {
+  const stream = createStreamableValue('');
+  
+  const validatedInput = RefineProposalInputSchema.parse(input);
+
+  const prompt = `
+    Eres un asistente pedagógico experto. Tu tarea es tomar una propuesta de actividad de aprendizaje existente y refinarla basándote en una instrucción específica.
+
+    **Propuesta Original (en Markdown):**
+    ---
+    ${validatedInput.originalProposal}
+    ---
+
+    **Instrucción de Refinamiento:**
+    ---
+    ${validatedInput.refinementInstruction}
+    ---
+
+    **Tarea:**
+    Revisa la propuesta original y aplica los cambios solicitados en la instrucción. Devuelve **únicamente** la versión nueva y completa de la propuesta en formato Markdown. No añadas comentarios introductorios como "Claro, aquí está la propuesta refinada". Simplemente entrega la propuesta modificada.
+  `;
+  
+  (async () => {
+    try {
+      const result = await model.generateContentStream(prompt);
+
+      for await (const chunk of result.stream) {
+        stream.update(chunk.text());
+      }
+    } catch (error) {
+      console.error("Error refining proposal with Gemini:", error);
+      stream.update("Error al refinar la propuesta. Por favor, inténtelo de nuevo.");
     } finally {
       stream.done();
     }
