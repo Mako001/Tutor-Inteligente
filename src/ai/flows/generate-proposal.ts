@@ -4,10 +4,13 @@
 import { model } from '@/ai/ai-instance';
 import { GenerateProposalInputSchema } from './schemas';
 import { z } from 'zod';
+import { createStreamableValue } from 'ai/rsc';
 
 export async function generateProposal(
   input: z.infer<typeof GenerateProposalInputSchema>
-): Promise<string> {
+) {
+  const stream = createStreamableValue('');
+  
   // The input is already validated by Zod on the client-side before calling,
   // but we can parse here for type safety within the function.
   const validatedInput = GenerateProposalInputSchema.parse(input);
@@ -44,14 +47,23 @@ export async function generateProposal(
     - Debe estar contextualizada a Colombia.
     - No puede salirse de los lineamientos del ministerio de educacion de Colombia.
   `;
+  
+  (async () => {
+    try {
+      const result = await model.generateContentStream(prompt);
 
-  try {
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
-    return text;
-  } catch (error) {
-    console.error("Error generating proposal with Gemini:", error);
-    throw new Error("La IA no pudo generar la propuesta.");
-  }
+      for await (const chunk of result.stream) {
+        stream.update(chunk.text());
+      }
+    } catch (error) {
+      console.error("Error generating proposal with Gemini:", error);
+      stream.update("Error al generar la propuesta. Por favor, inténtelo de nuevo.");
+    } finally {
+      stream.done();
+    }
+  })();
+
+  return {
+    output: stream.value
+  };
 }

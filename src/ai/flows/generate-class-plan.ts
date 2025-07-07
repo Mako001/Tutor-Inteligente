@@ -8,11 +8,9 @@ import { model } from '@/ai/ai-instance';
 import { GenerateClassPlanInputSchema } from './schemas';
 import { z } from 'zod';
 
-// This function now uses the @google/generative-ai SDK directly
 export async function generateClassPlan(
   input: z.infer<typeof GenerateClassPlanInputSchema>
 ): Promise<string> {
-  // The input is already validated by the Zod schema passed from the client-side logic.
   const { 
     planDepth, 
     planTitle,
@@ -20,7 +18,7 @@ export async function generateClassPlan(
     grade,
     totalDuration,
     bigIdea,
-    competencies, // This is already a string, joined in the client component.
+    competencies,
     specificObjectives,
     sessionSequence,
     summativeAssessment,

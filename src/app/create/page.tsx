@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import Cookies from 'js-cookie';
 import { saveAs } from 'file-saver';
 import { Packer, Document, Paragraph, TextRun } from 'docx';
+import { readStreamableValue } from 'ai/rsc';
 
 const formFields = [
   { name: 'grado', label: '1. Grado(s) Específico(s)', placeholder: 'Ej: 10º, 11º, o ambos', component: 'input' },
@@ -46,8 +47,8 @@ export default function CreateProposalPage() {
   });
 
   const [isLoading, setIsLoading] = useState(false);
+  const [generation, setGeneration] = useState('');
   const [error, setError] = useState('');
-  const [resultado, setResultado] = useState('');
 
   // Load data from cookies on component mount
   useEffect(() => {
@@ -73,7 +74,7 @@ export default function CreateProposalPage() {
   const handleDownload = () => {
     const doc = new Document({
         sections: [{
-            children: resultado.split('\n\n').map(p => new Paragraph({
+            children: generation.split('\n\n').map(p => new Paragraph({
               children: [new TextRun(p)]
             })),
         }],
@@ -87,7 +88,7 @@ export default function CreateProposalPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
-    setResultado('');
+    setGeneration('');
     
     // Zod validation on the client
     const validation = GenerateProposalInputSchema.safeParse(formData);
@@ -104,14 +105,17 @@ export default function CreateProposalPage() {
     setIsLoading(true);
 
     try {
-      const responseText = await generateProposal(formData);
-      setResultado(responseText);
+      const { output } = await generateProposal(formData);
+      for await (const delta of readStreamableValue(output)) {
+        setGeneration(currentGeneration => `${currentGeneration}${delta}`);
+      }
     } catch (apiError: any) {
-      setError(apiError.message || "Ocurrió un error desconocido al generar la propuesta.");
+      const message = apiError.message || "Ocurrió un error desconocido al generar la propuesta.";
+      setError(message);
        toast({
         variant: "destructive",
         title: "Error de la IA",
-        description: apiError.message || "Ocurrió un error desconocido.",
+        description: message,
       });
     } finally {
       setIsLoading(false);
@@ -175,13 +179,13 @@ export default function CreateProposalPage() {
         </form>
        </Card>
 
-        {(resultado || isLoading || error) && (
+        {(generation || isLoading || error) && (
             <Card className="w-full max-w-4xl mx-auto mt-8 shadow-lg">
                 <CardHeader>
                     <CardTitle>Propuesta de Actividad Generada</CardTitle>
                 </CardHeader>
                 <CardContent className="min-h-[200px]">
-                    {isLoading && (
+                    {isLoading && !generation && (
                         <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
                             <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
                             <p>Creando una propuesta increíble...</p>
@@ -192,17 +196,17 @@ export default function CreateProposalPage() {
                             <p className="text-destructive text-center">{error}</p>
                         </div>
                     )}
-                    {!isLoading && !error && resultado && (
+                    {generation && (
                         <div className="markdown-content-in-card">
                         <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                            {resultado}
+                            {generation}
                         </ReactMarkdown>
                         </div>
                     )}
                 </CardContent>
-                {resultado && !isLoading && (
+                {generation && !isLoading && (
                     <CardFooter className="flex justify-end gap-2">
-                         <Button variant="secondary" onClick={() => navigator.clipboard.writeText(resultado)}>
+                         <Button variant="secondary" onClick={() => navigator.clipboard.writeText(generation)}>
                             Copiar Texto
                         </Button>
                         <Button onClick={handleDownload}>
