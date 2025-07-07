@@ -123,9 +123,19 @@ export default function CreateActivityPage() {
     }
 
     try {
-      const responseText = await generateActivity(formData);
-      setResultado(responseText);
-      await guardarActividadEnFirebase(responseText, formData);
+      const response = await generateActivity(formData);
+      
+      if (response.success) {
+        setResultado(response.data);
+        await guardarActividadEnFirebase(response.data, formData);
+      } else {
+        setError(response.error);
+        toast({
+          variant: "destructive",
+          title: "Error al generar la actividad",
+          description: response.error,
+        });
+      }
     } catch (apiError: any) {
       setError(apiError.message || "Ocurrió un error desconocido al generar la actividad.");
     } finally {
