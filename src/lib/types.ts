@@ -49,6 +49,20 @@ export interface GenerateClassPlanInput {
     interdisciplinarity: string;
 }
 
+// Para el formulario de la propuesta original
+export interface ProposalFormData {
+  grado: string;
+  tiempo: string;
+  tema: string;
+  metodologia: string;
+  competencias: string;
+  evidencias: string;
+  componentes: string;
+  recursos: string;
+  contexto: string;
+  interdisciplinariedad: string;
+}
+
 // Para la búsqueda de recursos en la biblioteca
 export interface FindResourcesInput {
   topic: string;

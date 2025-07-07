@@ -44,6 +44,7 @@
     "firebase": "^11.6.0",
     "html-to-pdfmake": "^2.5.1",
     "html2pdf.js": "^0.10.2",
+    "js-cookie": "^3.0.5",
     "jsdom": "^24.1.1",
     "lucide-react": "^0.475.0",
     "next": "15.2.3",
@@ -64,6 +65,7 @@
   "devDependencies": {
     "@types/file-saver": "^2.0.7",
     "@types/html-to-pdfmake": "^2.4.4",
+    "@types/js-cookie": "^3.0.6",
     "@types/jsdom": "^21.1.7",
     "@types/node": "^20",
     "@types/pdfmake": "^0.2.9",

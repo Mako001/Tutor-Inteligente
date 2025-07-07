@@ -32,6 +32,21 @@ export const GenerateClassPlanInputSchema = z.object({
   interdisciplinarity: z.string(),
 });
 
+// Schema para el generador de propuestas del cuestionario original
+export const GenerateProposalInputSchema = z.object({
+  grado: z.string().min(1, 'El grado es obligatorio.'),
+  tiempo: z.string().min(1, 'El tiempo disponible es obligatorio.'),
+  tema: z.string().min(1, 'El tema central es obligatorio.'),
+  metodologia: z.string(),
+  competencias: z.string().min(1, 'Las competencias son obligatorias.'),
+  evidencias: z.string().min(1, 'Las evidencias de aprendizaje son obligatorias.'),
+  componentes: z.string().min(1, 'Los componentes curriculares son obligatorios.'),
+  recursos: z.string().min(1, 'Los recursos disponibles son obligatorios.'),
+  contexto: z.string(),
+  interdisciplinariedad: z.string(),
+});
+
+
 // Schemas para FindResources
 export const FindResourcesInputSchema = z.object({
   topic: z.string().describe('The central topic to search resources for (e.g., "Python loops", "Photosynthesis").'),
