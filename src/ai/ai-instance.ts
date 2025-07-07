@@ -1,5 +1,4 @@
 // src/ai/ai-instance.ts
-'use server';
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 
 const apiKey = process.env.GOOGLE_GEMINI_API_KEY;
