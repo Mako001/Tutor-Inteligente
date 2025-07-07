@@ -205,8 +205,8 @@ export default function LibraryPage() {
     try {
       await saveResourceToLibrary(user.uid, resourceData);
       toast({
-        title: "¡Recurso Guardado!",
-        description: `"${resource.title}" se ha añadido a tu biblioteca.`,
+        title: "Éxito",
+        description: "El recurso se ha guardado en tu biblioteca.",
       });
       // Refetch resources
       const resources = await getUserLibrary(user.uid);
@@ -214,8 +214,8 @@ export default function LibraryPage() {
     } catch (e: any) {
        toast({
         variant: "destructive",
-        title: "Error al Guardar",
-        description: e.message || 'No se pudo guardar el recurso.',
+        title: "Error al guardar",
+        description: "No se pudo guardar el recurso. Inténtalo de nuevo.",
       });
     }
   };
