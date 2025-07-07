@@ -1,25 +1,35 @@
-# AprendeTech Colombia - Tutor Inteligente
+
+# AprendeTech Colombia - Tu Asistente Pedagógico Inteligente
 
 ![AprendeTech Colombia UI](https://placehold.co/800x450.png)
-*Caption: Interfaz principal del formulario de AprendeTech Colombia.*
+*Caption: Interfaz principal de AprendeTech Colombia, tu centro de mando para la planificación educativa.*
 
 ## Descripción Detallada
 
-**AprendeTech Colombia** es un asistente inteligente diseñado para revolucionar la forma en que los docentes de Tecnología e Informática en Colombia planifican sus clases. Esta herramienta web resuelve un problema común: la dificultad de crear actividades de aprendizaje que no solo sean innovadoras y atractivas para los estudiantes, sino que también estén rigurosamente alineadas con los estándares y directrices curriculares del Ministerio de Educación Nacional de Colombia (MEN), como la Guía 30.
+**AprendeTech Colombia** es una plataforma web inteligente diseñada para revolucionar la forma en que los docentes de Colombia planifican sus clases y crean material educativo. Esta herramienta resuelve un problema común: la dificultad de diseñar actividades de aprendizaje que no solo sean innovadoras y atractivas para los estudiantes, sino que también estén rigurosamente alineadas con los estándares curriculares del Ministerio de Educación Nacional de Colombia (MEN).
+
+La aplicación se centra en tres módulos principales:
+1.  **Creador de Planes de Clase:** Un asistente guiado para generar secuencias didácticas completas y estructuradas para un período académico.
+2.  **Creador de Actividades:** Una herramienta ágil para diseñar actividades de aprendizaje específicas para una sesión de clase, con diferentes niveles de profundidad.
+3.  **Biblioteca Personal:** Un espacio centralizado donde se guarda todo el contenido generado (planes y actividades), se pueden editar y, además, se pueden buscar y guardar recursos educativos externos con la ayuda de la IA.
 
 Este proyecto está dirigido a **docentes de educación básica y media** que buscan:
-- **Ahorrar tiempo:** Automatizando la creación de la estructura base de una planeación de clase.
-- **Asegurar la pertinencia curricular:** Integrando un asistente de IA (Google Gemini) que conoce los lineamientos del MEN.
-- **Fomentar la creatividad:** Generando ideas y estructuras de actividades que pueden ser adaptadas y personalizadas.
-- **Facilitar el trabajo:** Proporcionando una interfaz intuitiva para capturar todos los detalles necesarios para una planificación de alta calidad, desde competencias y evidencias hasta recursos y adaptaciones contextuales.
+- **Ahorrar tiempo:** Automatizando la creación de la estructura base para planes y actividades.
+- **Asegurar la pertinencia curricular:** Integrando un asistente de IA (Google Gemini) instruido en los lineamientos del MEN.
+- **Fomentar la creatividad:** Generando ideas y estructuras que pueden ser adaptadas y personalizadas.
+- **Centralizar el trabajo:** Ofreciendo una biblioteca personal para guardar, revisar y editar todo el material pedagógico.
 
 ## Características Principales
 
-*   **Generación de Propuestas con IA:** Utiliza un formulario detallado para capturar los requerimientos del docente y envía esta información a Google Gemini para generar una propuesta de actividad completa.
-*   **Contextualización Colombiana:** El asistente de IA está específicamente instruido para basar sus respuestas en las Orientaciones Curriculares del MEN y la Guía 30.
-*   **Interfaz Moderna e Intuitiva:** Construida con Next.js, React, y componentes de ShadCN/ui para una experiencia de usuario fluida.
-*   **Persistencia de Datos:** Guarda las propuestas generadas en Firebase Firestore para consulta y referencia futura.
-*   **Exportación y Edición:** Permite a los usuarios descargar y refinar las propuestas generadas.
+*   **Generador de Planes de Clase:** Utiliza un formulario multi-paso para capturar los requerimientos del docente (objetivos, competencias, duración) y genera un plan de clase con diferentes niveles de detalle: "Esquema Rápido", "Plan Detallado" o "Proyecto Completo (ABP)".
+*   **Creador de Actividades Modulares:** Diseña rápidamente bloques de construcción para tus clases. La IA puede generar desde una "Lluvia de Ideas" hasta una "Actividad Detallada" con instrucciones, o incluso una "Mini-Secuencia" de clase con inicio, desarrollo y cierre.
+*   **Biblioteca Personal Unificada:**
+    *   **Almacenamiento automático:** Todos los planes y actividades generados se guardan automáticamente en tu biblioteca personal.
+    *   **Edición y gestión:** Revisa, edita el texto y elimina el contenido guardado directamente desde la biblioteca.
+    *   **Buscador de Recursos con IA:** ¿Necesitas un video o una simulación sobre un tema? Describe lo que buscas y la IA rastreará la web para sugerirte hasta 3 recursos de alta calidad, listos para guardar en tu biblioteca.
+*   **Contextualización Colombiana:** El asistente de IA está específicamente instruido para basar sus respuestas en las Orientaciones Curriculares del MEN (Guía 30, Estándares Básicos de Competencias, etc.).
+*   **Interfaz Moderna e Intuitiva:** Construida con Next.js y ShadCN/ui para una experiencia de usuario fluida.
+*   **Persistencia y Autenticación Anónima:** Utiliza Firebase Firestore para la base de datos y Firebase Authentication para crear sesiones de usuario anónimas y seguras, garantizando que tu contenido esté siempre disponible.
 
 ## Tech Stack
 
@@ -27,8 +37,8 @@ Este proyecto está dirigido a **docentes de educación básica y media** que bu
 *   **Lenguaje:** [TypeScript](https://www.typescriptlang.org/)
 *   **UI:** [React](https://reactjs.org/), [ShadCN/ui](https://ui.shadcn.com/)
 *   **Estilos:** [Tailwind CSS](https://tailwindcss.com/)
-*   **Inteligencia Artificial:** [Google Gemini](https://ai.google.dev/models/gemini) a través de API Routes de Next.js.
-*   **Base de Datos:** [Firebase Firestore](https://firebase.google.com/docs/firestore) para almacenar las propuestas.
+*   **Inteligencia Artificial:** [Google Gemini](https://ai.google.dev/models/gemini) a través de **Server Actions de Next.js** y el SDK `@google/generative-ai`.
+*   **Base de Datos y Autenticación:** [Firebase](https://firebase.google.com/) (Firestore para la base de datos, Authentication para sesiones de usuario anónimas).
 
 ## Requisitos Previos
 
@@ -55,7 +65,6 @@ Abre una terminal en la raíz del proyecto y ejecuta el siguiente comando para i
 ```bash
 npm install
 ```
-Asegúrate de que este comando se complete sin errores `ERESOLVE`. Si encuentras alguno, revisa las versiones de los paquetes en `package.json` para resolver conflictos de dependencias.
 
 ### 3. Configuración de Variables de Entorno (¡Paso Crucial!)
 
@@ -80,7 +89,7 @@ NEXT_PUBLIC_FIREBASE_APP_ID="TU_FIREBASE_APP_ID"
 
 # --- Configuración de la API Key de Google Gemini ---
 # Obtén tu API Key desde Google AI Studio: https://aistudio.google.com/app/apikey
-# Esta variable es usada por las API Routes en el backend de Next.js
+# Esta variable es usada por las Server Actions en el backend de Next.js
 GOOGLE_GEMINI_API_KEY="TU_API_KEY_DE_GEMINI"
 
 ```
@@ -114,7 +123,7 @@ Este proyecto está configurado para un despliegue sencillo en **Firebase Hostin
     ```bash
     firebase deploy --only hosting
     ```
-Firebase se encargará de construir tu aplicación Next.js, desplegar los archivos estáticos y configurar una Cloud Function para el renderizado del lado del servidor si es necesario.
+Firebase se encargará de construir tu aplicación Next.js, desplegar los archivos estáticos y configurar una Cloud Function para el renderizado del lado del servidor.
 
 ## Licencia
 
