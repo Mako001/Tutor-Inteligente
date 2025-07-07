@@ -12,7 +12,7 @@ import { z } from 'zod';
 // The main function, now using @google/generative-ai and supporting different depths
 export async function generateActivity(
   input: z.infer<typeof GenerateSingleActivityInputSchema>
-): Promise<string> {
+): Promise<{ success: true; data: string } | { success: false; error: string }> {
   const { 
     activityDepth,
     activityType, 
@@ -65,7 +65,7 @@ export async function generateActivity(
       - **Momento 1: Inicio (Warm-up / Engagement):** Describe una actividad corta para activar conocimientos previos o enganchar a los estudiantes.
       - **Momento 2: Desarrollo (Actividad Principal):** Describe la actividad central donde se trabaja el objetivo de aprendizaje.
       - **Momento 3: Cierre (Wrap-up / Síntesis):** Describe una actividad corta para consolidar el aprendizaje y verificar la comprensión.
-      Para cada momento, explica brevemente la actividad y su propósito.
+      Para cada momento, explica la actividad y su propósito.
 
       Procede a generar la propuesta según las instrucciones para el nivel de profundidad: **"${activityDepth}"**. Formatea toda tu respuesta en Markdown para una fácil lectura.
     `;
@@ -74,9 +74,9 @@ export async function generateActivity(
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = response.text();
-    return text;
+    return { success: true, data: text };
   } catch (error) {
     console.error("Error generating activity with Gemini:", error);
-    throw new Error("La IA no pudo generar la actividad.");
+    return { success: false, error: "La llamada a la API de Gemini falló. Por favor, inténtalo de nuevo." };
   }
 }
