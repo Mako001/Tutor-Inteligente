@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, FormEvent, useEffect } from 'react';
+import { useState, FormEvent, useEffect, useContext } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card";
-import { Loader2, Sparkles, Download } from 'lucide-react';
+import { Loader2, Sparkles, Download, Save } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { generateProposal } from '@/ai/flows/generate-proposal';
@@ -17,6 +17,8 @@ import Cookies from 'js-cookie';
 import { saveAs } from 'file-saver';
 import { Packer, Document, Paragraph, TextRun } from 'docx';
 import { readStreamableValue } from 'ai/rsc';
+import { AuthContext } from '@/lib/firebase/auth-provider';
+import { saveProposalToLibrary } from '@/lib/firebase/actions/proposal-actions';
 
 const formFields = [
   { name: 'grado', label: '1. Grado(s) Específico(s)', placeholder: 'Ej: 10º, 11º, o ambos', component: 'input' },
@@ -32,6 +34,7 @@ const formFields = [
 ];
 
 export default function CreateProposalPage() {
+  const { user } = useContext(AuthContext);
   const { toast } = useToast();
   const [formData, setFormData] = useState<ProposalFormData>({
     grado: '',
@@ -47,6 +50,7 @@ export default function CreateProposalPage() {
   });
 
   const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [generation, setGeneration] = useState('');
   const [error, setError] = useState('');
 
@@ -83,6 +87,54 @@ export default function CreateProposalPage() {
     Packer.toBlob(doc).then(blob => {
         saveAs(blob, "propuesta-de-actividad.docx");
     });
+  };
+
+  const handleSaveProposal = async () => {
+    if (!user) {
+        toast({
+            variant: "destructive",
+            title: "Error de Autenticación",
+            description: "Debes estar autenticado para guardar una propuesta.",
+        });
+        return;
+    }
+    if (!generation) {
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "No hay ninguna propuesta que guardar.",
+        });
+        return;
+    }
+
+    setIsSaving(true);
+    try {
+        const result = await saveProposalToLibrary(user.uid, {
+            title: formData.tema || 'Propuesta sin título',
+            content: generation
+        });
+
+        if (result.success) {
+            toast({
+                title: "¡Propuesta Guardada!",
+                description: "Tu propuesta se ha guardado en la biblioteca.",
+            });
+        } else {
+            toast({
+                variant: "destructive",
+                title: "Error al guardar",
+                description: result.error || "Ocurrió un error desconocido.",
+            });
+        }
+    } catch (e: any) {
+         toast({
+            variant: "destructive",
+            title: "Error inesperado",
+            description: e.message || "No se pudo conectar con el servicio.",
+        });
+    } finally {
+        setIsSaving(false);
+    }
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -206,6 +258,10 @@ export default function CreateProposalPage() {
                 </CardContent>
                 {generation && !isLoading && (
                     <CardFooter className="flex justify-end gap-2">
+                         <Button onClick={handleSaveProposal} disabled={isSaving || !user}>
+                           {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                           {isSaving ? 'Guardando...' : 'Guardar en mi Biblioteca'}
+                        </Button>
                          <Button variant="secondary" onClick={() => navigator.clipboard.writeText(generation)}>
                             Copiar Texto
                         </Button>
