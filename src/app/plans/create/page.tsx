@@ -1,7 +1,7 @@
 // src/app/plans/create/page.tsx
 'use client';
 
-import { useState, FormEvent, useEffect, useContext } from 'react';
+import { useState, FormEvent, useEffect, useContext, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -25,14 +25,15 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
-import { generateClassPlan } from '@/ai/flows/generate-class-plan';
+import { generateClassPlan, refineClassPlan } from '@/ai/flows/generate-class-plan';
 import { type PlanFormData, type GenerateClassPlanInput } from '@/lib/types';
 import { savePlan } from '@/lib/firebase/actions/plan-actions';
 import { AuthContext } from '@/lib/firebase/auth-provider';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { Loader2, BookCopy, FileText, Bot } from 'lucide-react';
+import { Loader2, BookCopy, FileText, Bot, Save, Sparkles } from 'lucide-react';
 import { curriculumData, CurriculumData } from '@/lib/data/curriculum';
+import { ExportButtons } from '@/components/export-buttons';
 
 // Opciones
 const subjectOptions = Object.keys(curriculumData);
@@ -82,6 +83,12 @@ export default function CreatePlanPage() {
   const [cargando, setCargando] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   
+  const [isRefining, setIsRefining] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [refinementInstruction, setRefinementInstruction] = useState('');
+  const planContentRef = useRef<HTMLDivElement>(null);
+
+
   useEffect(() => {
     const data = curriculumData[formData.subject];
     if (data) {
@@ -117,25 +124,25 @@ export default function CreatePlanPage() {
     });
   };
 
-  const guardarPlanEnFirebase = async (planGenerado: string, datos: PlanFormData) => {
-    if (!user) {
-        toast({ variant: "destructive", title: "Error", description: "Debes estar autenticado para guardar." });
+  const handleSavePlan = async () => {
+    if (!user || !resultadoTexto) {
+        toast({ variant: "destructive", title: "Error", description: "No hay plan para guardar o no estás autenticado." });
         return;
-    }
-    const dataToSave = {
-        userId: user.uid,
-        planTitle: datos.planTitle,
-        subject: datos.subject,
-        grade: datos.grade,
-        textoGenerado: planGenerado,
     };
-    const result = await savePlan(dataToSave as any);
+    setIsSaving(true);
+    const result = await savePlan({
+        userId: user.uid,
+        planTitle: formData.planTitle,
+        subject: formData.subject,
+        grade: formData.grade,
+        textoGenerado: resultadoTexto,
+    });
     if (result.success) {
         toast({ title: "¡Plan Guardado!", description: "Tu plan de clase se ha guardado en tu biblioteca." });
     } else {
-        setError(`Error al guardar el plan: ${result.error}`);
         toast({ variant: "destructive", title: "Error al guardar", description: result.error || 'Ocurrió un error desconocido' });
     }
+    setIsSaving(false);
   };
 
   const handleGenerarPlan = async (e: FormEvent) => {
@@ -161,7 +168,6 @@ export default function CreatePlanPage() {
       const response = await generateClassPlan(flowInput);
       if (response.success) {
         setResultadoTexto(response.data);
-        await guardarPlanEnFirebase(response.data, formData);
       } else {
         setError(response.error);
         toast({
@@ -178,6 +184,37 @@ export default function CreatePlanPage() {
       setCargando(false);
     }
   };
+
+  const handleRefinePlan = async () => {
+    if (!refinementInstruction.trim() || !resultadoTexto) return;
+
+    setIsRefining(true);
+    setError('');
+    const originalPlan = resultadoTexto;
+
+    try {
+        const response = await refineClassPlan({
+            originalProposal: originalPlan,
+            refinementInstruction,
+        });
+
+        if (response.success) {
+            setResultadoTexto(response.data);
+            setRefinementInstruction('');
+        } else {
+            setError(response.error);
+            setResultadoTexto(originalPlan); // Restore original text on failure
+            toast({ variant: "destructive", title: "Error al Refinar", description: response.error });
+        }
+    } catch (apiError: any) {
+        setError(apiError.message || 'Error inesperado.');
+        setResultadoTexto(originalPlan);
+        toast({ variant: "destructive", title: "Error al Refinar", description: apiError.message });
+    } finally {
+        setIsRefining(false);
+    }
+  };
+
 
   const renderFormContent = () => (
     <Accordion type="multiple" defaultValue={['item-1', 'item-2', 'item-3', 'item-4']} className="w-full space-y-4">
@@ -332,7 +369,7 @@ export default function CreatePlanPage() {
             <div className="flex justify-end sticky bottom-4 z-10">
                 <Button type="submit" size="lg" className="shadow-lg" disabled={cargando || !user}>
                     {cargando ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Bot className="mr-2 h-5 w-5"/>}
-                    {cargando ? 'Generando...' : 'Generar Plan y Guardar'}
+                    {cargando ? 'Generando...' : 'Generar Plan'}
                 </Button>
             </div>
         </form>
@@ -352,17 +389,53 @@ export default function CreatePlanPage() {
             </div>
           )}
           {resultadoTexto && !cargando && !error && (
-            <Card className="shadow-lg mt-10">
-                <CardHeader>
-                    <CardTitle>Plan Generado</CardTitle>
-                    <CardDescription>Tu plan ha sido generado y guardado en tu biblioteca.</CardDescription>
-                </CardHeader>
-                <CardContent className="markdown-content-in-card bg-secondary/20 p-4 rounded-lg">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
-                        {resultadoTexto}
-                    </ReactMarkdown>
-                </CardContent>
-            </Card>
+            <>
+                <Card className="shadow-lg mt-10">
+                    <CardHeader>
+                        <CardTitle>Plan Generado</CardTitle>
+                        <CardDescription>Revisa el plan generado. Puedes refinarlo, guardarlo o exportarlo.</CardDescription>
+                    </CardHeader>
+                    <CardContent ref={planContentRef} className="markdown-content-in-card bg-secondary/20 p-4 rounded-lg">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+                            {resultadoTexto}
+                        </ReactMarkdown>
+                    </CardContent>
+                    <CardFooter className="flex flex-wrap justify-end gap-2">
+                        <Button onClick={handleSavePlan} disabled={isSaving || !user}>
+                           {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                           {isSaving ? 'Guardando...' : 'Guardar en mi Biblioteca'}
+                        </Button>
+                        <ExportButtons contentRef={planContentRef} fileName={formData.planTitle || 'plan-de-clase'} />
+                    </CardFooter>
+                </Card>
+
+                <Card className="w-full max-w-4xl mt-4 shadow-lg">
+                    <CardHeader>
+                        <CardTitle>Refinar Plan</CardTitle>
+                        <CardDescription>
+                            Dale a la IA una instrucción para que mejore el plan.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Textarea
+                            value={refinementInstruction}
+                            onChange={(e) => setRefinementInstruction(e.target.value)}
+                            placeholder="Ej: Hazlo más visual, añade una rúbrica de evaluación, enfócalo para un proyecto de dos semanas."
+                            rows={3}
+                            disabled={isRefining}
+                        />
+                    </CardContent>
+                    <CardFooter>
+                        <Button onClick={handleRefinePlan} disabled={isRefining || !refinementInstruction.trim()}>
+                            {isRefining ? (
+                            <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Refinando...</>
+                            ) : (
+                            <><Sparkles className="mr-2 h-4 w-4" /> Refinar</>
+                            )}
+                        </Button>
+                    </CardFooter>
+                </Card>
+            </>
           )}
         </section>
       </main>

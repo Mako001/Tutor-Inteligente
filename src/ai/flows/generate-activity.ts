@@ -4,9 +4,10 @@
  * @fileOverview Generates a modular learning activity using AI with varying levels of detail.
  *
  * - generateActivity - A function that handles the activity generation process.
+ * - refineActivity - A function that refines an existing activity based on user feedback.
  */
 import { model } from '@/ai/ai-instance';
-import { GenerateSingleActivityInputSchema } from './schemas';
+import { GenerateSingleActivityInputSchema, RefineProposalInputSchema } from './schemas';
 import { z } from 'zod';
 
 // The main function, now using @google/generative-ai and supporting different depths
@@ -78,5 +79,38 @@ export async function generateActivity(
   } catch (error) {
     console.error("Error generating activity with Gemini:", error);
     return { success: false, error: "La llamada a la API de Gemini falló. Por favor, inténtalo de nuevo." };
+  }
+}
+
+export async function refineActivity(
+  input: z.infer<typeof RefineProposalInputSchema>
+): Promise<{ success: true; data: string } | { success: false; error: string }> {
+  const { originalProposal, refinementInstruction } = input;
+
+  const prompt = `
+      Eres un asistente pedagógico experto. Tu tarea es tomar una actividad de aprendizaje existente y refinarla basándote en una instrucción específica.
+
+      **Actividad Original (en Markdown):**
+      ---
+      ${originalProposal}
+      ---
+
+      **Instrucción de Refinamiento:**
+      ---
+      ${refinementInstruction}
+      ---
+
+      **Tarea:**
+      Revisa la actividad original y aplica los cambios solicitados en la instrucción. Devuelve **únicamente** la versión nueva y completa de la actividad en formato Markdown. No añadas comentarios introductorios como "Claro, aquí está la actividad refinada". Simplemente entrega la actividad modificada.
+    `;
+    
+  try {
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+    return { success: true, data: text };
+  } catch (error) {
+    console.error("Error refining activity with Gemini:", error);
+    return { success: false, error: "La IA no pudo refinar la actividad. Por favor, inténtalo de nuevo." };
   }
 }

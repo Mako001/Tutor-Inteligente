@@ -3,9 +3,10 @@
 /**
  * @fileOverview Generates an educational plan with varying levels of detail.
  * - generateClassPlan - A function that handles the class plan generation process.
+ * - refineClassPlan - A function that refines an existing class plan based on user feedback.
  */
 import { model } from '@/ai/ai-instance';
-import { GenerateClassPlanInputSchema } from './schemas';
+import { GenerateClassPlanInputSchema, RefineProposalInputSchema } from './schemas';
 import { z } from 'zod';
 
 export async function generateClassPlan(
@@ -100,5 +101,38 @@ export async function generateClassPlan(
   } catch (error) {
     console.error("Error generating class plan with Gemini:", error);
     return { success: false, error: "La IA no pudo generar el plan de clase. Por favor, revisa tu conexión o inténtalo de nuevo." };
+  }
+}
+
+export async function refineClassPlan(
+  input: z.infer<typeof RefineProposalInputSchema>
+): Promise<{ success: true; data: string } | { success: false; error: string }> {
+  const { originalProposal, refinementInstruction } = input;
+
+  const prompt = `
+      Eres un asistente pedagógico experto. Tu tarea es tomar un plan de clase existente y refinarlo basándote en una instrucción específica.
+
+      **Plan de Clase Original (en Markdown):**
+      ---
+      ${originalProposal}
+      ---
+
+      **Instrucción de Refinamiento:**
+      ---
+      ${refinementInstruction}
+      ---
+
+      **Tarea:**
+      Revisa el plan de clase original y aplica los cambios solicitados en la instrucción. Devuelve **únicamente** la versión nueva y completa del plan de clase en formato Markdown. No añadas comentarios introductorios como "Claro, aquí está el plan refinado". Simplemente entrega el plan modificado.
+    `;
+
+  try {
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+    return { success: true, data: text };
+  } catch (error) {
+    console.error("Error refining class plan with Gemini:", error);
+    return { success: false, error: "La IA no pudo refinar el plan de clase. Por favor, inténtalo de nuevo." };
   }
 }

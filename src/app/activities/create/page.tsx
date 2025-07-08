@@ -1,7 +1,7 @@
 // src/app/activities/create/page.tsx
 'use client';
 
-import { useState, FormEvent, useContext } from 'react';
+import { useState, FormEvent, useContext, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,13 +20,14 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import { Loader2, Sparkles, Lightbulb, FileText, Workflow, ArrowLeft, Save } from 'lucide-react';
-import { generateActivity } from '@/ai/flows/generate-activity';
+import { generateActivity, refineActivity } from '@/ai/flows/generate-activity';
 import { type GenerateSingleActivityInput } from '@/lib/types';
 import { saveActivity } from '@/lib/firebase/actions/activity-actions';
 import { AuthContext } from '@/lib/firebase/auth-provider';
 import { useToast } from '@/hooks/use-toast';
 import { curriculumData } from '@/lib/data/curriculum';
 import { cn } from '@/lib/utils';
+import { ExportButtons } from '@/components/export-buttons';
 
 const subjectOptions = Object.keys(curriculumData);
 const gradeOptions = [
@@ -72,9 +73,16 @@ export default function CreateActivityPage() {
     learningObjective: '',
     availableResources: '',
   });
+  
   const [resultado, setResultado] = useState('');
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState('');
+  
+  const [isRefining, setIsRefining] = useState(false);
+  const [refinementInstruction, setRefinementInstruction] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const activityContentRef = useRef<HTMLDivElement>(null);
+
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -89,25 +97,26 @@ export default function CreateActivityPage() {
       setFormData(prev => ({...prev, activityDepth: value}));
   };
   
-  const guardarActividadEnFirebase = async (textoGenerado: string, datos: GenerateSingleActivityInput) => {
-    if (!user) {
-        toast({ variant: "destructive", title: "Error", description: "Debes estar autenticado para guardar." });
+  const handleSaveActivity = async () => {
+    if (!user || !resultado) {
+        toast({ variant: "destructive", title: "Error", description: "No hay ninguna actividad que guardar o no estás autenticado." });
         return;
     }
+    setIsSaving(true);
     const dataToSave = {
         userId: user.uid,
-        learningObjective: datos.learningObjective, // Using learning objective as a title
-        subject: datos.subject,
-        grade: datos.grade,
-        textoGenerado: textoGenerado,
+        learningObjective: formData.learningObjective || "Actividad sin título",
+        subject: formData.subject,
+        grade: formData.grade,
+        textoGenerado: resultado,
     };
     const result = await saveActivity(dataToSave as any);
     if (result.success) {
         toast({ title: "¡Actividad Guardada!", description: "Tu actividad se ha guardado en la biblioteca." });
     } else {
-        setError(`Error al guardar la actividad: ${result.error}`);
         toast({ variant: "destructive", title: "Error al guardar", description: result.error });
     }
+    setIsSaving(false);
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -127,7 +136,6 @@ export default function CreateActivityPage() {
       
       if (response.success) {
         setResultado(response.data);
-        await guardarActividadEnFirebase(response.data, formData);
       } else {
         setError(response.error);
         toast({
@@ -140,6 +148,36 @@ export default function CreateActivityPage() {
       setError(apiError.message || "Ocurrió un error desconocido al generar la actividad.");
     } finally {
       setCargando(false);
+    }
+  };
+
+  const handleRefineActivity = async () => {
+    if (!refinementInstruction.trim() || !resultado) return;
+
+    setIsRefining(true);
+    setError('');
+    const originalActivity = resultado;
+
+    try {
+        const response = await refineActivity({
+            originalProposal: originalActivity,
+            refinementInstruction,
+        });
+
+        if (response.success) {
+            setResultado(response.data);
+            setRefinementInstruction('');
+        } else {
+            setError(response.error);
+            setResultado(originalActivity); // Restore original
+            toast({ variant: "destructive", title: "Error al Refinar", description: response.error });
+        }
+    } catch (apiError: any) {
+        setError(apiError.message || 'Error inesperado.');
+        setResultado(originalActivity);
+        toast({ variant: "destructive", title: "Error al Refinar", description: apiError.message });
+    } finally {
+        setIsRefining(false);
     }
   };
 
@@ -156,115 +194,146 @@ export default function CreateActivityPage() {
         </p>
       </header>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-        <Card className="w-full shadow-lg">
-          <CardHeader>
-              <CardTitle>Paso {step} de 3</CardTitle>
-              <Progress value={progressValue} className="w-full mt-2" />
-          </CardHeader>
-          <form onSubmit={handleSubmit}>
-            <CardContent className="space-y-6 min-h-[400px]">
-              {step === 1 && (
-                <div className="space-y-6 animate-in fade-in">
-                    <h2 className="text-xl font-semibold">Contexto Básico</h2>
-                    <div>
-                      <Label htmlFor="subject">Materia</Label>
-                      <Select name="subject" value={formData.subject} onValueChange={(value) => handleSelectChange('subject', value)}>
-                        <SelectTrigger id="subject"><SelectValue /></SelectTrigger>
-                        <SelectContent>{subjectOptions.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="grade">Grado</Label>
-                      <Select name="grade" value={formData.grade} onValueChange={(value) => handleSelectChange('grade', value)}>
-                        <SelectTrigger id="grade"><SelectValue /></SelectTrigger>
-                        <SelectContent>{gradeOptions.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="topic">Tema General del Plan (Opcional)</Label>
-                      <Input id="topic" name="topic" value={formData.topic || ''} onChange={handleInputChange} placeholder="Ej: La Revolución Industrial" />
-                    </div>
-                </div>
-              )}
-              {step === 2 && (
-                <div className="space-y-6 animate-in fade-in">
-                    <h2 className="text-xl font-semibold">Define la Actividad</h2>
-                    <div>
-                        <Label>Profundidad de la Actividad</Label>
-                        <RadioGroup value={formData.activityDepth} onValueChange={handleRadioChange} className="grid grid-cols-1 gap-4 mt-2">
-                            {activityDepthOptions.map(option => (
-                               <Label key={option.value} htmlFor={option.value} className={cn(
-                                   "flex flex-col items-start p-4 rounded-lg border-2 cursor-pointer transition-colors",
-                                   formData.activityDepth === option.value ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
-                               )}>
-                                    <RadioGroupItem value={option.value} id={option.value} className="sr-only"/>
-                                    <div className="flex items-center gap-3 mb-2">
-                                        <option.icon className="h-6 w-6 text-primary" />
-                                        <span className="font-bold text-lg">{option.label}</span>
-                                    </div>
-                                    <span className="text-sm font-normal text-muted-foreground">{option.description}</span>
-                               </Label>
-                            ))}
-                        </RadioGroup>
-                    </div>
-                     <div>
-                      <Label htmlFor="learningObjective">Objetivo de Aprendizaje de la Actividad *</Label>
-                      <Textarea id="learningObjective" name="learningObjective" value={formData.learningObjective} onChange={handleInputChange} required placeholder="Ej: Que los estudiantes puedan nombrar tres inventos clave y su impacto." rows={3}/>
-                    </div>
-                </div>
-              )}
-               {step === 3 && (
-                <div className="space-y-6 animate-in fade-in">
-                    <h2 className="text-xl font-semibold">Detalles Finales</h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-8">
+            <Card className="w-full shadow-lg">
+              <CardHeader>
+                  <CardTitle>Paso {step} de 3</CardTitle>
+                  <Progress value={progressValue} className="w-full mt-2" />
+              </CardHeader>
+              <form onSubmit={handleSubmit}>
+                <CardContent className="space-y-6 min-h-[400px]">
+                  {step === 1 && (
+                    <div className="space-y-6 animate-in fade-in">
+                        <h2 className="text-xl font-semibold">Contexto Básico</h2>
                         <div>
-                        <Label htmlFor="duration">Duración Estimada</Label>
-                        <Select name="duration" value={formData.duration} onValueChange={(value) => handleSelectChange('duration', value)}>
-                            <SelectTrigger id="duration"><SelectValue /></SelectTrigger>
-                            <SelectContent>{durationOptions.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
-                        </Select>
+                          <Label htmlFor="subject">Materia</Label>
+                          <Select name="subject" value={formData.subject} onValueChange={(value) => handleSelectChange('subject', value)}>
+                            <SelectTrigger id="subject"><SelectValue /></SelectTrigger>
+                            <SelectContent>{subjectOptions.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="grade">Grado</Label>
+                          <Select name="grade" value={formData.grade} onValueChange={(value) => handleSelectChange('grade', value)}>
+                            <SelectTrigger id="grade"><SelectValue /></SelectTrigger>
+                            <SelectContent>{gradeOptions.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="topic">Tema General del Plan (Opcional)</Label>
+                          <Input id="topic" name="topic" value={formData.topic || ''} onChange={handleInputChange} placeholder="Ej: La Revolución Industrial" />
+                        </div>
+                    </div>
+                  )}
+                  {step === 2 && (
+                    <div className="space-y-6 animate-in fade-in">
+                        <h2 className="text-xl font-semibold">Define la Actividad</h2>
+                        <div>
+                            <Label>Profundidad de la Actividad</Label>
+                            <RadioGroup value={formData.activityDepth} onValueChange={handleRadioChange} className="grid grid-cols-1 gap-4 mt-2">
+                                {activityDepthOptions.map(option => (
+                                   <Label key={option.value} htmlFor={option.value} className={cn(
+                                       "flex flex-col items-start p-4 rounded-lg border-2 cursor-pointer transition-colors",
+                                       formData.activityDepth === option.value ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
+                                   )}>
+                                        <RadioGroupItem value={option.value} id={option.value} className="sr-only"/>
+                                        <div className="flex items-center gap-3 mb-2">
+                                            <option.icon className="h-6 w-6 text-primary" />
+                                            <span className="font-bold text-lg">{option.label}</span>
+                                        </div>
+                                        <span className="text-sm font-normal text-muted-foreground">{option.description}</span>
+                                   </Label>
+                                ))}
+                            </RadioGroup>
                         </div>
                          <div>
-                        <Label htmlFor="activityType">Tipo de Actividad (Contexto)</Label>
-                        <Select name="activityType" value={formData.activityType} onValueChange={(value) => handleSelectChange('activityType', value)}>
-                            <SelectTrigger id="activityType"><SelectValue /></SelectTrigger>
-                            <SelectContent>{activityTypeOptions.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
-                        </Select>
+                          <Label htmlFor="learningObjective">Objetivo de Aprendizaje de la Actividad *</Label>
+                          <Textarea id="learningObjective" name="learningObjective" value={formData.learningObjective} onChange={handleInputChange} required placeholder="Ej: Que los estudiantes puedan nombrar tres inventos clave y su impacto." rows={3}/>
                         </div>
                     </div>
-                    <div>
-                        <Label htmlFor="availableResources">Recursos Disponibles (Opcional)</Label>
-                        <Input id="availableResources" name="availableResources" value={formData.availableResources || ''} onChange={handleInputChange} placeholder="Ej: Proyector, acceso a internet, cartulinas" />
+                  )}
+                   {step === 3 && (
+                    <div className="space-y-6 animate-in fade-in">
+                        <h2 className="text-xl font-semibold">Detalles Finales</h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                            <Label htmlFor="duration">Duración Estimada</Label>
+                            <Select name="duration" value={formData.duration} onValueChange={(value) => handleSelectChange('duration', value)}>
+                                <SelectTrigger id="duration"><SelectValue /></SelectTrigger>
+                                <SelectContent>{durationOptions.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
+                            </Select>
+                            </div>
+                             <div>
+                            <Label htmlFor="activityType">Tipo de Actividad (Contexto)</Label>
+                            <Select name="activityType" value={formData.activityType} onValueChange={(value) => handleSelectChange('activityType', value)}>
+                                <SelectTrigger id="activityType"><SelectValue /></SelectTrigger>
+                                <SelectContent>{activityTypeOptions.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                            </Select>
+                            </div>
+                        </div>
+                        <div>
+                            <Label htmlFor="availableResources">Recursos Disponibles (Opcional)</Label>
+                            <Input id="availableResources" name="availableResources" value={formData.availableResources || ''} onChange={handleInputChange} placeholder="Ej: Proyector, acceso a internet, cartulinas" />
+                        </div>
                     </div>
-                </div>
-              )}
-            </CardContent>
-            <CardFooter className="flex justify-between">
-              {step > 1 ? (
-                 <Button type="button" variant="ghost" onClick={prevStep}>
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Anterior
-                </Button>
-              ) : <div />}
+                  )}
+                </CardContent>
+                <CardFooter className="flex justify-between">
+                  {step > 1 ? (
+                     <Button type="button" variant="ghost" onClick={prevStep}>
+                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        Anterior
+                    </Button>
+                  ) : <div />}
 
-              {step < 3 ? (
-                <Button type="button" onClick={nextStep}>Siguiente</Button>
-              ) : (
-                <Button type="submit" className="w-1/2" disabled={cargando || !user}>
-                    {cargando ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                    {cargando ? 'Generando...' : 'Generar y Guardar'}
-                </Button>
-              )}
-            </CardFooter>
-          </form>
-        </Card>
+                  {step < 3 ? (
+                    <Button type="button" onClick={nextStep}>Siguiente</Button>
+                  ) : (
+                    <Button type="submit" className="w-1/2" disabled={cargando || !user}>
+                        {cargando ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                        {cargando ? 'Generando...' : 'Generar Actividad'}
+                    </Button>
+                  )}
+                </CardFooter>
+              </form>
+            </Card>
+
+            {resultado && !cargando && (
+              <Card className="w-full shadow-lg animate-in fade-in">
+                  <CardHeader>
+                      <CardTitle>Refinar Actividad</CardTitle>
+                      <CardDescription>
+                          Dale a la IA una instrucción para mejorar la actividad generada.
+                      </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                      <Textarea
+                          value={refinementInstruction}
+                          onChange={(e) => setRefinementInstruction(e.target.value)}
+                          placeholder="Ej: Conviértela en una actividad para grupos, añade preguntas de discusión, adáptala para 15 minutos."
+                          rows={3}
+                          disabled={isRefining}
+                      />
+                  </CardContent>
+                  <CardFooter>
+                      <Button onClick={handleRefineActivity} disabled={isRefining || !refinementInstruction.trim()}>
+                          {isRefining ? (
+                          <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Refinando...</>
+                          ) : (
+                          <><Sparkles className="mr-2 h-4 w-4" /> Refinar</>
+                          )}
+                      </Button>
+                  </CardFooter>
+              </Card>
+            )}
+        </div>
 
         <Card className="w-full shadow-lg sticky top-8">
             <CardHeader>
                 <CardTitle>Actividad Generada</CardTitle>
-                <CardDescription>Aquí aparecerá la propuesta de la IA. Se guardará automáticamente.</CardDescription>
+                <CardDescription>Aquí aparecerá la propuesta de la IA. Puedes refinarla, guardarla o exportarla.</CardDescription>
             </CardHeader>
-            <CardContent className="min-h-[400px] max-h-[60vh] overflow-y-auto">
+            <CardContent ref={activityContentRef} className="min-h-[400px] max-h-[60vh] overflow-y-auto">
                 {cargando && (
                     <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
                         <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
@@ -290,10 +359,12 @@ export default function CreateActivityPage() {
                 )}
             </CardContent>
             {resultado && !cargando && (
-                <CardFooter className="justify-end">
-                    <Button variant="secondary" onClick={() => navigator.clipboard.writeText(resultado)}>
-                        Copiar al Portapapeles
+                <CardFooter className="flex flex-wrap justify-end gap-2">
+                    <Button onClick={handleSaveActivity} disabled={isSaving || !user}>
+                        {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                        {isSaving ? 'Guardando...' : 'Guardar'}
                     </Button>
+                    <ExportButtons contentRef={activityContentRef} fileName={formData.learningObjective || 'actividad'} />
                 </CardFooter>
             )}
         </Card>
