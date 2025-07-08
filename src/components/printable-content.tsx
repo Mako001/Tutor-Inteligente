@@ -23,9 +23,6 @@ const PrintableContent = forwardRef<HTMLDivElement, PrintableContentProps>(
           color: 'black',
           fontSize: '12pt', // A standard font size for documents
         }}
-        // Re-using existing markdown styles can be helpful for consistency,
-        // as long as they don't interfere with the layout.
-        className="markdown-content-in-card" 
       >
         <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
           {content}
