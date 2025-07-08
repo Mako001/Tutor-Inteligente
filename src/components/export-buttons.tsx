@@ -18,6 +18,7 @@ export const ExportButtons: React.FC<ExportButtonsProps> = ({ contentRef, fileNa
   const [isDownloadingDocx, setIsDownloadingDocx] = useState(false);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
 
+  // New robust PDF download function
   const handleDownloadPdf = () => {
     if (!contentRef.current) {
       toast({ variant: 'destructive', title: 'Error', description: 'No hay contenido para exportar a PDF.' });
@@ -25,35 +26,39 @@ export const ExportButtons: React.FC<ExportButtonsProps> = ({ contentRef, fileNa
     }
     setIsDownloadingPdf(true);
 
-    const elementToPrint = contentRef.current;
-    
-    // Store original styles to restore them later
-    const originalStyles = {
-        maxHeight: elementToPrint.style.maxHeight,
-        overflowY: elementToPrint.style.overflowY,
-    };
+    // Get the HTML content from the ref
+    const contentHtml = contentRef.current.innerHTML;
 
-    // Temporarily modify styles to make the entire content visible for the PDF "screenshot"
-    elementToPrint.style.maxHeight = 'none';
-    elementToPrint.style.overflowY = 'visible';
+    // Create a new, off-screen element to hold the content for printing
+    const printElement = document.createElement('div');
+    printElement.innerHTML = contentHtml;
+    
+    // Position the element off-screen so it's not visible
+    printElement.style.position = 'absolute';
+    printElement.style.left = '-9999px';
+    printElement.style.width = '8.5in'; // Standard letter width for predictable layout
+    printElement.style.padding = '0.5in'; // Give content some space from the edges
+    printElement.style.fontSize = '12px'; // Standard document font size
+    printElement.style.fontFamily = 'Arial, sans-serif'; // Use a common font
+
+    document.body.appendChild(printElement);
 
     const opt = {
-      margin: 1,
-      filename: `${fileName}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+      margin:       0.5, // Margin in inches
+      filename:     `${fileName}.pdf`,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2, useCORS: true, logging: false },
+      jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
     };
 
-    html2pdf().from(elementToPrint).set(opt).save()
+    html2pdf().from(printElement).set(opt).save()
       .catch(err => {
         console.error("Error al exportar a PDF:", err);
         toast({ variant: 'destructive', title: 'Error al exportar PDF', description: 'No se pudo generar el archivo PDF.' });
       })
       .finally(() => {
-        // IMPORTANT: Restore original styles after the operation is complete
-        elementToPrint.style.maxHeight = originalStyles.maxHeight;
-        elementToPrint.style.overflowY = originalStyles.overflowY;
+        // IMPORTANT: Clean up by removing the temporary element from the DOM
+        document.body.removeChild(printElement);
         setIsDownloadingPdf(false);
       });
   };
