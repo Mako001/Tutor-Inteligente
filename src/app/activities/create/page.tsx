@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, FormEvent, useContext } from 'react';
+import { useState, FormEvent, useContext, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -80,6 +80,7 @@ export default function CreateActivityPage() {
   const [isRefining, setIsRefining] = useState(false);
   const [refinementInstruction, setRefinementInstruction] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
 
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -344,7 +345,7 @@ export default function CreateActivityPage() {
                     </div>
                 )}
                 {!cargando && !error && resultado && (
-                    <div className="markdown-content-in-card">
+                    <div ref={contentRef} className="markdown-content-in-card">
                       <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
                         {resultado}
                       </ReactMarkdown>
@@ -362,7 +363,7 @@ export default function CreateActivityPage() {
                         {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                         {isSaving ? 'Guardando...' : 'Guardar'}
                     </Button>
-                    <ExportButtons content={resultado} fileName={formData.learningObjective || 'actividad'} />
+                    <ExportButtons contentRef={contentRef} fileName={formData.learningObjective || 'actividad'} />
                 </CardFooter>
             )}
         </Card>

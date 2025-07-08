@@ -7,7 +7,7 @@
 
 **AprendeTech Colombia** es una plataforma web inteligente diseñada para revolucionar la forma en que los docentes de Colombia planifican sus clases y crean material educativo. Esta herramienta resuelve un problema común: la dificultad de diseñar actividades de aprendizaje que no solo sean innovadoras y atractivas para los estudiantes, sino que también estén rigurosamente alineadas con los estándares curriculares del Ministerio de Educación Nacional de Colombia (MEN).
 
-Con AprendeTech, los docentes pueden generar planes de clase y actividades detalladas en minutos, **refinarlos interactivamente con la IA** hasta que sean perfectos, y **exportarlos a formatos PDF y DOCX** listos para usar.
+Con AprendeTech, los docentes pueden generar planes de clase y actividades detalladas en minutos, **refinarlos interactivamente con la IA** hasta que sean perfectos, y **exportarlos a formatos DOCX** listos para usar.
 
 La aplicación se centra en tres módulos principales:
 1.  **Creador de Planes de Clase:** Un asistente guiado para generar secuencias didácticas completas y estructuradas para un período académico.
@@ -24,7 +24,7 @@ Este proyecto está dirigido a **docentes de educación básica y media** que bu
 
 *   **Generador de Planes de Clase y Actividades:** Utiliza formularios guiados para capturar los requerimientos del docente y genera contenido con diferentes niveles de detalle: desde un "Esquema Rápido" hasta un "Proyecto Completo (ABP)".
 *   **Refinamiento Interactivo con IA:** ¿No te convence la primera versión? Dale instrucciones adicionales a la IA para que ajuste, acorte, expanda o modifique cualquier plan o actividad generada. ¡El control es tuyo!
-*   **Exportación Versátil:** Descarga cualquier plan o actividad generada como un archivo **PDF** profesional listo para imprimir o como un documento de **Word (.docx)** para una edición posterior fuera de línea.
+*   **Exportación a Word:** Descarga cualquier plan o actividad generada como un documento de **Word (.docx)** para una edición posterior fuera de línea.
 *   **Biblioteca Personal Unificada y Organizada:**
     *   **Almacenamiento Manual:** Guarda tus planes y actividades favoritas con un solo clic.
     *   **Gestión de Contenido:** Revisa, edita el texto y elimina el contenido guardado directamente desde la biblioteca a través de una interfaz de pestañas clara (Planes, Actividades, Recursos).
@@ -41,7 +41,7 @@ Este proyecto está dirigido a **docentes de educación básica y media** que bu
 *   **Estilos:** [Tailwind CSS](https://tailwindcss.com/)
 *   **Inteligencia Artificial:** [Google Gemini](https://ai.google.dev/models/gemini) a través de **Server Actions de Next.js** y el SDK `@google/generative-ai`.
 *   **Base de Datos y Autenticación:** [Firebase](https://firebase.google.com/) (Firestore para la base de datos, Authentication para sesiones de usuario anónimas).
-*   **Exportación de Documentos:** `html2pdf.js` para PDF y `html-to-docx` para Word.
+*   **Exportación de Documentos:** `html-to-docx` para Word.
 
 ## Requisitos Previos
 

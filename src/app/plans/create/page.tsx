@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, FormEvent, useEffect, useContext } from 'react';
+import { useState, FormEvent, useEffect, useContext, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -85,6 +85,7 @@ export default function CreatePlanPage() {
   const [isRefining, setIsRefining] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [refinementInstruction, setRefinementInstruction] = useState('');
+  const contentRef = useRef<HTMLDivElement>(null);
 
 
   useEffect(() => {
@@ -394,16 +395,18 @@ export default function CreatePlanPage() {
                         <CardDescription>Revisa el plan generado. Puedes refinarlo, guardarlo o exportarlo.</CardDescription>
                     </CardHeader>
                     <CardContent className="markdown-content-in-card bg-secondary/20 p-4 rounded-lg">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
-                            {resultadoTexto}
-                        </ReactMarkdown>
+                        <div ref={contentRef}>
+                          <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+                              {resultadoTexto}
+                          </ReactMarkdown>
+                        </div>
                     </CardContent>
                     <CardFooter className="flex flex-wrap justify-end gap-2">
                         <Button onClick={handleSavePlan} disabled={isSaving || !user}>
                            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                            {isSaving ? 'Guardando...' : 'Guardar en mi Biblioteca'}
                         </Button>
-                        <ExportButtons content={resultadoTexto} fileName={formData.planTitle || 'plan-de-clase'} />
+                        <ExportButtons contentRef={contentRef} fileName={formData.planTitle || 'plan-de-clase'} />
                     </CardFooter>
                 </Card>
 
