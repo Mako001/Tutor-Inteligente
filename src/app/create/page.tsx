@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, FormEvent, useEffect, useContext } from 'react';
+import { useState, FormEvent, useEffect, useContext, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card";
-import { Loader2, Sparkles, Download, Save } from 'lucide-react';
+import { Loader2, Sparkles, Save } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { generateProposal, refineProposal } from '@/ai/flows/generate-proposal';
@@ -14,12 +14,10 @@ import { type ProposalFormData } from '@/lib/types';
 import { GenerateProposalInputSchema } from '@/ai/flows/schemas';
 import { useToast } from "@/hooks/use-toast";
 import Cookies from 'js-cookie';
-import { saveAs } from 'file-saver';
-import { Packer, Document, Paragraph, TextRun } from 'docx';
 import { readStreamableValue } from 'ai/rsc';
 import { AuthContext } from '@/lib/firebase/auth-provider';
 import { saveProposalToLibrary } from '@/lib/firebase/actions/proposal-actions';
-import html2pdf from 'html2pdf.js';
+import { ExportButtons } from '@/components/export-buttons';
 
 
 const formFields = [
@@ -57,6 +55,7 @@ export default function CreateProposalPage() {
   const [error, setError] = useState('');
   const [refinementInstruction, setRefinementInstruction] = useState('');
   const [isRefining, setIsRefining] = useState(false);
+  const proposalContentRef = useRef<HTMLDivElement>(null);
 
   // Load data from cookies on component mount
   useEffect(() => {
@@ -77,34 +76,6 @@ export default function CreateProposalPage() {
     setFormData(newFormData);
     // Save to cookies on every change
     Cookies.set('proposalFormData', JSON.stringify(newFormData), { expires: 7 });
-  };
-  
-  const handleDownloadDocx = () => {
-    const doc = new Document({
-        sections: [{
-            children: generation.split('\n\n').map(p => new Paragraph({
-              children: [new TextRun(p)]
-            })),
-        }],
-    });
-
-    Packer.toBlob(doc).then(blob => {
-        saveAs(blob, "propuesta-de-actividad.docx");
-    });
-  };
-
-  const handleDownloadPdf = () => {
-    const element = document.getElementById('proposal-content');
-    if (element) {
-      const opt = {
-        margin:       1,
-        filename:     'propuesta-de-actividad.pdf',
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true },
-        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
-      };
-      html2pdf().from(element).set(opt).save();
-    }
   };
 
   const handleSaveProposal = async () => {
@@ -305,7 +276,7 @@ export default function CreateProposalPage() {
                         </div>
                     )}
                     {generation && (
-                        <div id="proposal-content" className="markdown-content-in-card">
+                        <div id="proposal-content" ref={proposalContentRef} className="markdown-content-in-card">
                         <ReactMarkdown remarkPlugins={[remarkGfm]}>
                             {generation}
                         </ReactMarkdown>
@@ -321,14 +292,7 @@ export default function CreateProposalPage() {
                          <Button variant="secondary" onClick={() => navigator.clipboard.writeText(generation)}>
                             Copiar Texto
                         </Button>
-                        <Button onClick={handleDownloadDocx}>
-                            <Download className="mr-2 h-4 w-4" />
-                            Descargar .docx
-                        </Button>
-                        <Button onClick={handleDownloadPdf} variant="outline">
-                            <Download className="mr-2 h-4 w-4" />
-                            Descargar .pdf
-                        </Button>
+                        <ExportButtons contentRef={proposalContentRef} fileName={formData.tema || 'propuesta-de-actividad'} />
                     </CardFooter>
                 )}
             </Card>
