@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, FormEvent, useEffect, useContext, useRef } from 'react';
+import { useState, FormEvent, useEffect, useContext } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -55,7 +55,6 @@ export default function CreateProposalPage() {
   const [error, setError] = useState('');
   const [refinementInstruction, setRefinementInstruction] = useState('');
   const [isRefining, setIsRefining] = useState(false);
-  const proposalContentRef = useRef<HTMLDivElement>(null);
 
   // Load data from cookies on component mount
   useEffect(() => {
@@ -276,7 +275,7 @@ export default function CreateProposalPage() {
                         </div>
                     )}
                     {generation && (
-                        <div id="proposal-content" ref={proposalContentRef} className="markdown-content-in-card">
+                        <div id="proposal-content" className="markdown-content-in-card">
                         <ReactMarkdown remarkPlugins={[remarkGfm]}>
                             {generation}
                         </ReactMarkdown>
@@ -292,7 +291,7 @@ export default function CreateProposalPage() {
                          <Button variant="secondary" onClick={() => navigator.clipboard.writeText(generation)}>
                             Copiar Texto
                         </Button>
-                        <ExportButtons contentRef={proposalContentRef} fileName={formData.tema || 'propuesta-de-actividad'} />
+                        <ExportButtons content={generation} fileName={formData.tema || 'propuesta-de-actividad'} />
                     </CardFooter>
                 )}
             </Card>

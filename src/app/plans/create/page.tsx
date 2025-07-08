@@ -1,7 +1,6 @@
-// src/app/plans/create/page.tsx
 'use client';
 
-import { useState, FormEvent, useEffect, useContext, useRef } from 'react';
+import { useState, FormEvent, useEffect, useContext } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -86,7 +85,6 @@ export default function CreatePlanPage() {
   const [isRefining, setIsRefining] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [refinementInstruction, setRefinementInstruction] = useState('');
-  const planContentRef = useRef<HTMLDivElement>(null);
 
 
   useEffect(() => {
@@ -395,7 +393,7 @@ export default function CreatePlanPage() {
                         <CardTitle>Plan Generado</CardTitle>
                         <CardDescription>Revisa el plan generado. Puedes refinarlo, guardarlo o exportarlo.</CardDescription>
                     </CardHeader>
-                    <CardContent ref={planContentRef} className="markdown-content-in-card bg-secondary/20 p-4 rounded-lg">
+                    <CardContent className="markdown-content-in-card bg-secondary/20 p-4 rounded-lg">
                         <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
                             {resultadoTexto}
                         </ReactMarkdown>
@@ -405,7 +403,7 @@ export default function CreatePlanPage() {
                            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                            {isSaving ? 'Guardando...' : 'Guardar en mi Biblioteca'}
                         </Button>
-                        <ExportButtons contentRef={planContentRef} fileName={formData.planTitle || 'plan-de-clase'} />
+                        <ExportButtons content={resultadoTexto} fileName={formData.planTitle || 'plan-de-clase'} />
                     </CardFooter>
                 </Card>
 

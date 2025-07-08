@@ -1,7 +1,6 @@
-// src/app/activities/create/page.tsx
 'use client';
 
-import { useState, FormEvent, useContext, useRef } from 'react';
+import { useState, FormEvent, useContext } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -81,7 +80,6 @@ export default function CreateActivityPage() {
   const [isRefining, setIsRefining] = useState(false);
   const [refinementInstruction, setRefinementInstruction] = useState('');
   const [isSaving, setIsSaving] = useState(false);
-  const activityContentRef = useRef<HTMLDivElement>(null);
 
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -333,7 +331,7 @@ export default function CreateActivityPage() {
                 <CardTitle>Actividad Generada</CardTitle>
                 <CardDescription>Aquí aparecerá la propuesta de la IA. Puedes refinarla, guardarla o exportarla.</CardDescription>
             </CardHeader>
-            <CardContent ref={activityContentRef} className="min-h-[400px] max-h-[60vh] overflow-y-auto">
+            <CardContent className="min-h-[400px] max-h-[60vh] overflow-y-auto">
                 {cargando && (
                     <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
                         <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
@@ -364,7 +362,7 @@ export default function CreateActivityPage() {
                         {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                         {isSaving ? 'Guardando...' : 'Guardar'}
                     </Button>
-                    <ExportButtons contentRef={activityContentRef} fileName={formData.learningObjective || 'actividad'} />
+                    <ExportButtons content={resultado} fileName={formData.learningObjective || 'actividad'} />
                 </CardFooter>
             )}
         </Card>
