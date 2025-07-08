@@ -1,82 +1,65 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Download, Loader2 } from 'lucide-react';
 import html2pdf from 'html2pdf.js';
 import { saveAs } from 'file-saver';
 import { generateDocxFromHtml } from '@/lib/export/actions';
 import { useToast } from '@/hooks/use-toast';
+import PrintableContent from './printable-content';
 
 interface ExportButtonsProps {
-  contentRef: React.RefObject<HTMLDivElement>;
+  content: string;
   fileName?: string;
 }
 
-export const ExportButtons: React.FC<ExportButtonsProps> = ({ contentRef, fileName = 'documento' }) => {
+export const ExportButtons: React.FC<ExportButtonsProps> = ({ content, fileName = 'documento' }) => {
   const { toast } = useToast();
   const [isDownloadingDocx, setIsDownloadingDocx] = useState(false);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+  const printableRef = useRef<HTMLDivElement>(null);
 
-  // New robust PDF download function
   const handleDownloadPdf = () => {
-    if (!contentRef.current) {
+    if (!printableRef.current || !content) {
       toast({ variant: 'destructive', title: 'Error', description: 'No hay contenido para exportar a PDF.' });
       return;
     }
     setIsDownloadingPdf(true);
 
-    // Get the HTML content from the ref
-    const contentHtml = contentRef.current.innerHTML;
-
-    // Create a new, off-screen element to hold the content for printing
-    const printElement = document.createElement('div');
-    printElement.innerHTML = contentHtml;
-    
-    // Position the element off-screen so it's not visible
-    printElement.style.position = 'absolute';
-    printElement.style.left = '-9999px';
-    printElement.style.width = '8.5in'; // Standard letter width for predictable layout
-    printElement.style.padding = '0.5in'; // Give content some space from the edges
-    printElement.style.fontSize = '12px'; // Standard document font size
-    printElement.style.fontFamily = 'Arial, sans-serif'; // Use a common font
-
-    document.body.appendChild(printElement);
+    const element = printableRef.current;
 
     const opt = {
-      margin:       0.5, // Margin in inches
+      margin:       1,
       filename:     `${fileName}.pdf`,
       image:        { type: 'jpeg', quality: 0.98 },
       html2canvas:  { scale: 2, useCORS: true, logging: false },
       jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
     };
 
-    html2pdf().from(printElement).set(opt).save()
+    html2pdf().from(element).set(opt).save()
       .catch(err => {
         console.error("Error al exportar a PDF:", err);
         toast({ variant: 'destructive', title: 'Error al exportar PDF', description: 'No se pudo generar el archivo PDF.' });
       })
       .finally(() => {
-        // IMPORTANT: Clean up by removing the temporary element from the DOM
-        document.body.removeChild(printElement);
         setIsDownloadingPdf(false);
       });
   };
 
   const handleDownloadDocx = async () => {
-    if (!contentRef.current) {
+    if (!printableRef.current || !content) {
       toast({ variant: 'destructive', title: 'Error', description: 'No hay contenido para exportar a DOCX.' });
       return;
     }
     setIsDownloadingDocx(true);
 
-    const htmlString = contentRef.current.innerHTML;
+    const htmlString = printableRef.current.innerHTML;
     
     try {
       const result = await generateDocxFromHtml(htmlString);
 
       if (result.success && result.data) {
-        // The server returns a Base64 string. We need to convert it back to a Blob to download it.
         const byteCharacters = atob(result.data);
         const byteNumbers = new Array(byteCharacters.length);
         for (let i = 0; i < byteCharacters.length; i++) {
@@ -100,11 +83,13 @@ export const ExportButtons: React.FC<ExportButtonsProps> = ({ contentRef, fileNa
 
   return (
     <>
-      <Button onClick={handleDownloadDocx} disabled={isDownloadingDocx || isDownloadingPdf}>
+      <PrintableContent ref={printableRef} content={content} />
+
+      <Button onClick={handleDownloadDocx} disabled={isDownloadingDocx || isDownloadingPdf || !content}>
         {isDownloadingDocx ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
         Descargar .docx
       </Button>
-      <Button variant="outline" onClick={handleDownloadPdf} disabled={isDownloadingDocx || isDownloadingPdf}>
+      <Button variant="outline" onClick={handleDownloadPdf} disabled={isDownloadingDocx || isDownloadingPdf || !content}>
         {isDownloadingPdf ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
         Descargar .pdf
       </Button>
