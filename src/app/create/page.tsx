@@ -19,6 +19,8 @@ import { Packer, Document, Paragraph, TextRun } from 'docx';
 import { readStreamableValue } from 'ai/rsc';
 import { AuthContext } from '@/lib/firebase/auth-provider';
 import { saveProposalToLibrary } from '@/lib/firebase/actions/proposal-actions';
+import html2pdf from 'html2pdf.js';
+
 
 const formFields = [
   { name: 'grado', label: '1. Grado(s) Específico(s)', placeholder: 'Ej: 10º, 11º, o ambos', component: 'input' },
@@ -77,7 +79,7 @@ export default function CreateProposalPage() {
     Cookies.set('proposalFormData', JSON.stringify(newFormData), { expires: 7 });
   };
   
-  const handleDownload = () => {
+  const handleDownloadDocx = () => {
     const doc = new Document({
         sections: [{
             children: generation.split('\n\n').map(p => new Paragraph({
@@ -89,6 +91,20 @@ export default function CreateProposalPage() {
     Packer.toBlob(doc).then(blob => {
         saveAs(blob, "propuesta-de-actividad.docx");
     });
+  };
+
+  const handleDownloadPdf = () => {
+    const element = document.getElementById('proposal-content');
+    if (element) {
+      const opt = {
+        margin:       1,
+        filename:     'propuesta-de-actividad.pdf',
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true },
+        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+      };
+      html2pdf().from(element).set(opt).save();
+    }
   };
 
   const handleSaveProposal = async () => {
@@ -289,7 +305,7 @@ export default function CreateProposalPage() {
                         </div>
                     )}
                     {generation && (
-                        <div className="markdown-content-in-card">
+                        <div id="proposal-content" className="markdown-content-in-card">
                         <ReactMarkdown remarkPlugins={[remarkGfm]}>
                             {generation}
                         </ReactMarkdown>
@@ -297,7 +313,7 @@ export default function CreateProposalPage() {
                     )}
                 </CardContent>
                 {generation && !isLoading && !isRefining && (
-                    <CardFooter className="flex justify-end gap-2">
+                    <CardFooter className="flex flex-wrap justify-end gap-2">
                          <Button onClick={handleSaveProposal} disabled={isSaving || !user}>
                            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                            {isSaving ? 'Guardando...' : 'Guardar en mi Biblioteca'}
@@ -305,9 +321,13 @@ export default function CreateProposalPage() {
                          <Button variant="secondary" onClick={() => navigator.clipboard.writeText(generation)}>
                             Copiar Texto
                         </Button>
-                        <Button onClick={handleDownload}>
+                        <Button onClick={handleDownloadDocx}>
                             <Download className="mr-2 h-4 w-4" />
                             Descargar .docx
+                        </Button>
+                        <Button onClick={handleDownloadPdf} variant="outline">
+                            <Download className="mr-2 h-4 w-4" />
+                            Descargar .pdf
                         </Button>
                     </CardFooter>
                 )}
