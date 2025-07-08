@@ -25,17 +25,17 @@ export const ExportButtons: React.FC<ExportButtonsProps> = ({ contentRef, fileNa
     }
     setIsDownloadingPdf(true);
 
-    // Clone the node to work on a copy, which prevents issues with the live DOM.
-    const elementToPrint = contentRef.current.cloneNode(true) as HTMLElement;
+    const elementToPrint = contentRef.current;
+    
+    // Store original styles to restore them later
+    const originalStyles = {
+        maxHeight: elementToPrint.style.maxHeight,
+        overflowY: elementToPrint.style.overflowY,
+    };
 
-    // Temporarily append the clone to the body to ensure all styles are computed,
-    // and apply styles to make sure the entire content is visible for PDF generation.
-    elementToPrint.style.position = 'absolute';
-    elementToPrint.style.left = '-9999px';
-    elementToPrint.style.top = '0px';
-    elementToPrint.style.maxHeight = 'none'; // Remove height restrictions from scrollable containers
-    elementToPrint.style.overflow = 'visible'; // Ensure all content is visible
-    document.body.appendChild(elementToPrint);
+    // Temporarily modify styles to make the entire content visible for the PDF "screenshot"
+    elementToPrint.style.maxHeight = 'none';
+    elementToPrint.style.overflowY = 'visible';
 
     const opt = {
       margin: 1,
@@ -45,14 +45,17 @@ export const ExportButtons: React.FC<ExportButtonsProps> = ({ contentRef, fileNa
       jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
     };
 
-    html2pdf().from(elementToPrint).set(opt).save().catch(err => {
+    html2pdf().from(elementToPrint).set(opt).save()
+      .catch(err => {
         console.error("Error al exportar a PDF:", err);
         toast({ variant: 'destructive', title: 'Error al exportar PDF', description: 'No se pudo generar el archivo PDF.' });
-    }).finally(() => {
-        // Clean up: always remove the cloned element and reset the loading state
-        document.body.removeChild(elementToPrint);
+      })
+      .finally(() => {
+        // IMPORTANT: Restore original styles after the operation is complete
+        elementToPrint.style.maxHeight = originalStyles.maxHeight;
+        elementToPrint.style.overflowY = originalStyles.overflowY;
         setIsDownloadingPdf(false);
-    });
+      });
   };
 
   const handleDownloadDocx = async () => {
