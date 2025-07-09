@@ -52,9 +52,9 @@ const durationOptions = [
 ];
 
 const planDepthOptions = [
-    { value: "Esquema Rápido", label: "Esquema Rápido", description: "Genera una idea base con objetivo y actividades clave. Ideal para empezar.", icon: Bot },
-    { value: "Plan Detallado", label: "Plan Detallado", description: "Crea una secuencia didáctica completa con todas las secciones curriculares.", icon: FileText },
-    { value: "Proyecto Completo", label: "Proyecto Completo", description: "Diseña un plan de Aprendizaje Basado en Proyectos (ABP) a fondo.", icon: BookCopy },
+    { value: "Esquema Rápido", label: "Esquema Rápido", description: "Crea un borrador inicial con el objetivo principal y las actividades clave.", icon: Bot },
+    { value: "Plan Detallado", label: "Plan Detallado", description: "Desarrolla una secuencia didáctica completa con secciones curriculares detalladas.", icon: FileText },
+    { value: "Proyecto Completo", label: "Proyecto Completo", description: "Elabora un plan de Aprendizaje Basado en Proyectos (ABP) de principio a fin.", icon: BookCopy },
 ];
 
 export default function CreatePlanPage() {
@@ -221,7 +221,7 @@ export default function CreatePlanPage() {
             <AccordionTrigger className="p-4 font-semibold text-lg">Información General</AccordionTrigger>
             <AccordionContent className="p-6 pt-0 space-y-6">
                 <div>
-                  <Label htmlFor="planTitle">Título del Plan de Clase *</Label>
+                  <Label htmlFor="planTitle">Título del Plan *</Label>
                   <Input id="planTitle" name="planTitle" value={formData.planTitle} onChange={handleInputChange} required placeholder="Ej: Fundamentos de la Ciudadanía Digital" />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -248,7 +248,7 @@ export default function CreatePlanPage() {
                     </Select>
                 </div>
                 <div>
-                  <Label htmlFor="bigIdea">Gran Objetivo de Aprendizaje (Big Idea) *</Label>
+                  <Label htmlFor="bigIdea">Objetivo General o 'Gran Idea' *</Label>
                   <Textarea id="bigIdea" name="bigIdea" value={formData.bigIdea} onChange={handleInputChange} required placeholder="Describe el concepto central que los estudiantes deben comprender al finalizar el plan." rows={3}/>
                 </div>
             </AccordionContent>
@@ -259,7 +259,7 @@ export default function CreatePlanPage() {
             <AccordionContent className="p-6 pt-0 space-y-6">
                 <div className="space-y-2">
                   <Label>Estándares y Competencias (MEN)</Label>
-                  <CardDescription>Selecciona las competencias clave que abordará este plan.</CardDescription>
+                  <CardDescription>Selecciona las competencias clave que abordará tu plan.</CardDescription>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 max-h-60 overflow-y-auto p-2 border rounded-md bg-secondary/30">
                     {dynamicOptions?.competencias.map((comp, index) => (
                       <div key={`comp-${index}`} className="flex items-start space-x-3 p-2 rounded-md hover:bg-muted">
@@ -270,8 +270,8 @@ export default function CreatePlanPage() {
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="specificObjectives">Objetivos de Aprendizaje Específicos (Opcional)</Label>
-                  <Textarea id="specificObjectives" name="specificObjectives" value={formData.specificObjectives} onChange={handleInputChange} placeholder="Lista lo que los estudiantes serán capaces de hacer al finalizar." rows={4}/>
+                  <Label htmlFor="specificObjectives">Objetivos Específicos (Opcional)</Label>
+                  <Textarea id="specificObjectives" name="specificObjectives" value={formData.specificObjectives} onChange={handleInputChange} placeholder="Enumera lo que los estudiantes serán capaces de hacer al finalizar la unidad." rows={4}/>
                 </div>
             </AccordionContent>
         </AccordionItem>
@@ -280,16 +280,16 @@ export default function CreatePlanPage() {
             <AccordionTrigger className="p-4 font-semibold text-lg">Secuencia y Evaluación</AccordionTrigger>
             <AccordionContent className="p-6 pt-0 space-y-6">
                 <div>
-                  <Label htmlFor="sessionSequence">Secuencia de Sesiones / Actividades (Opcional)</Label>
-                  <Textarea id="sessionSequence" name="sessionSequence" value={formData.sessionSequence} onChange={handleInputChange} placeholder="Describe ideas para la secuencia de clases o actividades." rows={6}/>
+                  <Label htmlFor="sessionSequence">Secuencia de Sesiones (Opcional)</Label>
+                  <Textarea id="sessionSequence" name="sessionSequence" value={formData.sessionSequence} onChange={handleInputChange} placeholder="Esboza una posible secuencia de clases o fases del proyecto." rows={6}/>
                 </div>
                 <div>
                   <Label htmlFor="summativeAssessment">Evaluación Sumativa (Opcional)</Label>
-                  <Textarea name="summativeAssessment" id="summativeAssessment" rows={3} value={formData.summativeAssessment} onChange={handleInputChange} placeholder="¿Cómo medirás el aprendizaje al final del plan?" />
+                  <Textarea name="summativeAssessment" id="summativeAssessment" rows={3} value={formData.summativeAssessment} onChange={handleInputChange} placeholder="¿Cómo medirás el aprendizaje al final de la unidad?" />
                 </div>
                 <div>
                   <Label htmlFor="formativeAssessment">Evaluación Formativa (Opcional)</Label>
-                  <Textarea name="formativeAssessment" id="formativeAssessment" rows={3} value={formData.formativeAssessment} onChange={handleInputChange} placeholder="¿Cómo monitorearás el progreso durante el plan?" />
+                  <Textarea name="formativeAssessment" id="formativeAssessment" rows={3} value={formData.formativeAssessment} onChange={handleInputChange} placeholder="¿Cómo monitorearás el progreso durante la unidad?" />
                 </div>
             </AccordionContent>
         </AccordionItem>
@@ -298,16 +298,16 @@ export default function CreatePlanPage() {
             <AccordionTrigger className="p-4 font-semibold text-lg">Recursos y Detalles Finales</AccordionTrigger>
             <AccordionContent className="p-6 pt-0 space-y-6">
                 <div>
-                  <Label htmlFor="generalResources">Recursos Generales (Opcional)</Label>
-                  <Textarea name="generalResources" id="generalResources" rows={3} value={formData.generalResources} onChange={handleInputChange} placeholder="Lista los recursos necesarios para todo el plan." />
+                  <Label htmlFor="generalResources">Recursos y Materiales (Opcional)</Label>
+                  <Textarea name="generalResources" id="generalResources" rows={3} value={formData.generalResources} onChange={handleInputChange} placeholder="Enumera los recursos necesarios para implementar el plan." />
                 </div>
                 <div>
-                  <Label htmlFor="differentiation">Diferenciación (Opcional)</Label>
-                  <Textarea name="differentiation" id="differentiation" rows={3} value={formData.differentiation} onChange={handleInputChange} placeholder="¿Cómo adaptarás el plan para estudiantes con diferentes necesidades?" />
+                  <Label htmlFor="differentiation">Estrategias de Diferenciación (Opcional)</Label>
+                  <Textarea name="differentiation" id="differentiation" rows={3} value={formData.differentiation} onChange={handleInputChange} placeholder="¿Cómo adaptarás el plan para atender a la diversidad de estudiantes?" />
                 </div>
                 <div>
-                  <Label htmlFor="interdisciplinarity">Interdisciplinariedad (Opcional)</Label>
-                  <Textarea name="interdisciplinarity" id="interdisciplinarity" value={formData.interdisciplinarity} onChange={handleInputChange} placeholder="¿Cómo se puede conectar este plan con otras materias?" rows={3}/>
+                  <Label htmlFor="interdisciplinarity">Conexiones Interdisciplinares (Opcional)</Label>
+                  <Textarea name="interdisciplinarity" id="interdisciplinarity" value={formData.interdisciplinarity} onChange={handleInputChange} placeholder="¿Cómo se puede conectar este plan con otras áreas del saber?" rows={3}/>
                 </div>
             </AccordionContent>
         </AccordionItem>
@@ -317,9 +317,9 @@ export default function CreatePlanPage() {
   return (
     <div className="container mx-auto p-4 md:p-8 min-h-screen flex flex-col items-center">
       <header className="text-center mb-10 py-6 w-full max-w-4xl">
-        <h1 className="text-4xl font-bold text-primary">Asistente de Plan de Clase</h1>
+        <h1 className="text-4xl font-bold text-primary">Generador de Planes de Clase</h1>
         <p className="text-lg text-foreground/80 mt-2">
-          Elige la profundidad y completa los campos para que la IA diseñe tu planificación.
+          Define la estructura y los detalles de tu plan. La IA utilizará esta información para generar una propuesta curricular a tu medida.
         </p>
       </header>
       
@@ -327,8 +327,8 @@ export default function CreatePlanPage() {
         <form onSubmit={handleGenerarPlan} className="space-y-8">
             <Card>
                 <CardHeader>
-                    <CardTitle>1. Elige la Profundidad del Plan</CardTitle>
-                    <CardDescription>Selecciona qué tan detallado quieres que sea el plan generado por la IA.</CardDescription>
+                    <CardTitle>Paso 1: Elige la Profundidad del Plan</CardTitle>
+                    <CardDescription>Selecciona el nivel de detalle que deseas para tu plan de clase.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <RadioGroup
@@ -355,9 +355,9 @@ export default function CreatePlanPage() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>2. Completa los Detalles</CardTitle>
+                    <CardTitle>Paso 2: Proporciona los Detalles del Plan</CardTitle>
                     <CardDescription>
-                       Llena la información base. Los campos marcados con * son obligatorios. El resto son opcionales pero ayudan a la IA a darte un mejor resultado.
+                       Completa la información base. Los campos con * son obligatorios. Los demás son opcionales, pero mejoran la calidad de la propuesta de la IA.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -377,7 +377,7 @@ export default function CreatePlanPage() {
           {cargando && (
             <div className="flex flex-col items-center justify-center p-6 text-center space-y-4 rounded-lg bg-card shadow-lg">
               <Loader2 className="h-10 w-10 animate-spin text-primary" />
-              <p className="text-lg font-semibold text-muted-foreground">La IA está diseñando tu plan, por favor espera...</p>
+              <p className="text-lg font-semibold text-muted-foreground">La IA está generando tu plan de clase. Por favor, espera un momento...</p>
               <p className="text-sm text-muted-foreground">Esto puede tardar unos segundos.</p>
             </div>
           )}
@@ -391,8 +391,8 @@ export default function CreatePlanPage() {
             <>
                 <Card className="shadow-lg mt-10">
                     <CardHeader>
-                        <CardTitle>Plan Generado</CardTitle>
-                        <CardDescription>Revisa el plan generado. Puedes refinarlo, guardarlo o exportarlo.</CardDescription>
+                        <CardTitle>Resultado: Plan de Clase Generado</CardTitle>
+                        <CardDescription>Revisa la propuesta de la IA. Puedes refinarla, guardarla o exportarla.</CardDescription>
                     </CardHeader>
                     <CardContent className="markdown-content-in-card bg-secondary/20 p-4 rounded-lg">
                         <div ref={contentRef}>
@@ -412,16 +412,16 @@ export default function CreatePlanPage() {
 
                 <Card className="w-full max-w-4xl mt-4 shadow-lg">
                     <CardHeader>
-                        <CardTitle>Refinar Plan</CardTitle>
+                        <CardTitle>Refinar Propuesta</CardTitle>
                         <CardDescription>
-                            Dale a la IA una instrucción para que mejore el plan.
+                            Escribe una instrucción para que la IA modifique o mejore esta propuesta.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
                         <Textarea
                             value={refinementInstruction}
                             onChange={(e) => setRefinementInstruction(e.target.value)}
-                            placeholder="Ej: Hazlo más visual, añade una rúbrica de evaluación, enfócalo para un proyecto de dos semanas."
+                            placeholder="Ej: Añade una rúbrica de evaluación, enfócalo en trabajo colaborativo, adáptalo para estudiantes más jóvenes."
                             rows={3}
                             disabled={isRefining}
                         />

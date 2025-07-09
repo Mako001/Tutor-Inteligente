@@ -53,9 +53,9 @@ const durationOptions = [
 ];
 
 const activityDepthOptions = [
-    { value: "Lluvia de Ideas", label: "Lluvia de Ideas", description: "Genera 3-5 conceptos de actividades sobre un tema.", icon: Lightbulb },
-    { value: "Actividad Detallada", label: "Actividad Detallada", description: "Crea una actividad única con instrucciones y recursos.", icon: FileText },
-    { value: "Mini-Secuencia", label: "Mini-Secuencia", description: "Diseña una clase con inicio, desarrollo y cierre.", icon: Workflow },
+    { value: "Lluvia de Ideas", label: "Lluvia de Ideas", description: "Genera una lista de 3 a 5 ideas concisas para actividades.", icon: Lightbulb },
+    { value: "Actividad Detallada", label: "Actividad Detallada", description: "Desarrolla una única actividad con instrucciones para el docente y el estudiante.", icon: FileText },
+    { value: "Mini-Secuencia", label: "Mini-Secuencia", description: "Diseña una secuencia corta para una sesión de clase (inicio, desarrollo y cierre).", icon: Workflow },
 ];
 
 export default function CreateActivityPage() {
@@ -187,9 +187,9 @@ export default function CreateActivityPage() {
   return (
     <div className="container mx-auto p-4 md:p-8">
       <header className="text-center mb-10 py-6">
-        <h1 className="text-4xl font-bold text-primary">Asistente de Creación de Actividades</h1>
+        <h1 className="text-4xl font-bold text-primary">Generador de Actividades de Aprendizaje</h1>
         <p className="text-lg text-foreground/80 mt-2">
-          Diseña un bloque de construcción para tus clases en 3 simples pasos.
+          Diseña actividades específicas para tus clases de forma rápida y guiada.
         </p>
       </header>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
@@ -203,7 +203,7 @@ export default function CreateActivityPage() {
                 <CardContent className="space-y-6 min-h-[400px]">
                   {step === 1 && (
                     <div className="space-y-6 animate-in fade-in">
-                        <h2 className="text-xl font-semibold">Contexto Básico</h2>
+                        <h2 className="text-xl font-semibold">Paso 1: Contexto Curricular</h2>
                         <div>
                           <Label htmlFor="subject">Materia</Label>
                           <Select name="subject" value={formData.subject} onValueChange={(value) => handleSelectChange('subject', value)}>
@@ -219,16 +219,16 @@ export default function CreateActivityPage() {
                           </Select>
                         </div>
                         <div>
-                          <Label htmlFor="topic">Tema General del Plan (Opcional)</Label>
+                          <Label htmlFor="topic">Tema de la Unidad o Clase (Opcional)</Label>
                           <Input id="topic" name="topic" value={formData.topic || ''} onChange={handleInputChange} placeholder="Ej: La Revolución Industrial" />
                         </div>
                     </div>
                   )}
                   {step === 2 && (
                     <div className="space-y-6 animate-in fade-in">
-                        <h2 className="text-xl font-semibold">Define la Actividad</h2>
+                        <h2 className="text-xl font-semibold">Paso 2: Define la Actividad</h2>
                         <div>
-                            <Label>Profundidad de la Actividad</Label>
+                            <Label>Nivel de Detalle</Label>
                             <RadioGroup value={formData.activityDepth} onValueChange={handleRadioChange} className="grid grid-cols-1 gap-4 mt-2">
                                 {activityDepthOptions.map(option => (
                                    <Label key={option.value} htmlFor={option.value} className={cn(
@@ -246,14 +246,14 @@ export default function CreateActivityPage() {
                             </RadioGroup>
                         </div>
                          <div>
-                          <Label htmlFor="learningObjective">Objetivo de Aprendizaje de la Actividad *</Label>
-                          <Textarea id="learningObjective" name="learningObjective" value={formData.learningObjective} onChange={handleInputChange} required placeholder="Ej: Que los estudiantes puedan nombrar tres inventos clave y su impacto." rows={3}/>
+                          <Label htmlFor="learningObjective">Objetivo de Aprendizaje *</Label>
+                          <Textarea id="learningObjective" name="learningObjective" value={formData.learningObjective} onChange={handleInputChange} required placeholder="Ej: Identificar las partes de una célula, aplicar la fórmula del área, etc." rows={3}/>
                         </div>
                     </div>
                   )}
                    {step === 3 && (
                     <div className="space-y-6 animate-in fade-in">
-                        <h2 className="text-xl font-semibold">Detalles Finales</h2>
+                        <h2 className="text-xl font-semibold">Paso 3: Detalles Operativos</h2>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                             <Label htmlFor="duration">Duración Estimada</Label>
@@ -263,7 +263,7 @@ export default function CreateActivityPage() {
                             </Select>
                             </div>
                              <div>
-                            <Label htmlFor="activityType">Tipo de Actividad (Contexto)</Label>
+                            <Label htmlFor="activityType">Tipo de Actividad</Label>
                             <Select name="activityType" value={formData.activityType} onValueChange={(value) => handleSelectChange('activityType', value)}>
                                 <SelectTrigger id="activityType"><SelectValue /></SelectTrigger>
                                 <SelectContent>{activityTypeOptions.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
@@ -300,16 +300,16 @@ export default function CreateActivityPage() {
             {resultado && !cargando && (
               <Card className="w-full shadow-lg animate-in fade-in">
                   <CardHeader>
-                      <CardTitle>Refinar Actividad</CardTitle>
+                      <CardTitle>Refinar Propuesta</CardTitle>
                       <CardDescription>
-                          Dale a la IA una instrucción para mejorar la actividad generada.
+                          Escribe una instrucción para que la IA modifique o mejore esta propuesta.
                       </CardDescription>
                   </CardHeader>
                   <CardContent>
                       <Textarea
                           value={refinementInstruction}
                           onChange={(e) => setRefinementInstruction(e.target.value)}
-                          placeholder="Ej: Conviértela en una actividad para grupos, añade preguntas de discusión, adáptala para 15 minutos."
+                          placeholder="Ej: Conviértela en una actividad grupal, añade criterios de evaluación, hazla más corta."
                           rows={3}
                           disabled={isRefining}
                       />
@@ -329,14 +329,14 @@ export default function CreateActivityPage() {
 
         <Card className="w-full shadow-lg sticky top-8">
             <CardHeader>
-                <CardTitle>Actividad Generada</CardTitle>
-                <CardDescription>Aquí aparecerá la propuesta de la IA. Puedes refinarla, guardarla o exportarla.</CardDescription>
+                <CardTitle>Resultado: Actividad Generada</CardTitle>
+                <CardDescription>Aquí aparecerá la propuesta de la IA. Puedes refinarla, guardarla en tu biblioteca o exportarla.</CardDescription>
             </CardHeader>
             <CardContent className="min-h-[400px] max-h-[60vh] overflow-y-auto">
                 {cargando && (
                     <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
                         <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
-                        <p>Creando una actividad increíble...</p>
+                        <p>La IA está generando tu actividad. Por favor, espera...</p>
                     </div>
                 )}
                 {error && !cargando && (
@@ -353,7 +353,7 @@ export default function CreateActivityPage() {
                 )}
                  {!cargando && !error && !resultado && (
                     <div className="h-full flex items-center justify-center">
-                        <p className="text-muted-foreground text-center">La actividad aparecerá aquí.</p>
+                        <p className="text-muted-foreground text-center">La actividad generada aparecerá aquí.</p>
                     </div>
                 )}
             </CardContent>

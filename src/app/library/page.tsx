@@ -313,8 +313,8 @@ export default function LibraryPage() {
     <div className="space-y-8">
         <Card className="w-full">
             <CardHeader>
-                <CardTitle>Buscador Inteligente de Recursos</CardTitle>
-                <CardDescription>Describe lo que necesitas y la IA buscará en la web por ti.</CardDescription>
+                <CardTitle>Buscador de Recursos con IA</CardTitle>
+                <CardDescription>Encuentra videos, artículos y simulaciones para tus clases.</CardDescription>
             </CardHeader>
             <form onSubmit={handleSearch}>
                 <CardContent className="space-y-4">
@@ -360,7 +360,7 @@ export default function LibraryPage() {
             {isSearching && (
                 <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-8">
                     <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
-                    <p>La IA está buscando los mejores recursos...</p>
+                    <p>Buscando recursos educativos en la web...</p>
                 </div>
             )}
             {searchError && (
@@ -398,7 +398,7 @@ export default function LibraryPage() {
                 </div>
             )}
             {!isSearching && !searchError && foundResources.length === 0 && (
-                <p className="text-muted-foreground text-center py-4">Los resultados de la búsqueda aparecerán aquí.</p>
+                <p className="text-muted-foreground text-center py-4">Los recursos encontrados por la IA se mostrarán aquí.</p>
             )}
         </div>
     </div>
@@ -410,7 +410,7 @@ export default function LibraryPage() {
         <h1 className="text-4xl font-bold text-primary">Mi Biblioteca</h1>
         <p className="text-lg text-foreground/80 mt-2 flex items-center justify-center gap-2">
             <User className="h-5 w-5" />
-            {user ? `Sesión de Usuario: ${user.uid.substring(0, 12)}...` : 'Iniciando sesión anónima...'}
+            {user ? `ID de Usuario: ${user.uid.substring(0, 12)}...` : 'Iniciando sesión anónima...'}
         </p>
       </header>
 
@@ -420,7 +420,7 @@ export default function LibraryPage() {
                 <AccordionTrigger className="p-6 hover:no-underline">
                     <div className="flex items-center gap-2 text-lg font-semibold">
                         <Search />
-                        <span>Buscador Inteligente de Recursos</span>
+                        <span>Buscador de Recursos Educativos</span>
                     </div>
                 </AccordionTrigger>
                 <AccordionContent className="p-6 pt-0">
@@ -432,7 +432,7 @@ export default function LibraryPage() {
         <Card className="w-full shadow-lg">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2"><BookOpen/> Contenido Guardado</CardTitle>
-                <CardDescription>Aquí están los recursos, actividades y planes de clase que has guardado.</CardDescription>
+                <CardDescription>Gestiona todos los planes, actividades y recursos que has guardado.</CardDescription>
             </CardHeader>
             <CardContent>
                 <Tabs defaultValue="plans" className="w-full">
@@ -484,8 +484,8 @@ export default function LibraryPage() {
                          {user && !isLoadingPlans && !plansError && savedPlans.length === 0 && (
                             <div className="h-60 flex flex-col items-center justify-center text-center p-4">
                                 <ClipboardList className="h-16 w-16 text-muted-foreground mb-4" />
-                                <h2 className="text-xl font-semibold">No has guardado ningún plan</h2>
-                                <p className="text-muted-foreground mt-2 mb-4">Empieza a crear planificaciones y las verás aquí.</p>
+                                <h2 className="text-xl font-semibold">Aún no has guardado planes</h2>
+                                <p className="text-muted-foreground mt-2 mb-4">Crea tu primer plan de clase y guárdalo para acceder a él más tarde.</p>
                                 <Button asChild>
                                     <Link href="/plans/create">Crear Plan de Clase</Link>
                                 </Button>
@@ -535,8 +535,8 @@ export default function LibraryPage() {
                          {user && !isLoadingActivities && !activitiesError && savedActivities.length === 0 && (
                             <div className="h-60 flex flex-col items-center justify-center text-center p-4">
                                 <FileText className="h-16 w-16 text-muted-foreground mb-4" />
-                                <h2 className="text-xl font-semibold">No has guardado ninguna actividad</h2>
-                                <p className="text-muted-foreground mt-2 mb-4">Genera actividades para tus clases y guárdalas para después.</p>
+                                <h2 className="text-xl font-semibold">Aún no has guardado actividades</h2>
+                                <p className="text-muted-foreground mt-2 mb-4">Genera actividades de aprendizaje y guárdalas en tu biblioteca.</p>
                                 <Button asChild>
                                     <Link href="/activities/create">Crear Actividad</Link>
                                 </Button>
@@ -576,8 +576,8 @@ export default function LibraryPage() {
                         {user && !isLoadingLibrary && !libraryError && savedResources.length === 0 && (
                             <div className="h-60 flex flex-col items-center justify-center text-center p-4">
                                 <LinkIcon className="h-16 w-16 text-muted-foreground mb-4" />
-                                <h2 className="text-xl font-semibold">No tienes recursos guardados</h2>
-                                <p className="text-muted-foreground mt-2">Usa el buscador inteligente para encontrar y guardar enlaces, videos y más.</p>
+                                <h2 className="text-xl font-semibold">Aún no has guardado recursos</h2>
+                                <p className="text-muted-foreground mt-2">Utiliza el buscador para encontrar recursos y guárdalos aquí.</p>
                             </div>
                         )}
                     </TabsContent>
@@ -591,16 +591,16 @@ export default function LibraryPage() {
         <AlertDialog open onOpenChange={(isOpen) => !isOpen && setActivityToDelete(null)}>
             <AlertDialogContent>
             <AlertDialogHeader>
-                <AlertDialogTitle>¿Estás realmente seguro?</AlertDialogTitle>
+                <AlertDialogTitle>¿Confirmas la eliminación?</AlertDialogTitle>
                 <AlertDialogDescription>
-                Esta acción no se puede deshacer. Esto eliminará permanentemente la actividad
+                Esta acción es irreversible y eliminará permanentemente la actividad
                 <strong className="mx-1">"{activityToDelete.learningObjective}"</strong>
-                de la base de datos.
+                de tu biblioteca.
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
                 <AlertDialogCancel onClick={() => setActivityToDelete(null)}>Cancelar</AlertDialogCancel>
-                <AlertDialogAction onClick={confirmDeleteActivity} className={cn(buttonVariants({ variant: "destructive" }))}>Sí, eliminar</AlertDialogAction>
+                <AlertDialogAction onClick={confirmDeleteActivity} className={cn(buttonVariants({ variant: "destructive" }))}>Eliminar</AlertDialogAction>
             </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
@@ -610,9 +610,9 @@ export default function LibraryPage() {
         <Dialog open onOpenChange={(isOpen) => !isOpen && setActivityToEdit(null)}>
             <DialogContent className="sm:max-w-2xl">
             <DialogHeader>
-                <DialogTitle>Modificar Actividad: {activityToEdit.learningObjective}</DialogTitle>
+                <DialogTitle>Editar Actividad</DialogTitle>
                 <DialogDescription>
-                Realiza los cambios necesarios en el texto generado por la IA.
+                Realiza cambios en el contenido. Estos se guardarán permanentemente en tu biblioteca.
                 </DialogDescription>
             </DialogHeader>
             <div className="py-4">
@@ -639,16 +639,16 @@ export default function LibraryPage() {
         <AlertDialog open onOpenChange={(isOpen) => !isOpen && setPlanToDelete(null)}>
             <AlertDialogContent>
             <AlertDialogHeader>
-                <AlertDialogTitle>¿Estás realmente seguro?</AlertDialogTitle>
+                <AlertDialogTitle>¿Confirmas la eliminación?</AlertDialogTitle>
                 <AlertDialogDescription>
-                Esta acción no se puede deshacer. Esto eliminará permanentemente el plan
+                Esta acción es irreversible y eliminará permanentemente el plan
                 <strong className="mx-1">"{planToDelete.planTitle}"</strong>
-                de la base de datos.
+                de tu biblioteca.
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
                 <AlertDialogCancel onClick={() => setPlanToDelete(null)}>Cancelar</AlertDialogCancel>
-                <AlertDialogAction onClick={confirmDeletePlan} className={cn(buttonVariants({ variant: "destructive" }))}>Sí, eliminar</AlertDialogAction>
+                <AlertDialogAction onClick={confirmDeletePlan} className={cn(buttonVariants({ variant: "destructive" }))}>Eliminar</AlertDialogAction>
             </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
@@ -658,9 +658,9 @@ export default function LibraryPage() {
         <Dialog open onOpenChange={(isOpen) => !isOpen && setPlanToEdit(null)}>
             <DialogContent className="sm:max-w-2xl">
             <DialogHeader>
-                <DialogTitle>Modificar Plan: {planToEdit.planTitle}</DialogTitle>
+                <DialogTitle>Editar Plan</DialogTitle>
                 <DialogDescription>
-                Realiza los cambios necesarios en el texto generado por la IA.
+                Realiza cambios en el contenido. Estos se guardarán permanentemente en tu biblioteca.
                 </DialogDescription>
             </DialogHeader>
             <div className="py-4">

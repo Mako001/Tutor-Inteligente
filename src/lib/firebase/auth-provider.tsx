@@ -20,7 +20,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (!auth) {
-        const errorMessage = "Configuración de Firebase no válida. El servicio de autenticación no pudo inicializarse.";
+        const errorMessage = "Error de Configuración de Firebase. El servicio de autenticación no se pudo inicializar.";
         console.error(errorMessage);
         setConfigError(errorMessage);
         setLoading(false);
@@ -40,10 +40,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const errorMessageString = String(error?.message || '');
           // This is a more robust check for the specific API key error.
           if (error?.code === 'auth/invalid-api-key' || error?.code === 'auth/api-key-not-valid' || errorMessageString.includes('API key not valid')) {
-              const friendlyError = "La API Key de Firebase no es válida. La aplicación no puede conectarse a los servicios de autenticación.";
+              const friendlyError = "La clave de API de Firebase no es válida. Revisa la variable `NEXT_PUBLIC_FIREBASE_API_KEY` en tu archivo `.env.local`.";
               setConfigError(friendlyError);
           } else {
-              setConfigError("Ocurrió un error inesperado durante la autenticación. Revisa la consola para más detalles.");
+              setConfigError("Error de Autenticación. No se pudo iniciar sesión anónimamente. Revisa la consola y la configuración de tu proyecto de Firebase.");
           }
         } finally {
             setLoading(false);
@@ -69,13 +69,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                   <CardHeader>
                       <CardTitle className="flex items-center gap-2 text-destructive">
                           <AlertTriangle className="h-6 w-6" />
-                          Error de Configuración de Firebase
+                          La aplicación no se puede conectar a Firebase
                       </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                       <p className="text-foreground">La aplicación no pudo conectarse a los servicios de Firebase debido a un problema con las credenciales.</p>
                       <div className="p-4 bg-secondary rounded-md">
-                        <p className="font-semibold text-foreground">Mensaje de Error:</p>
+                        <p className="font-semibold text-foreground">Detalle del Error:</p>
                         <p className="font-mono text-sm text-muted-foreground">{configError}</p>
                       </div>
                       <p className="font-semibold">Pasos para solucionarlo:</p>

@@ -8,7 +8,7 @@ export default function HomePage() {
     <div className="flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] p-4 md:p-8 bg-secondary">
       <header className="text-center mb-12">
         <h1 className="text-5xl font-bold text-primary">Bienvenido a AprendeTech</h1>
-        <p className="text-xl text-foreground/80 mt-2">Tu centro de mando para la planificación educativa inteligente.</p>
+        <p className="text-xl text-foreground/80 mt-2">Tu asistente de IA para la planificación educativa.</p>
       </header>
       
       <main className="w-full max-w-5xl">
@@ -24,7 +24,7 @@ export default function HomePage() {
             </CardHeader>
             <CardContent className="flex-grow">
               <CardDescription className="text-center">
-                Genera una secuencia didáctica completa. Define objetivos, competencias, fases y evaluación para un periodo académico.
+                Diseña secuencias didácticas completas. Define objetivos, competencias y estrategias de evaluación para tus unidades académicas.
               </CardDescription>
             </CardContent>
             <CardFooter>
@@ -45,7 +45,7 @@ export default function HomePage() {
             </CardHeader>
             <CardContent className="flex-grow">
               <CardDescription className="text-center">
-                ¿Necesitas una idea rápida? Diseña una actividad de aprendizaje específica para una sola clase, con un objetivo claro y conciso.
+                Crea actividades de aprendizaje específicas para una sesión de clase. Ideal para generar ideas, ejercicios prácticos o evaluaciones formativas.
               </CardDescription>
             </CardContent>
             <CardFooter>
@@ -65,7 +65,7 @@ export default function HomePage() {
             </CardHeader>
             <CardContent className="flex-grow">
               <CardDescription className="text-center">
-                Accede a todos tus planes y actividades guardados. Revisa, edita y reutiliza tus mejores creaciones pedagógicas.
+                Centraliza tus recursos. Accede, edita y reutiliza tus planes de clase, actividades y recursos educativos guardados.
               </CardDescription>
             </CardContent>
             <CardFooter>

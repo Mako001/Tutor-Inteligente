@@ -9,9 +9,9 @@ export function Hub() {
   const pathname = usePathname();
 
   const navLinks = [
-    { href: '/plans/create', label: 'Crear Plan', icon: FilePlus2 },
-    { href: '/activities/create', label: 'Crear Actividad', icon: Sparkles },
-    { href: '/library', label: 'Mi Biblioteca', icon: Library },
+    { href: '/plans/create', label: 'Planes de Clase', icon: FilePlus2 },
+    { href: '/activities/create', label: 'Actividades', icon: Sparkles },
+    { href: '/library', label: 'Biblioteca', icon: Library },
   ];
 
   return (
