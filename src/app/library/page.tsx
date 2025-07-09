@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useEffect, FormEvent, useContext } from 'react';
+import Link from 'next/link';
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -481,8 +482,13 @@ export default function LibraryPage() {
                              </div>
                         )}
                          {user && !isLoadingPlans && !plansError && savedPlans.length === 0 && (
-                            <div className="h-40 flex items-center justify-center">
-                                <p className="text-muted-foreground text-center">No has guardado ningún plan de clase todavía.<br/>¡Crea uno y aparecerá aquí!</p>
+                            <div className="h-60 flex flex-col items-center justify-center text-center p-4">
+                                <ClipboardList className="h-16 w-16 text-muted-foreground mb-4" />
+                                <h2 className="text-xl font-semibold">No has guardado ningún plan</h2>
+                                <p className="text-muted-foreground mt-2 mb-4">Empieza a crear planificaciones y las verás aquí.</p>
+                                <Button asChild>
+                                    <Link href="/plans/create">Crear Plan de Clase</Link>
+                                </Button>
                             </div>
                         )}
                     </TabsContent>
@@ -527,8 +533,13 @@ export default function LibraryPage() {
                              </div>
                         )}
                          {user && !isLoadingActivities && !activitiesError && savedActivities.length === 0 && (
-                            <div className="h-40 flex items-center justify-center">
-                                <p className="text-muted-foreground text-center">No has guardado ninguna actividad todavía.<br/>¡Crea una y aparecerá aquí!</p>
+                            <div className="h-60 flex flex-col items-center justify-center text-center p-4">
+                                <FileText className="h-16 w-16 text-muted-foreground mb-4" />
+                                <h2 className="text-xl font-semibold">No has guardado ninguna actividad</h2>
+                                <p className="text-muted-foreground mt-2 mb-4">Genera actividades para tus clases y guárdalas para después.</p>
+                                <Button asChild>
+                                    <Link href="/activities/create">Crear Actividad</Link>
+                                </Button>
                             </div>
                         )}
                     </TabsContent>
@@ -563,8 +574,10 @@ export default function LibraryPage() {
                             </div>
                         )}
                         {user && !isLoadingLibrary && !libraryError && savedResources.length === 0 && (
-                            <div className="h-40 flex items-center justify-center">
-                                <p className="text-muted-foreground text-center">Tu biblioteca de recursos está vacía.<br/>¡Usa el buscador para encontrar y guardar nuevos recursos!</p>
+                            <div className="h-60 flex flex-col items-center justify-center text-center p-4">
+                                <LinkIcon className="h-16 w-16 text-muted-foreground mb-4" />
+                                <h2 className="text-xl font-semibold">No tienes recursos guardados</h2>
+                                <p className="text-muted-foreground mt-2">Usa el buscador inteligente para encontrar y guardar enlaces, videos y más.</p>
                             </div>
                         )}
                     </TabsContent>
