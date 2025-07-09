@@ -1,12 +1,9 @@
 // src/ai/ai-instance.ts
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 import { GEMINI_MODEL_NAME } from '@/config/ai-constants';
+import { env } from '@/lib/env';
 
-const apiKey = process.env.GOOGLE_GEMINI_API_KEY;
-
-if (!apiKey) {
-  throw new Error("GOOGLE_GEMINI_API_KEY is not set. Please add it to your .env.local file.");
-}
+const apiKey = env.GOOGLE_GEMINI_API_KEY;
 
 const genAI = new GoogleGenerativeAI(apiKey);
 
