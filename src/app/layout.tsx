@@ -9,8 +9,22 @@ import { AuthProvider } from '@/lib/firebase/auth-provider';
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata: Metadata = {
-  title: 'Tutor Inteligente - AprendeTech',
-  description: 'Asistente IA para diseño de actividades educativas',
+  title: 'AprendeTech Colombia - Asistente de IA para Docentes',
+  description: 'Una herramienta para generar planes de clase, actividades y recursos educativos con la ayuda de la inteligencia artificial.',
+  openGraph: {
+    title: 'AprendeTech Colombia - Asistente de IA para Docentes',
+    description: 'Una herramienta para generar planes de clase, actividades y recursos educativos con la ayuda de la inteligencia artificial.',
+    images: [
+      {
+        url: 'https://placehold.co/1200x630.png',
+        width: 1200,
+        height: 630,
+        alt: 'Página principal de AprendeTech Colombia',
+      },
+    ],
+    locale: 'es_CO',
+    type: 'website',
+  },
 };
 
 export default function RootLayout({
