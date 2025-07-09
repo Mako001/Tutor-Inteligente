@@ -3,13 +3,14 @@ import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/ge
 import { GEMINI_MODEL_NAME } from '@/config/ai-constants';
 
 // --- Validación de la API Key del Servidor ---
-// Validamos la variable de entorno de Gemini aquí mismo, ya que este módulo
-// solo se usa en el lado del servidor (a través de Server Actions).
-const apiKey = process.env.GOOGLE_GEMINI_API_KEY;
+// Obtenemos la API key. Si no está presente, las llamadas a la API fallarán.
+// Este error es capturado en los 'flows' de IA (Server Actions), 
+// lo que evita que la aplicación se bloquee al iniciar y muestra un error controlado al usuario.
+const apiKey = process.env.GOOGLE_GEMINI_API_KEY || '';
 
 if (!apiKey) {
-  throw new Error(
-    'ERROR: La variable de entorno GOOGLE_GEMINI_API_KEY no está definida. Asegúrate de que tu archivo .env.local la incluya.'
+  console.warn(
+    'ADVERTENCIA: La variable de entorno GOOGLE_GEMINI_API_KEY no está definida. Las llamadas a la IA fallarán, pero la aplicación no se bloqueará.'
   );
 }
 // --- Fin de la Validación ---
