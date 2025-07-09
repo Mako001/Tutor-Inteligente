@@ -1,14 +1,11 @@
 import { z } from 'zod';
 
 /**
- * Define el esquema para las variables de entorno utilizando Zod.
+ * Define el esquema para las variables de entorno PÚBLICAS (del lado del cliente).
  * Esto asegura que todas las variables requeridas estén presentes y no estén vacías
  * al iniciar la aplicación.
  */
 const envSchema = z.object({
-  // Clave de API de Google Gemini (privada, solo para el servidor)
-  GOOGLE_GEMINI_API_KEY: z.string().min(1),
-  
   // Variables de Firebase (públicas, accesibles desde el cliente)
   NEXT_PUBLIC_FIREBASE_API_KEY: z.string().min(1),
   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: z.string().min(1),
@@ -32,7 +29,7 @@ try {
 } catch (error) {
   // Lanza un error más claro y amigable si la validación falla.
   throw new Error(
-    'ERROR: Faltan variables de entorno. Asegúrate de que tu archivo .env.local esté completo y correcto.'
+    'ERROR: Faltan variables de entorno públicas (NEXT_PUBLIC_). Asegúrate de que tu archivo .env.local esté completo y correcto.'
   );
 }
 

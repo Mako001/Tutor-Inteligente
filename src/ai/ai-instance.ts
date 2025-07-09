@@ -1,9 +1,18 @@
 // src/ai/ai-instance.ts
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 import { GEMINI_MODEL_NAME } from '@/config/ai-constants';
-import { env } from '@/lib/env';
 
-const apiKey = env.GOOGLE_GEMINI_API_KEY;
+// --- Validación de la API Key del Servidor ---
+// Validamos la variable de entorno de Gemini aquí mismo, ya que este módulo
+// solo se usa en el lado del servidor (a través de Server Actions).
+const apiKey = process.env.GOOGLE_GEMINI_API_KEY;
+
+if (!apiKey) {
+  throw new Error(
+    'ERROR: La variable de entorno GOOGLE_GEMINI_API_KEY no está definida. Asegúrate de que tu archivo .env.local la incluya.'
+  );
+}
+// --- Fin de la Validación ---
 
 const genAI = new GoogleGenerativeAI(apiKey);
 
